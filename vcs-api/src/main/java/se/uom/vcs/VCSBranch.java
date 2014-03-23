@@ -10,7 +10,7 @@ import se.uom.vcs.walker.ModifyingPathVisitor;
 import se.uom.vcs.walker.PathLimitingVisitor;
 import se.uom.vcs.walker.Visitor;
 
-/**
+/** 
  * Represents a branch of a {@link VCSRepository}.<p>
  * 
  * Some VCSs support branching (Git) and some others not (SVN). In case VCS
