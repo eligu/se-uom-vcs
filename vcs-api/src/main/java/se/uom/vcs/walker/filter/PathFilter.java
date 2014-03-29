@@ -36,6 +36,11 @@ public class PathFilter<T extends VCSResource> extends AbstractPathFilter<T> {
     public boolean include(T entity) {
 
 	String path = entity.getPath();
+	
+	return containsPath(path);
+    }
+    
+    public boolean containsPath(String path) {
 	path = path.replaceAll("\\", "/").trim();
 	if(path.equals("/")) {
 	    return false;
@@ -43,5 +48,4 @@ public class PathFilter<T extends VCSResource> extends AbstractPathFilter<T> {
 	path = AbstractPathFilter.correctAndCheckPath(path);
 	return paths.contains(path);
     }
-
 }

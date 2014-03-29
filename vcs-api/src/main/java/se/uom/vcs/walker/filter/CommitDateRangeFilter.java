@@ -32,6 +32,15 @@ public class CommitDateRangeFilter<T extends VCSCommit> implements VCSCommitFilt
 	this.start = start;
 	this.end = end;
     }
+    
+    public Date getStart() {
+	return this.start;
+    }
+    
+    public Date getEnd() {
+	return this.end;
+    }
+    
     @Override
     public boolean include(T entity) {
 	

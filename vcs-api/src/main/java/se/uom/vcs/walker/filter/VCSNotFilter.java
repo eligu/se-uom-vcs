@@ -28,6 +28,14 @@ public class VCSNotFilter<T> implements VCSFilter<T> {
     }
     
     /**
+     * @return
+     * 		the filter this will revert
+     */
+    public VCSFilter<T> getFilter() {
+	return this.filter;
+    }
+    
+    /**
      * {@inheritDoc}
      * This will revert the specified filter (during the creation) returned value. 
      */

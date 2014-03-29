@@ -36,4 +36,12 @@ public abstract class PatternsFilter<T> implements VCSFilter<T> {
 	    this.patterns.add(Pattern.compile(str));
 	}
     }
+    
+    public Set<String> getPatterns() {
+	Set<String> set = new LinkedHashSet<String>();
+	for(Pattern p : patterns) {
+	    set.add(p.pattern());
+	}
+	return set;
+    }
 }

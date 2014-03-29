@@ -4,6 +4,7 @@
 package se.uom.vcs.walker.filter;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import se.uom.vcs.VCSCommit;

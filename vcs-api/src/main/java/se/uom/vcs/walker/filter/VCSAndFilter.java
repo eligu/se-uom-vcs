@@ -42,6 +42,14 @@ public class VCSAndFilter<T> implements VCSFilter<T> {
     }
     
     /**
+     * 
+     * @return
+     * 		the filters
+     */
+    public Set<VCSFilter<T>> getFilters() {
+	return this.filters;
+    }
+    /**
      * {@inheritDoc}
      * Returns true if all of the specified filters (during creation) returns true.<p>
      */

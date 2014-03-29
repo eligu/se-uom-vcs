@@ -9,7 +9,7 @@ import se.uom.vcs.VCSCommit;
  * Select the first nth commits.<p>
  * 
  * When applied this filter will return true only for the first n commits and false for others.
- * n argument is specified in contructor.
+ * n argument is specified in constructor.
  * 
  * @author Elvis Ligu
  * @version 0.0.1
@@ -31,6 +31,10 @@ public class MaxCounterFilter<T extends VCSCommit> implements VCSCommitFilter<T>
 	    throw new IllegalArgumentException("size must be greater than 0");
 	}
 	this.size = size;
+    }
+    
+    public int getSize() {
+	return size;
     }
     
     /**

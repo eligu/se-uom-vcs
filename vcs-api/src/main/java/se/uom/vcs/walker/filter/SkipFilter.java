@@ -32,6 +32,14 @@ public class SkipFilter<T extends VCSCommit> implements VCSCommitFilter<T> {
 	block = skip;
     }
     
+    public int getBlock() {
+	return block;
+    }
+    
+    public int getCounter() {
+	return counter;
+    }
+    
     /**
      * {@inheritDoc}
      * For each nth commit return true, where n is the argument specified when this filter was created.
