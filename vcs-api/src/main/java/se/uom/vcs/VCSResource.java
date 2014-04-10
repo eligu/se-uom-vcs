@@ -129,4 +129,18 @@ public interface VCSResource {
 	 */
 	public abstract void walkAllCommits(Visitor<VCSCommit> visitor)
 			throws VCSRepositoryException;
+
+	/**
+	 * Returns the parent resource this is contained.<p>
+	 *  
+	 *  If this resource is at root of repository the parent might be null,
+	 *  however it depends on the implementation, that is there might be a special
+	 *  case when the root directory of repository is represented by a resource.
+	 *  
+	 * @return
+	 * 	the directory this resource is contained. If null than
+	 * 	this resource is a top level resource, 
+	 * 	is not under any directory.
+	 */
+	public VCSResource getParent();
 }

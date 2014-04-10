@@ -23,9 +23,10 @@ public interface Collector<T> extends Iterable<T>{
 
 	/**
 	 * Collect the result of a computation to one collection, or
-	 * give access to an iterator.
+	 * give access to an iterator.<p>
 	 * 
 	 * @return
+	 * 	a collection of results
 	 * @throws VCSRepositoryException
 	 */
 	Collection<T> collect() throws VCSRepositoryException;

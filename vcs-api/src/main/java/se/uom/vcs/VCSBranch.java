@@ -6,9 +6,7 @@ package se.uom.vcs;
 import java.util.Collection;
 
 import se.uom.vcs.exceptions.VCSRepositoryException;
-import se.uom.vcs.walker.ModifyingPathVisitor;
-import se.uom.vcs.walker.PathLimitingVisitor;
-import se.uom.vcs.walker.Visitor;
+import se.uom.vcs.walker.CommitVisitor;
 
 /** 
  * Represents a branch of a {@link VCSRepository}.<p>
@@ -92,16 +90,19 @@ public interface VCSBranch {
 	 */
 	public abstract String getBranchName();
 
+	// TODO Have to rewrite comments for path limiting visitor and modifying visitors
 	/**
 	 * Walk commits of this branch.<p>
 	 * 
 	 * A commit belongs to a branch only if it is reachable from this branch, 
-	 * that is it contains a previous history of this branch.<p>
-	 * 
-	 * If the visitor is of type {@link PathLimitingVisitor} then it will include only the commits that
-	 * contains only the specified paths (and their sub resources). If the visitor is of type
-	 * {@link ModifyingPathVisitor} then it will include only the commits that modify the specified paths.<p>
-	 * 
+	 * that is it contains a previous history of this branch.
+	 * <p>
+	 * If a resource filter is specified, the changes will be limited only to those
+	 * resources that this filter allows.
+	 * <p>
+	 * If a commit filter is specified, only those commits that are allowed by this
+	 * filter will be visited.
+	 * <p>
 	 * <b>NOTE:</b> if the implementation does not support branching this method may return all commits of repository.<p>
 	 * 
 	 * @param 
@@ -109,5 +110,5 @@ public interface VCSBranch {
 	 * @throws 
 	 * 		VCSRepositoryException if a problem occurs during walk
 	 */
-	void walkCommits(Visitor<VCSCommit> visitor) throws VCSRepositoryException;
+	void walkCommits(CommitVisitor<VCSCommit> visitor) throws VCSRepositoryException;
 }

@@ -6,7 +6,7 @@ package se.uom.vcs;
 import java.util.Set;
 
 import se.uom.vcs.exceptions.VCSRepositoryException;
-import se.uom.vcs.walker.FileDirVisitor;
+import se.uom.vcs.walker.Visitor;
 
 /**
  * Represents a directory of {@link VCSRepository}.<p>
@@ -74,6 +74,6 @@ public interface VCSDirectory extends VCSResource {
 	 * @param visitor
 	 * @throws VCSRepositoryException
 	 */
-	void walkResources(final FileDirVisitor<VCSResource> visitor)
+	void walkResources(final Visitor<VCSResource> visitor)
 			throws VCSRepositoryException;
 }

@@ -11,7 +11,7 @@ package se.uom.vcs.exceptions;
  * @version 0.0.1
  *
  */
-public class VCSResourceNotFound extends Exception {
+public class VCSResourceNotFoundException extends Exception {
 
 	/**
 	 * Unique serial ID used during serialization
@@ -21,21 +21,21 @@ public class VCSResourceNotFound extends Exception {
 	/**
 	 * Creates a new instance
 	 */
-	public VCSResourceNotFound() {
+	public VCSResourceNotFoundException() {
 		super();
 	}
 
 	/**
 	 * @param msg
 	 */
-	public VCSResourceNotFound(String msg) {
+	public VCSResourceNotFoundException(String msg) {
 		super(msg);
 	}
 
 	/**
 	 * @param ex
 	 */
-	public VCSResourceNotFound(Throwable ex) {
+	public VCSResourceNotFoundException(Throwable ex) {
 		super(ex);
 	}
 }

@@ -1,10 +1,9 @@
 /**
  * 
  */
-package se.uom.vcs.walker.filter;
+package se.uom.vcs.walker.filter.commit;
 
 import java.util.Collection;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 import se.uom.vcs.VCSCommit;
@@ -12,12 +11,22 @@ import se.uom.vcs.VCSCommit;
 /**
  * Test the current commit if it is from a specified list of committers.<p>
  * 
+ * This implementation is based on Java patterns so any string passed at
+ * the constructor should take care of the special characters used by
+ * Java.
+ * 
  * @author Elvis Ligu
  * @since 0.0.1
  * @version 0.0.1
  */
 public class CommitterFilter<T extends VCSCommit> extends PatternsFilter<T> implements VCSCommitFilter<T>{
 
+    /**
+     * Create a new instance based on the given committer patterns.<p>
+     * 
+     * @param committersPatterns
+     * 		Java patterns that will be checked against the committer of a given commit.
+     */
     public CommitterFilter(Collection<String> committersPatterns) {
 	super(committersPatterns);
     }
@@ -37,6 +46,4 @@ public class CommitterFilter<T extends VCSCommit> extends PatternsFilter<T> impl
 	}
 	return false;
     }
-
-    
 }

@@ -4,11 +4,18 @@
 package se.uom.vcs.walker.filter;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
  * Check whether all filters include true to return the result.<p>
+ * 
+ * This is a simple implementation of AND operator, and will return
+ * true if all the specified filters return true. This implementation
+ * will work in most situations, however keep in mind that there are
+ * situations when an AND result can not be produced always when all
+ * all filters return true.
  * 
  * @author Elvis Ligu
  * @since 0.0.1
@@ -16,6 +23,9 @@ import java.util.Set;
  */
 public class VCSAndFilter<T> implements VCSFilter<T> {
 
+    /**
+     * The filters to apply AND operator.<p>
+     */
     private Set<VCSFilter<T>> filters;
     
     /**
@@ -23,7 +33,7 @@ public class VCSAndFilter<T> implements VCSFilter<T> {
      * 
      * @param filters
      * 		the filters to check if all of the filters returns true. Must not be null not or empty
-     * 		or contain a null filter.
+     * 		or contain a null filter. Must contain at least two filters.
      */
     public VCSAndFilter(Collection<VCSFilter<T>> filters) {
 	if(filters == null) {
@@ -39,16 +49,21 @@ public class VCSAndFilter<T> implements VCSFilter<T> {
 	    }
 	    this.filters.add(f);
 	}
+	if(filters.size() < 2) {
+	    throw new IllegalArgumentException("filters must contain at least two elements");
+	}
     }
     
     /**
+     * Return an unmodifiable set of these filters.<p>
      * 
      * @return
      * 		the filters
      */
     public Set<VCSFilter<T>> getFilters() {
-	return this.filters;
+	return Collections.unmodifiableSet(this.filters);
     }
+    
     /**
      * {@inheritDoc}
      * Returns true if all of the specified filters (during creation) returns true.<p>

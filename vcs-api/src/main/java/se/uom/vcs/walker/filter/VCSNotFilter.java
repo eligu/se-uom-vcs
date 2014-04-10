@@ -6,12 +6,19 @@ package se.uom.vcs.walker.filter;
 /**
  * Revert the result of a {@link VCSFilter#include(Object)}.<p>
  * 
+ * This is a simple implementation that works in most cases, and
+ * will revert the filtering strategy. However there are situations
+ * that the opposite of a filter include is not just a NOT operator.
+ * 
  * @author Elvis Ligu
  * @since 0.0.1
  * @version 0.0.1
  */
 public class VCSNotFilter<T> implements VCSFilter<T> {
 
+    /**
+     * The filter to negate the result of include.<p>
+     */
     private VCSFilter<T> filter;
     
     /**

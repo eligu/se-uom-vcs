@@ -3,12 +3,26 @@
  */
 package se.uom.vcs.walker.filter;
 
+import se.uom.vcs.walker.Visitor;
+import se.uom.vcs.walker.filter.commit.VCSCommitFilter;
+import se.uom.vcs.walker.filter.resource.VCSResourceFilter;
+
 /**
- * A base interface to filter results when walking either tree or commits.<p>
+ * A base interface to filter results when using a visitor.<p>
  * 
+ * There are two extensions to this interface {@link VCSResourceFilter}
+ * and {@link VCSCommitFilter}. When only a subset of results is required
+ * it is highly recommended to use a filter to limit the results and not
+ * rely on {@link Visitor#visit(Object)} method, because that should
+ * allow implementations to make any optimization, such as discarding
+ * any tree entries that are unnecessary when walking resources or
+ * discarding commits that can not pass <code>include()</code> method.
+ *  
  * @author Elvis Ligu
  * @since 0.0.1
  * @version 0.0.1
+ * @see VCSCommitFilter
+ * @see VCSResourceFilter
  */
 public interface VCSFilter<T> {
 

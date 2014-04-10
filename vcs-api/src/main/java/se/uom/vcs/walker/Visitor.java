@@ -15,7 +15,7 @@ package se.uom.vcs.walker;
 public interface Visitor<T> {
 
 	/**
-	 * Makes the visitor to accept this entity.<p>
+	 * Pass the current visiting entity to this visitor.<p>
 	 * 
 	 * @param entity to visit
 	 * @return true if this visitor should accept more entities
