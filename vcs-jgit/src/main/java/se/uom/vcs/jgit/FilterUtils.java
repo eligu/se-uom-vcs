@@ -30,8 +30,8 @@ import se.uom.vcs.jgit.walker.JGitMergeFilter;
 import se.uom.vcs.jgit.walker.JGitPathFilter;
 import se.uom.vcs.jgit.walker.OptimizedCommitFilter;
 import se.uom.vcs.jgit.walker.OptimizedResourceFilter;
-import se.uom.vcs.walker.filter.CommitterFilter;
-import se.uom.vcs.walker.filter.MessageFilter;
+import se.uom.vcs.walker.filter.commit.CommitterFilter;
+import se.uom.vcs.walker.filter.commit.MessageFilter;
 
 /**
  * @author Elvis Ligu

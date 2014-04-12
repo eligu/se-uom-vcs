@@ -20,7 +20,7 @@ import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 import se.uom.vcs.exceptions.VCSRepositoryException;
-import se.uom.vcs.exceptions.VCSResourceNotFound;
+import se.uom.vcs.exceptions.VCSResourceNotFoundException;
 
 /**
  * A tree utility class to be used only with JGit TreeWalk and other API classes.<p>
@@ -320,7 +320,7 @@ public class TreeUtils {
 			final Repository repository, 
 			String path) 
 					throws 
-					VCSResourceNotFound, 
+					VCSResourceNotFoundException, 
 					VCSRepositoryException {
 
 		ArgsCheck.notNull("repository", repository);
@@ -371,7 +371,7 @@ public class TreeUtils {
 						return walk;
 					}
 
-					throw new VCSResourceNotFound("uknown path " + path);
+					throw new VCSResourceNotFoundException("uknown path " + path);
 					// The current walk entry is a directory so enter it
 				} else if (walk.isSubtree()) {
 					walk.enterSubtree();
@@ -384,7 +384,7 @@ public class TreeUtils {
 			}
 
 			// If walk has not any entry that means the path doesn't exist
-			throw new VCSResourceNotFound("uknown path " + path);
+			throw new VCSResourceNotFoundException("uknown path " + path);
 
 		} catch (final MissingObjectException e) {
 			throw new VCSRepositoryException(e);
