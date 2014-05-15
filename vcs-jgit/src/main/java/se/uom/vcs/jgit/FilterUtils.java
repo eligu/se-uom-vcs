@@ -23,13 +23,13 @@ import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 import se.uom.vcs.VCSCommit;
 import se.uom.vcs.VCSResource;
-import se.uom.vcs.jgit.walker.DirNameFilter;
-import se.uom.vcs.jgit.walker.FileNameFilter;
 import se.uom.vcs.jgit.walker.JGitCommitDateRangeFilter;
 import se.uom.vcs.jgit.walker.JGitMergeFilter;
-import se.uom.vcs.jgit.walker.JGitPathFilter;
 import se.uom.vcs.jgit.walker.OptimizedCommitFilter;
-import se.uom.vcs.jgit.walker.OptimizedResourceFilter;
+import se.uom.vcs.jgit.walker.filter.resource.DirNameFilter;
+import se.uom.vcs.jgit.walker.filter.resource.FileNameFilter;
+import se.uom.vcs.jgit.walker.filter.resource.JGitPathFilter;
+import se.uom.vcs.jgit.walker.filter.resource.OptimizedResourceFilter;
 import se.uom.vcs.walker.filter.commit.CommitterFilter;
 import se.uom.vcs.walker.filter.commit.MessageFilter;
 

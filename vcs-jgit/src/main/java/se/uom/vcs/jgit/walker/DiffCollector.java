@@ -110,6 +110,7 @@ public class DiffCollector<T extends DiffEntry> implements Collector<T> {
 	 */
 	public DiffCollector<T> setPathFilters(final String... paths) {
 		this.command.setPathFilter(PathFilterGroup.createFromStrings(paths));
+		
 		return this;
 	}
 
@@ -144,7 +145,7 @@ public class DiffCollector<T extends DiffEntry> implements Collector<T> {
 			// Create tree iterators
 			final AbstractTreeIterator oldTreeParser = TreeUtils.prepareTreeParserForWalk(this.repo, this.oldC, null);
 			final AbstractTreeIterator newTreeParser = TreeUtils.prepareTreeParserForWalk(this.repo, this.newC, null);
-
+			
 			// then the porcelain diff-command returns a list of diff entries
 			final List<DiffEntry> diff = this.command.setOldTree(oldTreeParser).setNewTree(newTreeParser).call();
 

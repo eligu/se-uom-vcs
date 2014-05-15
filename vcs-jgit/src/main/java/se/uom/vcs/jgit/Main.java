@@ -3,7 +3,7 @@ package se.uom.vcs.jgit;
 import java.util.Arrays;
 
 import se.uom.vcs.VCSRepository;
-import se.uom.vcs.jgit.walker.JGitChildFilter;
+import se.uom.vcs.jgit.walker.filter.resource.JGitChildFilter;
 
 public class Main {
 

@@ -44,6 +44,7 @@ import se.uom.vcs.VCSResource;
 import se.uom.vcs.exceptions.VCSRepositoryException;
 import se.uom.vcs.exceptions.VCSResourceNotFound;
 import se.uom.vcs.jgit.walker.DiffCollector;
+import se.uom.vcs.walker.ChangeVisitor;
 import se.uom.vcs.walker.FileDirVisitor;
 import se.uom.vcs.walker.ModifyingPathVisitor;
 import se.uom.vcs.walker.PathLimitingVisitor;
@@ -485,8 +486,8 @@ public class VCSCommitImp implements VCSCommit {
 	 */
 	@Override
 	public void walkChanges(
-			final VCSCommit commit,
-			final Visitor<VCSChange<?>> visitor) 
+		final VCSCommit commit, 
+		final ChangeVisitor<VCSChange<?>> visitor) 
 					throws 
 					VCSRepositoryException {
 
@@ -505,6 +506,7 @@ public class VCSCommitImp implements VCSCommit {
 		// Check visitor to see if it is an instance of PathLimitingVisitor
 		// if so get the paths from visitor to limit the walk on diffs
 		Collection<String> paths = null;
+		
 		if (PathLimitingVisitor.class.isAssignableFrom(visitor.getClass())) {
 			paths = ((PathLimitingVisitor<VCSChange<?>>) visitor).getPaths();
 		}

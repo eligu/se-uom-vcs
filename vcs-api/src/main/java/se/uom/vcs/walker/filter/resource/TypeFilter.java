@@ -29,6 +29,10 @@ public class TypeFilter<T extends VCSResource> extends ExactFilter<T> implements
 	this.type = type;
     }
     
+    public VCSResource.Type getType() {
+	return type;
+    }
+    
     /**
      * {@inheritDoc}
      * <p>

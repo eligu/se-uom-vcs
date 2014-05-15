@@ -1,11 +1,9 @@
-/**
- * 
- */
-package se.uom.vcs.jgit.walker;
+package se.uom.vcs.jgit.walker.filter.resource;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -17,21 +15,40 @@ import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import se.uom.vcs.walker.filter.resource.AbstractPathFilter;
 
 /**
+ * An abstract class for all custom path filters used by JGit library.<p>
+ * 
+ * This class will check each path by comparing their byte form.
+ * 
  * @author Elvis Ligu
  * @version 0.0.1
  * @since 0.0.1
  */
-public class JGitChildFilter extends TreeFilter {
+public abstract class JGitAbstractPathFilter extends TreeFilter {
 
-    //protected Set<String> paths;
+    /**
+     * The paths to check for children in bytes.<p>
+     */
     protected byte[][] paths;
+    /**
+     * The unix like line separator '/'.<p>
+     */
     public static final byte LINE_SEP = 0x2f; // '/' char
+    /**
+     * The encoding of paths.<p>
+     */
     public static final String ENCODING = "UTF-8";
     
     /**
-     * 
+     * If the walk will be recursive or not.<p>
      */
-    public JGitChildFilter(Set<String> paths) {
+    protected boolean recursive = true;
+    
+    /**
+     * Creates a new instance.<p>
+     * 
+     * @param paths the set of paths to limit their children.
+     */
+    public JGitAbstractPathFilter(Collection<String> paths) {
 	if (paths == null) {
 	    throw new IllegalArgumentException("paths must not be null");
 	}
@@ -53,50 +70,17 @@ public class JGitChildFilter extends TreeFilter {
 		throw new IllegalStateException(ENCODING + " is not supported");
 	    }
 	}
-	
     }
 
-    public static boolean isChild(byte[] prefix, byte[] path) {
-	
-	// Prefix length should be less than path length
-	if(prefix.length >= path.length) {
-	    return false;
-	}
-	
-	// If the character in path at prefix length is not
-	// a line separator that means this path has no
-	// prefix the given one
-	if(path[prefix.length] != LINE_SEP) {
-	    return false;
-	}
-	
-	// Find last char of '/'
-	int i = prefix.length + 1;
-	while(i < path.length) {
-	    if(path[i] == LINE_SEP) {
-		break;
-	    }
-	    i++;
-	}
-	
-	// If i is equal to path that means no other '/'
-	// char was found so we only have to check the
-	// characters starting from last prefix
-	// char
-	if(i < path.length) {
-	    return false;
-	}
-	
-	i = prefix.length;
-	while(i-- != 0) {
-	    if(prefix[i] != path[i]){
-		return false;
-	    }
-	}
-	
-	return true;
-    }
-    
+    /**
+     * Check if the given path is a root path.<p>
+     * 
+     * A root path has no path separator in it. We assume
+     * the path doesn't start with a separator.
+     * 
+     * @param path to check if it's root
+     * @return true if the given path is root
+     */
     public static boolean isRootPath(byte[] path) {
 	// If we find any '/' that means
 	// this is not a root path
@@ -110,7 +94,15 @@ public class JGitChildFilter extends TreeFilter {
 	return true;
     }
     
-    
+    /**
+     * Check if the given prefix is a path prefix of the given path.<p>
+     * 
+     * A path prefix may be a prefix of a path even if the two are equals.
+     * 
+     * @param prefix to check the path against
+     * @param path to check for prefix
+     * @return true if the first argument is prefix of the last
+     */
     public static boolean isPrefix(byte[] prefix, byte[] path) {
 	
 	// Prefix length should be less than path length
@@ -140,44 +132,25 @@ public class JGitChildFilter extends TreeFilter {
 	
 	return true;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public abstract boolean include(TreeWalk walker) throws MissingObjectException,
+	    IncorrectObjectTypeException, IOException;
+
+    @Override
+    public boolean shouldBeRecursive(){
+	return recursive;
+    }
+
+    public void setRecursive(boolean recursive) {
+	this.recursive = recursive;
+    }
     
-    /**
-     *  {@inheritDoc)
-     * @see TreeFilter#include(TreeWalk)
-     */
-    @Override
-    public boolean include(TreeWalk walker) throws MissingObjectException,
-	    IncorrectObjectTypeException, IOException {
-	byte[] path = walker.getRawPath();
-	for(byte[] prefix : paths) {
-	    if(prefix.length > 0) {
-		if(isPrefix(path, prefix) || isChild(prefix, path)) {
-		    return true;
-		}
-	    } else {
-		if(isRootPath(path)) {
-		    return true;
-		}
-	    }
-	}
-	return false;
-    }
-
-    /**
-     *  {@inheritDoc)
-     * @see TreeFilter#shouldBeRecursive()
-     */
-    @Override
-    public boolean shouldBeRecursive() {
-	return false;
-    }
-
-    /* {@inheritDoc)
-     * @see TreeFilter#clone()
-     */
     @Override
     public TreeFilter clone() {
 	return this;
     }
-
 }

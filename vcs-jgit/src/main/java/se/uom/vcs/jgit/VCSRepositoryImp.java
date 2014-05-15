@@ -147,7 +147,7 @@ public class VCSRepositoryImp implements VCSRepository {
 	 * @throws 
 	 * 		URISyntaxException
 	 */
-	static Repository openRepo(final String local) throws IOException, URISyntaxException {
+	public static Repository openRepo(final String local) throws IOException, URISyntaxException {
 
 		final File gitDir = createGitDir(local);
 
@@ -168,7 +168,7 @@ public class VCSRepositoryImp implements VCSRepository {
 	 * 		path to create the file that point to .git dir
 	 * @return
 	 */
-	static File createGitDir(String path) {
+	public static File createGitDir(String path) {
 
 		File gitDir = null;
 		path = path.replace('\\', '/');

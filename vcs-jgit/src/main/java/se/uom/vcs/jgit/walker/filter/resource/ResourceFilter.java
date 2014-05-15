@@ -1,7 +1,7 @@
 /**
  * 
  */
-package se.uom.vcs.jgit.walker;
+package se.uom.vcs.jgit.walker.filter.resource;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -9,7 +9,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.OrTreeFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
@@ -17,22 +16,34 @@ import org.eclipse.jgit.treewalk.filter.PathSuffixFilter;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 import se.uom.vcs.VCSResource;
+import se.uom.vcs.jgit.walker.FilterParser;
 import se.uom.vcs.walker.filter.resource.ChildFilter;
 import se.uom.vcs.walker.filter.resource.ModifiedFilter;
+import se.uom.vcs.walker.filter.resource.PathFilter;
 import se.uom.vcs.walker.filter.resource.PathPrefixFilter;
 import se.uom.vcs.walker.filter.resource.SuffixFilter;
+import se.uom.vcs.walker.filter.resource.TypeFilter;
 import se.uom.vcs.walker.filter.resource.VCSResourceAndFilter;
 import se.uom.vcs.walker.filter.resource.VCSResourceFilter;
 import se.uom.vcs.walker.filter.resource.VCSResourceNotFilter;
 import se.uom.vcs.walker.filter.resource.VCSResourceOrFilter;
 
 /**
+ * A utility class to deal with JGit tree filters.<p>
+ * 
  * @author Elvis Ligu
  * @version 0.0.1
  * @since 0.0.1
  */
 public class ResourceFilter {
 
+    /**
+     * Given a collection of filters creates a new filter that apply an
+     * AND operator to them.<p>
+     * 
+     * @param filters to AND
+     * @return the new AND filter based on the given filters
+     */
     public OptimizedResourceFilter<VCSResource> and(
 	    Collection<OptimizedResourceFilter<VCSResource>> filters) {
 	List<TreeFilter> revFilters = new ArrayList<TreeFilter>();
@@ -43,11 +54,23 @@ public class ResourceFilter {
 		AndTreeFilter.create(revFilters));
     }
 
+    /**
+     * Given a filter creates a new one that negates its result.<p>
+     * @param filter
+     * @return
+     */
     public OptimizedResourceFilter<VCSResource> not(OptimizedResourceFilter<?> filter) {
 	return new OptimizedResourceFilter<VCSResource>(filter.getCurrent()
 		.negate());
     }
 
+    /**
+     * Given a collection of filters creates a new filter that apply an
+     * OR operator to them.<p>
+     * 
+     * @param filters to OR
+     * @return the new OR filter based on the given filters
+     */
     public OptimizedResourceFilter<VCSResource> or(
 	    Collection<OptimizedResourceFilter<VCSResource>> filters) {
 	List<TreeFilter> revFilters = new ArrayList<TreeFilter>();
@@ -58,12 +81,24 @@ public class ResourceFilter {
 		OrTreeFilter.create(revFilters));
     }
 
+    /**
+     * Given a collection of string paths, creates a new path prefix filter.<p>
+     * 
+     * @param patterns of the paths
+     * @return the new prefix filter
+     */
     public OptimizedResourceFilter<VCSResource> pathPrefix(
 	    Collection<String> patterns) {
 	return new OptimizedResourceFilter<VCSResource>(
 		PathFilterGroup.createFromStrings(patterns));
     }
 
+    /**
+     * Will throw an {@link IllegalArgumentException} if the 
+     * collection contains a null or empty string.<p>
+     * 
+     * @param patterns to check
+     */
     private static void checkStrings(Collection<String> patterns) {
 	if (patterns == null) {
 	    throw new IllegalArgumentException("patterns must not be null");
@@ -82,7 +117,13 @@ public class ResourceFilter {
 	}
     }
 
-    public OptimizedResourceFilter<VCSResource> name(Collection<String> patterns) {
+    /**
+     * Given a collection of string patterns, creates a new tree filter that check for suffixes.<p>
+     * 
+     * @param patterns the suffixes
+     * @return a new suffix filter
+     */
+    public OptimizedResourceFilter<VCSResource> suffix(Collection<String> patterns) {
 
 	checkStrings(patterns);
 
@@ -94,19 +135,68 @@ public class ResourceFilter {
 	if (filters.size() == 1) {
 	    filter = filters.get(0);
 	} else {
-	    filter = AndTreeFilter.create(filters);
+	    filter = OrTreeFilter.create(filters);
 	}
 	return new OptimizedResourceFilter<VCSResource>(filter);
     }
 
+    /**
+     * Return a ANY_DIFF tree filter.<p>
+     * 
+     * @return
+     */
     public OptimizedResourceFilter<VCSResource> modification() {
 	return new OptimizedResourceFilter<VCSResource>(TreeFilter.ANY_DIFF);
     }
 
+    /**
+     * Creates a path filter that will allow only the specified paths.<p>
+     * @param paths to filter
+     * @return new path filter (not prefix filter)
+     */
+    public OptimizedResourceFilter<VCSResource> path(Collection<String> paths) {
+	checkStrings(paths);
+	
+	return new OptimizedResourceFilter<VCSResource>(new JGitPathFilter(paths));
+    }
+    
+    /**
+     * Creates a filter that will allow only the children of the specified paths
+     * to be included.<p>
+     * 
+     * @param paths the parents of entries to be included
+     * @return new child filter
+     */
+    public OptimizedResourceFilter<VCSResource> child(Collection<String> paths) {
+	return new OptimizedResourceFilter<VCSResource>(new JGitChildFilter(paths));
+    }
+    
+    /**
+     * Creates a filter that fill allow only the resources of the specified type.<p>
+     * 
+     * @param type of resource to be allowed
+     * @return new type filter
+     */
+    public OptimizedResourceFilter<VCSResource> type(VCSResource.Type type) {
+	return new OptimizedResourceFilter<VCSResource>(new JGitTypeFilter(type));
+    }
+    
+    /**
+     * Will parse a {@link VCSResourceFilter} and try to convert it to a
+     * JGit tree filter.<p>
+     * 
+     * @param filter to parse
+     * @param parser if there is another parser available will check it first,
+     * 		if he can parse the filter it will be returned otherwise
+     * 		will try the default method.
+     * @return
+     */
     public OptimizedResourceFilter<VCSResource> parse(
 	    VCSResourceFilter<VCSResource> filter, 
 	    FilterParser<VCSResource, OptimizedResourceFilter<VCSResource>> parser) {
 
+	// Check the given parser if he can parse the filter
+	// If not try to parse it with the default method
 	if(parser != null) {
 	    OptimizedResourceFilter<VCSResource> f = parser.parse(filter);
 	    if(f != null) {
@@ -121,7 +211,7 @@ public class ResourceFilter {
 
 	// Case when filter is a name filter
 	if (SuffixFilter.class.isAssignableFrom(filter.getClass())) {
-	    return this.parseName((SuffixFilter<VCSResource>) filter);
+	    return this.parseSuffix((SuffixFilter<VCSResource>) filter);
 	}
 
 	// Case when filter is AND
@@ -134,21 +224,51 @@ public class ResourceFilter {
 	    return this.parseOr((VCSResourceOrFilter<VCSResource>) filter, parser);
 	}
 
+	// Case when filter is Modified (ANY_DIFF will be returned)
 	if(ModifiedFilter.class.isAssignableFrom(filter.getClass())) {
 	    return this.parseModified((ModifiedFilter<VCSResource>) filter);
 	}
+	
 	// Case the given filter is an optimized filter
 	if (OptimizedResourceFilter.class.isAssignableFrom(filter.getClass())) {
 	    return (OptimizedResourceFilter<VCSResource>) filter;
 	}
 	
+	// Case when filter is a path filter
+	if(se.uom.vcs.walker.filter.resource.PathFilter.class.isAssignableFrom(filter.getClass())) {
+	    return this.parsePath((PathFilter<VCSResource>) filter);
+	}
+	
+	// Case when filter is a child filter
+	if(ChildFilter.class.isAssignableFrom(filter.getClass())) {
+	    return this.parseChild((ChildFilter<VCSResource>) filter);
+	}
+	
+	// Case when filter is a type filter
+	if(TypeFilter.class.isAssignableFrom(filter.getClass())) {
+	    return this.parseType((TypeFilter<VCSResource>) filter);
+	}
+	
+	// Case when the given filter is NOT filter
+	if(VCSResourceNotFilter.class.isAssignableFrom(filter.getClass())) {
+	    return this.parseNot((VCSResourceNotFilter<VCSResource>) filter, parser);
+	}
+	
 	return null;
+    }
+     
+    public OptimizedResourceFilter<VCSResource> parseType(TypeFilter<VCSResource> filter) {
+	return this.type(filter.getType());
+    }
+    
+    public OptimizedResourceFilter<VCSResource> parsePath(se.uom.vcs.walker.filter.resource.PathFilter<VCSResource> filter) {
+	return this.path(filter.getPaths());
     }
 
     public OptimizedResourceFilter<VCSResource> parseChild(
 	    ChildFilter<VCSResource> filter) {
 
-	return new OptimizedResourceFilter<VCSResource>(new JGitChildFilter(new LinkedHashSet<String>(filter.getPaths())));
+	return this.child(filter.getPaths());
     }
 
     public OptimizedResourceFilter<VCSResource> parsePrefix(
@@ -156,8 +276,8 @@ public class ResourceFilter {
 	return this.pathPrefix(filter.getPaths());
     }
 
-    public OptimizedResourceFilter<VCSResource> parseName(SuffixFilter<?> filter) {
-	return this.name(filter.getSuffixes());
+    public OptimizedResourceFilter<VCSResource> parseSuffix(SuffixFilter<?> filter) {
+	return this.suffix(filter.getSuffixes());
     }
 
     public OptimizedResourceFilter<VCSResource> parseAnd(
@@ -210,7 +330,7 @@ public class ResourceFilter {
 	}
     }
 
-    public OptimizedResourceFilter<?> parseNot(
+    public OptimizedResourceFilter<VCSResource> parseNot(
 	    VCSResourceNotFilter<VCSResource> filter,
 	    FilterParser<VCSResource, OptimizedResourceFilter<VCSResource>> parser) {
 	OptimizedResourceFilter<?> of = this.parse(filter.getFilter(), parser);
@@ -224,6 +344,4 @@ public class ResourceFilter {
     public OptimizedResourceFilter<VCSResource> parseModified(ModifiedFilter<VCSResource> filter) {
 	return modification();
     }
-
-    
 }
