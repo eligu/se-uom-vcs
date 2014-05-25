@@ -236,7 +236,7 @@ public class VCSRepositoryImpTest extends VCSTest {
 			VCSBranch branch = repo.resolveBranch(bid.id);
 			assertNotNull(branch);
 			assertEquals(bid.id, branch.getID());
-			assertEquals(bid.head, branch.head().getID());
+			assertEquals(bid.head, branch.getHead().getID());
 		}
 		
 	}
@@ -285,10 +285,10 @@ public class VCSRepositoryImpTest extends VCSTest {
 			repo.selectBranch(branch);
 			
 			// Check if branch head
-			assertEquals(b.head, branch.head().getID());
+			assertEquals(b.head, branch.getHead().getID());
 			
 			// Check repo's head
-			assertEquals(branch.head().getID(), repo.getHead().getID());
+			assertEquals(branch.getHead().getID(), repo.getHead().getID());
 		}
 	}
 
@@ -326,7 +326,7 @@ public class VCSRepositoryImpTest extends VCSTest {
 		assertNotNull(selected);
 
 		// Check the head of master
-		VCSCommit head = selected.head();
+		VCSCommit head = selected.getHead();
 		assertNotNull(head);
 
 		// Check the head if it is the same as expected
@@ -359,7 +359,7 @@ public class VCSRepositoryImpTest extends VCSTest {
 			assertNotNull(selected);
 			
 			assertEquals(b.id, selected.getID());
-			assertEquals(b.head, selected.head().getID());
+			assertEquals(b.head, selected.getHead().getID());
 		}
 	}
 

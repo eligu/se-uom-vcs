@@ -1,7 +1,7 @@
 /**
  * 
  */
-package se.uom.vcs.jgit.walker;
+package se.uom.vcs.jgit.walker.filter.commit;
 
 import java.io.IOException;
 

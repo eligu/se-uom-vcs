@@ -98,6 +98,20 @@ public class ChildFilter<T extends VCSResource> extends
 	return new NotChild<T>(paths);
     }
 
+    @Override
+    public boolean enter(T resource) {
+	String path = resource.getPath();
+	
+	if (path != null) {
+	    for (String prefix : paths) {
+		if (isPrefix(path, prefix)) {
+		    return true;
+		}
+	    }
+	}
+	return false;
+    }
+    
     /**
      * {@inheritDoc}
      * <p>

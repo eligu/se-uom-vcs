@@ -30,7 +30,7 @@ import se.uom.vcs.jgit.mocks.CommitMock;
 public class VCSBranchImpTest extends VCSTest {
 
 	/**
-	 * Test method for {@link VCSBranchImp#head()}.<p>
+	 * Test method for {@link VCSBranchImp#getHead()}.<p>
 	 * 
 	 * For each branch in array {@link BranchMock#BRANCHES} will
 	 * resolve them and check the head commit.
@@ -44,7 +44,7 @@ public class VCSBranchImpTest extends VCSTest {
 			
 			VCSBranch branch = repo.resolveBranch(branchMock.id);
 			assertNotNull(branch);
-			assertEquals(branchMock.head, branch.head().getID());
+			assertEquals(branchMock.head, branch.getHead().getID());
 			
 		}
 	}

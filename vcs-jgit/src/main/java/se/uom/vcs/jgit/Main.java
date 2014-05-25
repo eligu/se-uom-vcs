@@ -1,9 +1,19 @@
 package se.uom.vcs.jgit;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
+import se.uom.vcs.VCSCommit;
+import se.uom.vcs.VCSFileDiff;
 import se.uom.vcs.VCSRepository;
-import se.uom.vcs.jgit.walker.filter.resource.JGitChildFilter;
+import se.uom.vcs.VCSResource;
+import se.uom.vcs.jgit.walker.filter.resource.ResourceFilter;
+import se.uom.vcs.walker.ChangeVisitor;
+import se.uom.vcs.walker.filter.VCSFilter;
+import se.uom.vcs.walker.filter.commit.VCSCommitFilter;
+import se.uom.vcs.walker.filter.resource.ResourceFilterFactory;
+import se.uom.vcs.walker.filter.resource.VCSResourceFilter;
 
 public class Main {
 
@@ -15,7 +25,7 @@ public class Main {
      * @param args
      */
     public static void main(String[] args) throws Exception {
-	
+	/*
 	String path = "java/path";
 	byte[] bytes = path.getBytes("UTF-8");
 	System.out.println(JGitChildFilter.isPrefix("java".getBytes("UTF-8"), bytes));
@@ -23,8 +33,8 @@ public class Main {
 	System.out.println(JGitChildFilter.isRootPath("path".getBytes("UTF-8")));
 	System.out.println(path.length());
 	System.out.println(bytes.length);
+	*/
 	
-	/*
 	init();
 	if(!isAvailable()) {
 	    cloneRepo();
@@ -35,19 +45,17 @@ public class Main {
 	
 	// Filter for only .xml files
 	long start = System.nanoTime();
-	final ResourceFilter rfutils = FilterUtils.resource();
 	final List<VCSResourceFilter<VCSResource>> filters = new ArrayList<VCSResourceFilter<VCSResource>>();
 	final ResourceFilterFactory filterFactory = new ResourceFilterFactory();
 	
-	filters.add(filterFactory.fileName(".*.java"));
-	System.out.println(Pattern.compile(".*.java").matcher("a.java").matches());
+	//filters.add(filterFactory.suffix(".*.java"));
+	
 	filters.add(filterFactory.path("src/main/java/org/java_websocket/client/DefaultWebSocketClientFactory.java",
 		"src/main/java/org/java_websocket/client/WebSocketClient.java"));
-	filters.add(filterFactory.prefix(
-		"src/main/java/org/java_websocket/"));
-	//filters.add(rfutils.modification());
+	//filters.add(filterFactory.prefix("src/main/java/org/java_websocket/"));
+	//filters.add(filterFactory.modified());
 	
-	FilteredVisitor<VCSFileDiff<?>> visitor = new FilteredVisitor<VCSFileDiff<?>>() {
+	ChangeVisitor<VCSFileDiff<?>> visitor = new ChangeVisitor<VCSFileDiff<?>>() {
 
 	    @Override
 	    public boolean visit(VCSFileDiff<?> entity) {
@@ -58,18 +66,14 @@ public class Main {
 	    }
 
 	    @Override
-	    public VCSCommitFilter getCommitFilter() {
-		return null;
-	    }
-
-	    @Override
 	    public VCSResourceFilter<VCSResource> getResourceFilter() {
 		//return rfutils.modification();
 		return filterFactory.and(filters);
 	    }
 
 	    @Override
-	    public VCSFilter getEntityFilter() {
+	    public <F extends VCSFilter<VCSFileDiff<?>>> F getFilter() {
+		// TODO Auto-generated method stub
 		return null;
 	    }
 	    
@@ -78,8 +82,15 @@ public class Main {
 	newC.walkFileChanges(oldC, visitor);
 	
 	System.out.println("\n" + (System.nanoTime() - start)/(1000.0*1000*1000));
-	*/
 	
+	
+	char a = 'a';
+	char b = 'b';
+	char d = 'd';
+	char c = 'c';
+	
+	String str = "a/b/c/d";
+	System.out.println(str.matches(".*"));
     }
     
     static boolean isPrefix(byte[] prefix, byte[] path) {

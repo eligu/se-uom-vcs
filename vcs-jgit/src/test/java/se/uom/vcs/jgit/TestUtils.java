@@ -155,14 +155,14 @@ public class TestUtils {
 	 * @param b1 first branch (not null)
 	 * @param b2 second branch (not null)
 	 * @return true if branches are equals
-	 * @throws VCSRepositoryException thrown by {@link VCSBranch#head()}
+	 * @throws VCSRepositoryException thrown by {@link VCSBranch#getHead()}
 	 */
 	public static boolean equals(VCSBranch b1, VCSBranch b2)
 			throws VCSRepositoryException {
 		String id1 = extractName(b1.getID());
 		String id2 = extractName(b2.getID());
-		String hid1 = b1.head().getID();
-		String hid2 = b2.head().getID();
+		String hid1 = b1.getHead().getID();
+		String hid2 = b2.getHead().getID();
 	
 		return (id1.endsWith(id2)) && (hid1.equals(hid2));
 	}

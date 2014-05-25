@@ -6,6 +6,7 @@ package se.uom.vcs;
 import java.util.Set;
 
 import se.uom.vcs.exceptions.VCSRepositoryException;
+import se.uom.vcs.walker.ResourceVisitor;
 import se.uom.vcs.walker.Visitor;
 
 /**
@@ -65,8 +66,8 @@ public interface VCSDirectory extends VCSResource {
 	 * Walk the resources under this directory.<p>
 	 * 
 	 * This method behavior is similar to {@link #getResources(boolean, boolean, boolean)} with the difference
-	 * that an instance of {@link FileDirVisitor} will be used to get the parameters, and each resource will be passed
-	 * to {@link FileDirVisitor#visit(Object)} method.<p>
+	 * that an instance of {@link ResourceVisitor} will be used to get the parameters, and each resource will be passed
+	 * to {@link ResourceVisitor#visit(Object)} method.<p>
 	 * 
 	 * This method is usually more efficient if you don't want to collect all results in a single place
 	 * and then to use them.
@@ -74,6 +75,6 @@ public interface VCSDirectory extends VCSResource {
 	 * @param visitor
 	 * @throws VCSRepositoryException
 	 */
-	void walkResources(final Visitor<VCSResource> visitor)
+	void walkResources(final ResourceVisitor<VCSResource> visitor)
 			throws VCSRepositoryException;
 }

@@ -35,4 +35,19 @@ public interface ResourceVisitor<T extends VCSResource> extends FilterVisitor<T>
      */
     @SuppressWarnings("unchecked")
     VCSResourceFilter<T> getFilter();
+    
+    /**
+     * Specify if the tree walking should include directory resource to be
+     * visited by visitor.<p>
+     * 
+     * @return true if this visitor should visit directories
+     */
+    public boolean includeDirs();
+    
+    /**
+     * Specify if the tree walking should include file resources to be visited by this visitor.<p>
+     * 
+     * @return true if this visitor should visit files
+     */
+    public boolean includeFiles();
 }

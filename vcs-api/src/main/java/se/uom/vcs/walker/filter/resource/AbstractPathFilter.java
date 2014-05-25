@@ -99,7 +99,7 @@ public abstract class AbstractPathFilter<T extends VCSResource> extends Abstract
      * @param path
      * @return true if <code>prefix</code> is a path prefix of <code>path</code>
      */ 
-    protected static boolean isPrefix(String prefix, String path) {
+    public static boolean isPrefix(String prefix, String path) {
 
 	if (prefix.length() > path.length()) {
 	    return false;

@@ -1,8 +1,9 @@
-package se.uom.vcs.jgit.walker;
+package se.uom.vcs.jgit.walker.filter.commit;
 
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 
 import se.uom.vcs.VCSCommit;
+import se.uom.vcs.jgit.walker.OptimizedFilter;
 import se.uom.vcs.walker.filter.commit.VCSCommitFilter;
 
 public class OptimizedCommitFilter<T extends VCSCommit> extends OptimizedFilter<T> implements VCSCommitFilter<T> {

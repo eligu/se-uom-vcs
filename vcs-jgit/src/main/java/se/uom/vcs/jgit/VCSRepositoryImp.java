@@ -273,10 +273,10 @@ public class VCSRepositoryImp implements VCSRepository {
 
 		final Collection<VCSBranch> branches = this.getBranches();
 		for(final VCSBranch branch : branches) {
-			if(branch.getBranchName().endsWith("/master")){
+			if(branch.getName().endsWith("/master")){
 				this.selectedBranch = (VCSBranchImp) branch;
 				return;
-			} else if (branch.getBranchName().equals("master")) {
+			} else if (branch.getName().equals("master")) {
 				this.selectedBranch = (VCSBranchImp) branch;
 				return;
 			}
@@ -479,7 +479,7 @@ public class VCSRepositoryImp implements VCSRepository {
 			throw new VCSRepositoryException("There is not any selected branch");
 		}
 
-		return this.selectedBranch.head();
+		return this.selectedBranch.getHead();
 	}
 
 	/**
