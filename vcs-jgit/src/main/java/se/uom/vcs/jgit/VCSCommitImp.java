@@ -76,8 +76,8 @@ public class VCSCommitImp implements VCSCommit {
     * A class to hold a person ident in case we need synchronization on cached
     * fields (author and committer).
     */
-   private class PersonIdentHolder {
-      protected PersonIdent person;
+   private class CachedObjectHolder<T> {
+      protected T cache;
    }
 
    /**
@@ -86,14 +86,14 @@ public class VCSCommitImp implements VCSCommit {
     * 
     * This field is for caching purposes
     */
-   protected PersonIdentHolder author = new PersonIdentHolder();
+   protected CachedObjectHolder<PersonIdent> author = new CachedObjectHolder<PersonIdent>();
 
    /**
     * The committer that committed this revision.
     * <p>
     * This filed is for caching purposes.
     */
-   protected PersonIdentHolder committer = new PersonIdentHolder();
+   protected CachedObjectHolder<PersonIdent> committer = new CachedObjectHolder<PersonIdent>();
 
    /**
     * JGit repository from where this commit comes from.
@@ -111,7 +111,7 @@ public class VCSCommitImp implements VCSCommit {
     * collection is null that means they are not calculated, if it is not, they
     * are calculated so don't calculate them.
     */
-   protected List<VCSCommit> children = null;
+   protected CachedObjectHolder<List<VCSCommit>> children = new CachedObjectHolder<List<VCSCommit>>();
 
    /**
     * Creates a commit that is linked to a JGit commit and repository.
@@ -178,11 +178,11 @@ public class VCSCommitImp implements VCSCommit {
       // thus we keep author cached so next time it will be needed
       // it will remain within this commit
       synchronized (author) {
-         if (this.author.person == null) {
-            this.author.person = this.commit.getAuthorIdent();
+         if (this.author.cache == null) {
+            this.author.cache = this.commit.getAuthorIdent();
          }
       }
-      return this.author.person;
+      return this.author.cache;
    }
 
    /**
@@ -218,11 +218,11 @@ public class VCSCommitImp implements VCSCommit {
       // thus we keep author cached so next time it will be needed
       // it will remain within this commit
       synchronized (committer) {
-         if (this.committer.person == null) {
-            this.committer.person = this.commit.getCommitterIdent();
+         if (this.committer.cache == null) {
+            this.committer.cache = this.commit.getCommitterIdent();
          }
       }
-      return this.committer.person;
+      return this.committer.cache;
    }
 
    /**
@@ -790,65 +790,67 @@ public class VCSCommitImp implements VCSCommit {
    @Override
    public Collection<VCSCommit> getNext() throws VCSRepositoryException {
 
-      // Check first if children are previously calculated
-      // if so return them, otherwise calculate them
-      if (this.children != null) {
-         return this.children;
-      }
-
-      this.children = new ArrayList<VCSCommit>();
-      RevWalk revWalk = null;
-
-      try {
-
-         // Check first if this commit is a head that has no children, if
-         // true then
-         // getMergingHeads will return an empty list
-         final List<RevCommit> heads = this.getMergingHeads();
-         if (heads.isEmpty()) {
-            return new ArrayList<VCSCommit>(this.children);
+      synchronized (this.children) {
+         // Check first if children are previously calculated
+         // if so return them, otherwise calculate them
+         if (this.children.cache != null) {
+            return this.children.cache;
          }
 
-         // Walker to walk the commits until we find this one
-         revWalk = new RevWalk(this.repo);
+         this.children.cache = new ArrayList<VCSCommit>();
+         RevWalk revWalk = null;
 
-         // The current commit that we need to know its children
-         final RevCommit required = revWalk.parseCommit(this.commit);
+         try {
 
-         // The walking will start from each head we found
-         revWalk.markStart(heads);
-
-         // The sorting here is important
-         // We set sorting topology so the children will be parsed first
-         // And the commit walking descending so the newest first
-         revWalk.sort(RevSort.TOPO, true);
-         revWalk.sort(RevSort.COMMIT_TIME_DESC, true);
-
-         // Start from the current commit, the first one probably will be a
-         // head
-         // until the current commit is equal to this commit.
-         // For each commit that we parse check if it has parent this commit
-         RevCommit current = null;
-         while (((current = revWalk.next()) != null)
-               && !AnyObjectId.equals(current, required)) {
-
-            // If required (this commit) is parent of current
-            // we found a child
-            if (RevUtils.isParent(required, current)) {
-               this.children.add(new VCSCommitImp(current, this.repo));
+            // Check first if this commit is a head that has no children, if
+            // true then
+            // getMergingHeads will return an empty list
+            final List<RevCommit> heads = this.getMergingHeads();
+            if (heads.isEmpty()) {
+               return new ArrayList<VCSCommit>(this.children.cache);
             }
-         }
 
-         // We must ensure no one can modify our cache
-         return new ArrayList<VCSCommit>(this.children);
+            // Walker to walk the commits until we find this one
+            revWalk = new RevWalk(this.repo);
 
-      } catch (final IOException e) {
-         throw new VCSRepositoryException(e);
-      } catch (final GitAPIException e) {
-         throw new VCSRepositoryException(e);
-      } finally {
-         if (revWalk != null) {
-            revWalk.release();
+            // The current commit that we need to know its children
+            final RevCommit required = revWalk.parseCommit(this.commit);
+
+            // The walking will start from each head we found
+            revWalk.markStart(heads);
+
+            // The sorting here is important
+            // We set sorting topology so the children will be parsed first
+            // And the commit walking descending so the newest first
+            revWalk.sort(RevSort.TOPO, true);
+            revWalk.sort(RevSort.COMMIT_TIME_DESC, true);
+
+            // Start from the current commit, the first one probably will be a
+            // head
+            // until the current commit is equal to this commit.
+            // For each commit that we parse check if it has parent this commit
+            RevCommit current = null;
+            while (((current = revWalk.next()) != null)
+                  && !AnyObjectId.equals(current, required)) {
+
+               // If required (this commit) is parent of current
+               // we found a child
+               if (RevUtils.isParent(required, current)) {
+                  this.children.cache.add(new VCSCommitImp(current, this.repo));
+               }
+            }
+
+            // We must ensure no one can modify our cache
+            return new ArrayList<VCSCommit>(this.children.cache);
+
+         } catch (final IOException e) {
+            throw new VCSRepositoryException(e);
+         } catch (final GitAPIException e) {
+            throw new VCSRepositoryException(e);
+         } finally {
+            if (revWalk != null) {
+               revWalk.release();
+            }
          }
       }
    }
