@@ -10,7 +10,7 @@ import se.uom.vcs.mocks.VCSResourceMock;
 
 public class PathPrefixFilterTest {
 
-    ResourceFilterFactory filters = new ResourceFilterFactory();
+    ResourceFilterUtility filters = new ResourceFilterUtility();
     
     @Test
     public void testInclude() {
@@ -86,10 +86,10 @@ public class PathPrefixFilterTest {
 	// or paths
 	filters.path("src/java/test.java", "src/main/java"),
 	// or children of java/path that ends with .txt
-	filters.and(filters.childFilter("java/path"), filters.suffix(".txt")));
+	filters.and(filters.child("java/path"), filters.suffix(".txt")));
 	
 	// and not children of java/main
-	filter = (AbstractResourceFilter<VCSResource>) filters.and(filter, ((AbstractResourceFilter<VCSResource>)filters.childFilter("java/main")).not());
+	filter = (AbstractResourceFilter<VCSResource>) filters.and(filter, ((AbstractResourceFilter<VCSResource>)filters.child("java/main")).not());
 	
 	VCSResourceMock rmock = new VCSResourceMock("java/test", VCSResource.Type.FILE, null);
 	rmock.setParent(new VCSResourceMock("java", null, null));
@@ -142,10 +142,10 @@ public class PathPrefixFilterTest {
 	// or paths
 	filters.path("src/java/test.java", "src/main/java"),
 	// or children of java/path that ends with .txt
-	filters.and(filters.childFilter("java/path"), filters.suffix(".txt")));
+	filters.and(filters.child("java/path"), filters.suffix(".txt")));
 	
 	// and not children of java/main
-	filter = (AbstractResourceFilter<VCSResource>) filters.and(filter, ((AbstractResourceFilter<VCSResource>)filters.childFilter("java/main")).not());
+	filter = (AbstractResourceFilter<VCSResource>) filters.and(filter, ((AbstractResourceFilter<VCSResource>)filters.child("java/main")).not());
 	
 	VCSResourceMock rmock = new VCSResourceMock("java/main", VCSResource.Type.FILE, null);
 	rmock.setParent(new VCSResourceMock("java", null, null));

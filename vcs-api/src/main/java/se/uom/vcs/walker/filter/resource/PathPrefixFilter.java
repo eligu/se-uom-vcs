@@ -26,92 +26,67 @@ import se.uom.vcs.VCSResource;
  * @since 0.0.1
  */
 public class PathPrefixFilter<T extends VCSResource> extends
-	AbstractPathFilter<T> {
+      AbstractPathFilter<T> {
 
-    /**
-     * If files should be included.
-     */
-    protected boolean files = true;
-    
-    /**
-     * If directories should be included.
-     */
-    protected boolean dirs = false;
-    
-    
-    public boolean isFiles() {
-        return files;
-    }
+   /**
+    * Creates a filter for the given path prefixes.
+    * <p>
+    * 
+    * @param paths
+    *           prefixes to check each path against
+    */
+   public PathPrefixFilter(Collection<String> paths) {
+      super(paths);
+   }
+   
+   /**
+    * {@inheritDoc}
+    * Check if entity's path has one of the specified paths as a prefix.
+    * <p>
+    */
+   @Override
+   public boolean include(T entity) {
+      String path = entity.getPath();
+      for (String prefix : paths) {
+         if (isPrefix(prefix, path)) {
+            return true;
+         }
+      }
+      return false;
+   }
 
-    public boolean isDirs() {
-        return dirs;
-    }
-    
-    /**
-     * Creates a filter for the given path prefixes.
-     * <p>
-     * 
-     * @param paths
-     *            prefixes to check each path against
-     */
-    public PathPrefixFilter(Collection<String> paths) {
-	super(paths);
-    }
+   @Override
+   protected boolean excludesAnd(AbstractResourceFilter<T> filter) {
 
-    public PathPrefixFilter(Collection<String> paths, boolean files, boolean dirs) {
-	super(paths);
-	if(!(files || dirs)) {
-	    throw new IllegalArgumentException("files || dirs must be true");
-	}
-	this.files = files;
-	this.dirs = dirs;
-    }
-    
-    /**
-     * Check if entity's path has one of the specified paths as a prefix.
-     * <p>
-     */
-    @Override
-    public boolean include(T entity) {
-	String path = entity.getPath();
-	for (String prefix : paths) {
-	    if (isPrefix(prefix, path)) {
-		return true;
-	    }
-	}
-	return false;
-    }
+      if (filter instanceof ChildFilter) {
+         return true;
+      }
+      if (filter instanceof PathFilter) {
+         return true;
+      }
+      if (filter instanceof PathPrefixFilter) {
+         return true;
+      }
+      return false;
+   }
 
-    @Override
-    protected boolean excludesAnd(AbstractResourceFilter<T> filter) {
-        
-	if(filter instanceof ChildFilter) {
-	    return true;
-	}
-	if(filter instanceof PathFilter) {
-	    return true;
-	}
-	if(filter instanceof PathPrefixFilter) {
-	    return true;
-	}
-        return false;
-    }
-    
-    @Override
-    public VCSResourceFilter<T> not() {
-	return new PathPrefixFilter<T>(paths){
-	    @Override
-	    public boolean include(T entity) {
-	        return !super.include(entity);
-	    }
-	    @Override
-	    public boolean enter(T resource) {
-	        return super.notEnter(resource.getPath());
-	    }
-	    @Override
-	    public VCSResourceFilter<T> not() {
-	        return new PathPrefixFilter<T>(paths);
-	    }
-	};
-    }
+   @Override
+   public VCSResourceFilter<T> not() {
+      return new PathPrefixFilter<T>(paths) {
+         @Override
+         public boolean include(T entity) {
+            return !super.include(entity);
+         }
+
+         @Override
+         public boolean enter(T resource) {
+            return super.notEnter(resource.getPath());
+         }
+
+         @Override
+         public VCSResourceFilter<T> not() {
+            return new PathPrefixFilter<T>(paths);
+         }
+      };
+   }
 }

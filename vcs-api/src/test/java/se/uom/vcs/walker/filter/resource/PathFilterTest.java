@@ -17,7 +17,7 @@ import se.uom.vcs.mocks.VCSResourceMock;
  */
 public class PathFilterTest {
 
-    ResourceFilterFactory filters = new ResourceFilterFactory();
+    ResourceFilterUtility filters = new ResourceFilterUtility();
     
     /**
      * Test method for {@link PathFilter#include(VCSResource)}.

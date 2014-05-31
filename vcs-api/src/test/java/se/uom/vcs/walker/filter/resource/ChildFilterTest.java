@@ -17,7 +17,7 @@ import se.uom.vcs.mocks.VCSResourceMock;
  */
 public class ChildFilterTest {
 
-    ResourceFilterFactory filters = new ResourceFilterFactory();
+    ResourceFilterUtility filters = new ResourceFilterUtility();
     
     /**
      * Test method for {@link PathPrefixFilter#include(VCSResource)}.
@@ -26,7 +26,7 @@ public class ChildFilterTest {
     public void testInclude() {
 	VCSResourceMock rmock = new VCSResourceMock("java/path/test.java", null, null);
 	rmock.setParent(new VCSResourceMock("java/path", null, null));
-	AbstractResourceFilter<VCSResource> filter = (AbstractResourceFilter<VCSResource>) filters.childFilter("java/path");
+	AbstractResourceFilter<VCSResource> filter = (AbstractResourceFilter<VCSResource>) filters.child("java/path");
 	assertTrue(filter.include(rmock));
 	assertTrue(!filter.not().include(rmock));
 	
@@ -53,7 +53,7 @@ public class ChildFilterTest {
     public void testAllow() {
 	VCSResourceMock rmock = new VCSResourceMock("java/path/test.java", null, null);
 	rmock.setParent(new VCSResourceMock("java/path", null, null));
-	AbstractResourceFilter<VCSResource> filter = (AbstractResourceFilter<VCSResource>) filters.childFilter("java/path");
+	AbstractResourceFilter<VCSResource> filter = (AbstractResourceFilter<VCSResource>) filters.child("java/path");
 	assertTrue(!filter.enter(rmock));
 	
 	rmock.setPath("java/pat/test");

@@ -12,32 +12,39 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 
+import se.uom.vcs.walker.filter.commit.MergeFilter;
+
 /**
+ * A custom implementation of {@link MergeFilter} to be used with JGit library.
+ * <p>
+ * Each time a merge filter is used, it will be parsed to an instance of this
+ * filter and will be applied directly to the RevWalk.
+ * 
  * @author Elvis Ligu
  * @version 0.0.1
  * @since 0.0.1
  */
 public class JGitMergeFilter extends RevFilter {
 
-    /**
+/**
      * {@inheritDoc)
      * @see RevFilter#include(RevWalk, RevCommit)
      */
-    @Override
-    public boolean include(RevWalk walker, RevCommit cmit)
-	    throws StopWalkException, MissingObjectException,
-	    IncorrectObjectTypeException, IOException {
-	
-	return cmit.getParentCount() > 1;
-    }
+   @Override
+   public boolean include(RevWalk walker, RevCommit cmit)
+         throws StopWalkException, MissingObjectException,
+         IncorrectObjectTypeException, IOException {
 
-    /** 
+      return cmit.getParentCount() > 1;
+   }
+
+/** 
      * {@inheritDoc)
      * @see org.eclipse.jgit.revwalk.filter.RevFilter#clone()
      */
-    @Override
-    public RevFilter clone() {
-	return this;
-    }
+   @Override
+   public RevFilter clone() {
+      return this;
+   }
 
 }

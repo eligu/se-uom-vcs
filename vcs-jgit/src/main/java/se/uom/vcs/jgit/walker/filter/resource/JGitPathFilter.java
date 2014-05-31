@@ -13,7 +13,8 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import se.uom.vcs.walker.filter.resource.PathFilter;
 
 /**
- * A special case of {@link PathFilter} optimized for JGit library.<p>
+ * A special case of {@link PathFilter} optimized for JGit library.
+ * <p>
  * 
  * @author Elvis Ligu
  * @version 0.0.1
@@ -21,33 +22,34 @@ import se.uom.vcs.walker.filter.resource.PathFilter;
  */
 public class JGitPathFilter extends JGitAbstractPathFilter {
 
-    /**
-     * Creates a new instance based on the given paths.<p>
-     * 
-     * @param paths
-     */
-    public JGitPathFilter(Collection<String> paths) {
-	super(paths);
-    }
-    
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean include(TreeWalk walker) throws MissingObjectException,
-	    IncorrectObjectTypeException, IOException {
-	byte[] path = walker.getRawPath();
-	for(byte[] prefix : paths) {
-	    if(prefix.length > 0) {
-		if(isPrefix(path, prefix)) {
-		    return true;
-		}
-	    } else {
-		if(isRootPath(path)) {
-		    return true;
-		}
-	    }
-	}
-	return false;
-    }
+   /**
+    * Creates a new instance based on the given paths.
+    * <p>
+    * 
+    * @param paths
+    */
+   public JGitPathFilter(Collection<String> paths) {
+      super(paths);
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public boolean include(TreeWalk walker) throws MissingObjectException,
+         IncorrectObjectTypeException, IOException {
+      byte[] path = walker.getRawPath();
+      for (byte[] prefix : paths) {
+         if (prefix.length > 0) {
+            if (isPrefix(path, prefix)) {
+               return true;
+            }
+         } else {
+            if (isRootPath(path)) {
+               return true;
+            }
+         }
+      }
+      return false;
+   }
 }
