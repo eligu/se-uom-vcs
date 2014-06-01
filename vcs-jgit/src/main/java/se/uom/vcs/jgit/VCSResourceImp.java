@@ -10,6 +10,7 @@ import org.eclipse.jgit.api.LogCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.RenameDetector;
 import org.eclipse.jgit.errors.AmbiguousObjectException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
@@ -332,12 +333,13 @@ public class VCSResourceImp implements VCSResource {
     * will check the parents of resource's commit, and make a diff with each of
     * them, if there were a parent from which this resource has been changed
     * then returns true
+    * <p>
     * 
     * @param type
     * @return
     * @throws VCSRepositoryException
     */
-   private static boolean checkChangeType(final VCSChange.Type type,
+   public static boolean checkChangeType(final VCSChange.Type type,
          final VCSResourceImp resource) throws VCSRepositoryException {
 
       // We cache the change of this resource
@@ -402,6 +404,12 @@ public class VCSResourceImp implements VCSResource {
     * Check if the specified path was added at the given commit. It will check
     * all parents, if this path is present at the given commit but not present
     * to any of its parents that means it was just added.
+    * <p>
+    * <b>WARNING:</b> This method may return true even in case there is a RENAME
+    * because it checks if the given path is not present all parents of
+    * the given commit, but present at this commit. When we have a rename
+    * usually a path is present at least one of parents of the current commit
+    * that made the rename, however it is not present at the current commit.
     * 
     * @param commit
     * @param repo
@@ -435,6 +443,12 @@ public class VCSResourceImp implements VCSResource {
     * Check if the specified path was deleted at the given commit. It will check
     * all parents, if this path is not present to the given commit but is
     * present to any of its parents that means it was just added.
+    * <p>
+    * <b>WARNING:</b> This method may return true even in case there is a RENAME
+    * because it checks if the given path is present at one of the parents of
+    * the given commit, but not present at this commit. When we have a rename
+    * usually a path is present at least one of parents of the current commit
+    * that made the rename, however it is not present at the current commit.
     * 
     * @param commit
     * @param repo
@@ -442,7 +456,7 @@ public class VCSResourceImp implements VCSResource {
     * @return
     * @throws IOException
     */
-   private static boolean isDeletion(final RevCommit commit,
+   public static boolean isDeletion(final RevCommit commit,
          final Repository repo, final String path) throws IOException {
 
       // If this path exists in this commit then it is not
@@ -498,5 +512,39 @@ public class VCSResourceImp implements VCSResource {
          }
       }
       return null;
+   }
+
+   @Override
+   public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + ((commit == null) ? 0 : commit.hashCode());
+      result = prime * result + ((path == null) ? 0 : path.hashCode());
+      result = prime * result + ((type == null) ? 0 : type.hashCode());
+      return result;
+   }
+
+   @Override
+   public boolean equals(Object obj) {
+      if (this == obj)
+         return true;
+      if (obj == null)
+         return false;
+      if (getClass() != obj.getClass())
+         return false;
+      VCSResourceImp other = (VCSResourceImp) obj;
+      if (commit == null) {
+         if (other.commit != null)
+            return false;
+      } else if (!commit.equals(other.commit))
+         return false;
+      if (path == null) {
+         if (other.path != null)
+            return false;
+      } else if (!path.equals(other.path))
+         return false;
+      if (type != other.type)
+         return false;
+      return true;
    }
 }

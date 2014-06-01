@@ -47,8 +47,8 @@ import se.uom.vcs.exceptions.VCSRepositoryException;
  * for reading. When the instance of this repository is created, if the
  * specified local path contains a repository (.git dir) it will load it
  * automatically, and that would require time. If there is no repository
- * available, you can not use this instance until you call cloneRemote()
- * in order to clone a remote repository and store it to the local path.
+ * available, you can not use this instance until you call cloneRemote() in
+ * order to clone a remote repository and store it to the local path.
  * <p>
  * This object is not thread safe, in that it doesn't lock the repository's
  * folder, so another object (or thread) can change the contents and cause
@@ -327,7 +327,8 @@ public class VCSRepositoryImp implements VCSRepository {
     *           to check
     * @throws VCSRepositoryException
     */
-   private static void checkRepo(final Repository repo) throws VCSRepositoryException {
+   private static void checkRepo(final Repository repo)
+         throws VCSRepositoryException {
       if (repo == null) {
          throw new VCSRepositoryException(
                "repository can not be loaded, either a local repo is not specified or a remote repository has never been cloned to the local path");
@@ -442,6 +443,7 @@ public class VCSRepositoryImp implements VCSRepository {
       checkRepo(this.repo);
 
       final RevWalk walker = new RevWalk(this.repo);
+
       try {
          final ObjectId oid = this.repo.resolve(cid);
          if (oid == null) {

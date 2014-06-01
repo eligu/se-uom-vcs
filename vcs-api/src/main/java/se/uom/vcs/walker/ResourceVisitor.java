@@ -39,7 +39,7 @@ public interface ResourceVisitor<T extends VCSResource> extends
     * @see VCSResourceFilter
     */
    @SuppressWarnings("unchecked")
-   VCSResourceFilter<T> getFilter();
+   public VCSResourceFilter<T> getFilter();
 
    /**
     * Specify if the tree walking should include directory resources to be
