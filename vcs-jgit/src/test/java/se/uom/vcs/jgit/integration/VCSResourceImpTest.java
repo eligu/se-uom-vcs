@@ -6,6 +6,12 @@ package se.uom.vcs.jgit.integration;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static se.uom.vcs.walker.filter.resource.ResourceFilterUtility.and;
+import static se.uom.vcs.walker.filter.resource.ResourceFilterUtility.child;
+import static se.uom.vcs.walker.filter.resource.ResourceFilterUtility.or;
+import static se.uom.vcs.walker.filter.resource.ResourceFilterUtility.path;
+import static se.uom.vcs.walker.filter.resource.ResourceFilterUtility.prefix;
+import static se.uom.vcs.walker.filter.resource.ResourceFilterUtility.suffix;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -22,9 +28,8 @@ import se.uom.vcs.exceptions.VCSResourceNotFoundException;
 import se.uom.vcs.jgit.VCSDirectoryImp;
 import se.uom.vcs.walker.ResourceVisitor;
 import se.uom.vcs.walker.Visitor;
+import se.uom.vcs.walker.filter.resource.AbstractPathFilter;
 import se.uom.vcs.walker.filter.resource.VCSResourceFilter;
-
-import static se.uom.vcs.walker.filter.resource.ResourceFilterUtility.*;
 
 /**
  * A test case that conducts tests on a real repository, for VCSResourceImp and
@@ -178,7 +183,6 @@ public class VCSResourceImpTest extends MainSuite {
          VCSResourceNotFoundException {
 
       // Here we will check the main source directory
-      String dirPath = "src/main/java/org/scribe";
       VCSCommit commit = thisRepo
             .resolveCommit("c4dbbcf98992d4f83f51e06ed2b71dc6f7eacb6a");
 
@@ -235,5 +239,312 @@ public class VCSResourceImpTest extends MainSuite {
       } finally {
          assertTrue(passed);
       }
+   }
+
+   @Test
+   public void walkTreeFiles() throws VCSRepositoryException,
+         VCSResourceNotFoundException {
+
+      // Here we will check the main source directory
+      VCSCommit commit = thisRepo
+            .resolveCommit("c4dbbcf98992d4f83f51e06ed2b71dc6f7eacb6a");
+
+      assertTrue(commit.isResourceAvailable(dirPath));
+      VCSDirectoryImp directory = (VCSDirectoryImp) commit.getResource(dirPath);
+      assertNotNull(directory);
+
+      // Walk 2
+      // We will try to get only files (recursively) that are under this path
+      directory.walkResources(new ResourceVisitor<VCSResource>() {
+
+         @Override
+         public boolean visit(VCSResource entity) {
+            assertTrue(entity instanceof VCSFile);
+            return true;
+         }
+
+         @SuppressWarnings("unchecked")
+         @Override
+         public VCSResourceFilter<VCSResource> getFilter() {
+            return null;
+         }
+
+         @Override
+         public boolean includeDirs() {
+            // Do not allow dirs
+            return false;
+         }
+
+         @Override
+         public boolean includeFiles() {
+            // Allow files
+            return true;
+         }
+      });
+   }
+
+   @Test
+   public void walkTreeDirs() throws VCSRepositoryException,
+         VCSResourceNotFoundException {
+
+      // Here we will check the main source directory
+      VCSCommit commit = thisRepo
+            .resolveCommit("c4dbbcf98992d4f83f51e06ed2b71dc6f7eacb6a");
+
+      assertTrue(commit.isResourceAvailable(dirPath));
+      VCSDirectoryImp directory = (VCSDirectoryImp) commit.getResource(dirPath);
+      assertNotNull(directory);
+
+      // Walk 3
+      // We will try to get only dirs
+      directory.walkResources(new ResourceVisitor<VCSResource>() {
+
+         @Override
+         public boolean visit(VCSResource entity) {
+            assertTrue(entity instanceof VCSDirectory);
+            return true;
+         }
+
+         @SuppressWarnings("unchecked")
+         @Override
+         public VCSResourceFilter<VCSResource> getFilter() {
+            return null;
+         }
+
+         @Override
+         public boolean includeDirs() {
+            // Allow dirs to be visited
+            return true;
+         }
+
+         @Override
+         public boolean includeFiles() {
+            // Do not allow files to be visited
+            return false;
+         }
+      });
+   }
+
+   @Test
+   public void walkTreeCheckResources() throws VCSRepositoryException,
+         VCSResourceNotFoundException {
+
+      // Here we will check the main source directory
+      VCSCommit commit = thisRepo
+            .resolveCommit("c4dbbcf98992d4f83f51e06ed2b71dc6f7eacb6a");
+
+      assertTrue(commit.isResourceAvailable(dirPath));
+      VCSDirectoryImp directory = (VCSDirectoryImp) commit.getResource(dirPath);
+      assertNotNull(directory);
+
+      // Walk 2
+      // We will try to get all resources (recursively) under path
+      directory.walkResources(new ResourceVisitor<VCSResource>() {
+
+         @Override
+         public boolean visit(VCSResource entity) {
+            assertTrue(AbstractPathFilter.isPrefix(dirPath, entity.getPath()));
+            return true;
+         }
+
+         @SuppressWarnings("unchecked")
+         @Override
+         public VCSResourceFilter<VCSResource> getFilter() {
+            return null;
+         }
+
+         @Override
+         public boolean includeDirs() {
+            return true;
+         }
+
+         @Override
+         public boolean includeFiles() {
+            return true;
+         }
+      });
+   }
+
+   @SuppressWarnings("unchecked")
+   @Test
+   public void walkTreeFilters() throws VCSRepositoryException,
+         VCSResourceNotFoundException {
+
+      // Here we will check the main source directory
+      VCSCommit commit = thisRepo
+            .resolveCommit("c4dbbcf98992d4f83f51e06ed2b71dc6f7eacb6a");
+
+      assertTrue(commit.isResourceAvailable(dirPath));
+      VCSDirectoryImp directory = (VCSDirectoryImp) commit.getResource(dirPath);
+      assertNotNull(directory);
+
+      // A filter that allows all children of .../builder with suffix .java
+      // and all .java files that are under .../oauth
+      // and the single path .../builder/api/ImgUrApi.java
+      final VCSResourceFilter<VCSResource> filter = or(
+            and(child("src/main/java/org/scribe/builder"), suffix(".java")),
+            and(prefix("src/main/java/org/scribe/oauth"), suffix(".java")),
+            path("src/main/java/org/scribe/builder/api/ImgUrApi.java"),
+            // This filter will not be considered because we are querying under
+            // the specified directory
+            prefix("src/test"));
+
+      // Walk 2
+      // We will try to get only files but apply a filter so we can 
+      // check the consistency of implementation
+      directory.walkResources(new ResourceVisitor<VCSResource>() {
+
+         @Override
+         public boolean visit(VCSResource entity) {
+
+            assertTrue(AbstractPathFilter.isPrefix(dirPath, entity.getPath()));
+            assertTrue(entity.getPath().endsWith(".java"));
+            
+            String parentPath = entity.getParent().getPath();
+            boolean passed = parentPath.equals("src/main/java/org/scribe/builder")
+                  || parentPath.equals("src/main/java/org/scribe/oauth")
+                  || entity.getPath().equals("src/main/java/org/scribe/builder/api/ImgUrApi.java");
+            
+            assertTrue(passed);
+            
+            return true;
+         }
+
+         @Override
+         public VCSResourceFilter<VCSResource> getFilter() {
+            return filter;
+         }
+
+         @Override
+         public boolean includeDirs() {
+            return false;
+         }
+
+         @Override
+         public boolean includeFiles() {
+            return true;
+         }
+      });
+   }
+
+   static final String dirPath = "src/main/java/org/scribe";
+   static final Set<String> resources = new HashSet<String>();
+   static {
+      resources.add("src/main/java/org/scribe/builder");
+      resources.add("src/main/java/org/scribe/builder/ServiceBuilder.java");
+      resources.add("src/main/java/org/scribe/builder/api");
+      resources.add("src/main/java/org/scribe/builder/api/AWeberApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/Api.java");
+      resources
+            .add("src/main/java/org/scribe/builder/api/ConstantContactApi.java");
+      resources
+            .add("src/main/java/org/scribe/builder/api/ConstantContactApi2.java");
+      resources.add("src/main/java/org/scribe/builder/api/DefaultApi10a.java");
+      resources.add("src/main/java/org/scribe/builder/api/DefaultApi20.java");
+      resources.add("src/main/java/org/scribe/builder/api/DiggApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/DropBoxApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/EvernoteApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/FacebookApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/FlickrApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/Foursquare2Api.java");
+      resources.add("src/main/java/org/scribe/builder/api/FoursquareApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/FreelancerApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/GetGlueApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/GoogleApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/ImgUrApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/KaixinApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/KaixinApi20.java");
+      resources.add("src/main/java/org/scribe/builder/api/LinkedInApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/LiveApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/LoveFilmApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/MeetupApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/MendeleyApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/MisoApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/NetProspexApi.java");
+      resources
+            .add("src/main/java/org/scribe/builder/api/NeteaseWeibooApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/PlurkApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/Px500Api.java");
+      resources.add("src/main/java/org/scribe/builder/api/QWeiboApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/RenrenApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/SapoApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/SimpleGeoApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/SinaWeiboApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/SinaWeiboApi20.java");
+      resources.add("src/main/java/org/scribe/builder/api/SkyrockApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/SohuWeiboApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/TrelloApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/TumblrApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/TwitterApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/UbuntuOneApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/ViadeoApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/VimeoApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/VkontakteApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/XingApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/YahooApi.java");
+      resources.add("src/main/java/org/scribe/builder/api/YammerApi.java");
+      resources.add("src/main/java/org/scribe/exceptions");
+      resources
+            .add("src/main/java/org/scribe/exceptions/OAuthConnectionException.java");
+      resources.add("src/main/java/org/scribe/exceptions/OAuthException.java");
+      resources
+            .add("src/main/java/org/scribe/exceptions/OAuthParametersMissingException.java");
+      resources
+            .add("src/main/java/org/scribe/exceptions/OAuthSignatureException.java");
+      resources.add("src/main/java/org/scribe/extractors");
+      resources
+            .add("src/main/java/org/scribe/extractors/AccessTokenExtractor.java");
+      resources
+            .add("src/main/java/org/scribe/extractors/BaseStringExtractor.java");
+      resources
+            .add("src/main/java/org/scribe/extractors/BaseStringExtractorImpl.java");
+      resources.add("src/main/java/org/scribe/extractors/HeaderExtractor.java");
+      resources
+            .add("src/main/java/org/scribe/extractors/HeaderExtractorImpl.java");
+      resources
+            .add("src/main/java/org/scribe/extractors/JsonTokenExtractor.java");
+      resources
+            .add("src/main/java/org/scribe/extractors/RequestTokenExtractor.java");
+      resources
+            .add("src/main/java/org/scribe/extractors/TokenExtractor20Impl.java");
+      resources
+            .add("src/main/java/org/scribe/extractors/TokenExtractorImpl.java");
+      resources.add("src/main/java/org/scribe/model");
+      resources.add("src/main/java/org/scribe/model/OAuthConfig.java");
+      resources.add("src/main/java/org/scribe/model/OAuthConstants.java");
+      resources.add("src/main/java/org/scribe/model/OAuthRequest.java");
+      resources.add("src/main/java/org/scribe/model/Parameter.java");
+      resources.add("src/main/java/org/scribe/model/ParameterList.java");
+      resources.add("src/main/java/org/scribe/model/Request.java");
+      resources.add("src/main/java/org/scribe/model/RequestTuner.java");
+      resources.add("src/main/java/org/scribe/model/Response.java");
+      resources.add("src/main/java/org/scribe/model/SignatureType.java");
+      resources.add("src/main/java/org/scribe/model/Token.java");
+      resources.add("src/main/java/org/scribe/model/Verb.java");
+      resources.add("src/main/java/org/scribe/model/Verifier.java");
+      resources.add("src/main/java/org/scribe/oauth");
+      resources.add("src/main/java/org/scribe/oauth/OAuth10aServiceImpl.java");
+      resources.add("src/main/java/org/scribe/oauth/OAuth20ServiceImpl.java");
+      resources.add("src/main/java/org/scribe/oauth/OAuthService.java");
+      resources.add("src/main/java/org/scribe/services");
+      resources.add("src/main/java/org/scribe/services/Base64Encoder.java");
+      resources.add("src/main/java/org/scribe/services/CommonsEncoder.java");
+      resources
+            .add("src/main/java/org/scribe/services/DatatypeConverterEncoder.java");
+      resources
+            .add("src/main/java/org/scribe/services/HMACSha1SignatureService.java");
+      resources
+            .add("src/main/java/org/scribe/services/PlaintextSignatureService.java");
+      resources
+            .add("src/main/java/org/scribe/services/RSASha1SignatureService.java");
+      resources.add("src/main/java/org/scribe/services/SignatureService.java");
+      resources.add("src/main/java/org/scribe/services/TimestampService.java");
+      resources
+            .add("src/main/java/org/scribe/services/TimestampServiceImpl.java");
+      resources.add("src/main/java/org/scribe/utils");
+      resources.add("src/main/java/org/scribe/utils/MapUtils.java");
+      resources.add("src/main/java/org/scribe/utils/OAuthEncoder.java");
+      resources.add("src/main/java/org/scribe/utils/Preconditions.java");
+      resources.add("src/main/java/org/scribe/utils/StreamUtils.java");
    }
 }

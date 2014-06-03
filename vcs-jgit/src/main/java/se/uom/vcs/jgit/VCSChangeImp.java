@@ -153,4 +153,43 @@ public class VCSChangeImp<T extends VCSResourceImp> implements VCSChange<T> {
    public String toString() {
       return this.type + ":" + this.oldResource + ":" + this.newResource;
    }
+
+   
+   @Override
+   public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result
+            + ((newResource == null) ? 0 : newResource.hashCode());
+      result = prime * result
+            + ((oldResource == null) ? 0 : oldResource.hashCode());
+      result = prime * result + ((type == null) ? 0 : type.hashCode());
+      return result;
+   }
+
+   @Override
+   public boolean equals(Object obj) {
+      if (this == obj)
+         return true;
+      if (obj == null)
+         return false;
+      if (getClass() != obj.getClass())
+         return false;
+      VCSChangeImp<?> other = (VCSChangeImp<?>) obj;
+      if (newResource == null) {
+         if (other.newResource != null)
+            return false;
+      } else if (!newResource.equals(other.newResource))
+         return false;
+      if (oldResource == null) {
+         if (other.oldResource != null)
+            return false;
+      } else if (!oldResource.equals(other.oldResource))
+         return false;
+      if (type != other.type)
+         return false;
+      return true;
+   }
+
+   
 }

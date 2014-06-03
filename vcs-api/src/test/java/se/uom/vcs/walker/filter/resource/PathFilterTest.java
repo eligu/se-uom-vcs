@@ -17,15 +17,13 @@ import se.uom.vcs.mocks.VCSResourceMock;
  */
 public class PathFilterTest {
 
-    ResourceFilterUtility filters = new ResourceFilterUtility();
-    
     /**
      * Test method for {@link PathFilter#include(VCSResource)}.
      */
     @Test
     public void testInclude() {
 	VCSResourceMock rmock = new VCSResourceMock("java/path", null, null);
-	AbstractResourceFilter<VCSResource> filter = (AbstractResourceFilter<VCSResource>) filters.path("java/path", "java/none/path");
+	AbstractResourceFilter<VCSResource> filter = (AbstractResourceFilter<VCSResource>) ResourceFilterUtility.path("java/path", "java/none/path");
 	assertTrue(filter.include(rmock));
 	assertTrue(!filter.not().include(rmock));
 	
@@ -52,7 +50,7 @@ public class PathFilterTest {
     @Test
     public void testAllow() {
 	VCSResourceMock rmock = new VCSResourceMock("java/path", null, null);
-	AbstractResourceFilter<VCSResource> filter = (AbstractResourceFilter<VCSResource>) filters.path("java/path", "java/none/path");
+	AbstractResourceFilter<VCSResource> filter = (AbstractResourceFilter<VCSResource>) ResourceFilterUtility.path("java/path", "java/none/path");
 	// This should not be entered because we need to stop entering path
 	assertTrue(!filter.enter(rmock));
 	

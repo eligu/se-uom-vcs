@@ -48,7 +48,7 @@ public class CommitFilterUtility {
    public static <T extends VCSCommit> VCSCommitFilter<T> author(
          String... patterns) {
       Set<String> authors = new HashSet<String>();
-      for (String a : authors) {
+      for (String a : patterns) {
          authors.add(a);
       }
       return author(authors);
@@ -80,7 +80,7 @@ public class CommitFilterUtility {
    public static <T extends VCSCommit> VCSCommitFilter<T> committer(
          String... patterns) {
       Set<String> committers = new HashSet<String>();
-      for (String a : committers) {
+      for (String a : patterns) {
          committers.add(a);
       }
       return committer(committers);
@@ -151,11 +151,11 @@ public class CommitFilterUtility {
     */
    public static <T extends VCSCommit> VCSCommitFilter<T> message(
          String... patterns) {
-      Set<String> committers = new HashSet<String>();
-      for (String a : committers) {
-         committers.add(a);
+      Set<String> pats = new HashSet<String>();
+      for (String a : patterns) {
+         pats.add(a);
       }
-      return message(committers);
+      return message(pats);
    }
 
    /**
@@ -163,12 +163,25 @@ public class CommitFilterUtility {
     * <p>
     * 
     * @param skip
-    *           the number of the commits to skip until the next is allowed
+    *           the number of n first commits to until the commits will start to include
     * @return a new skip filter
     * @see SkipFilter
     */
    public static <T extends VCSCommit> VCSCommitFilter<T> skip(int skip) {
       return new SkipFilter<T>(skip);
+   }
+
+   /**
+    * Creates a new iteration filter.
+    * <p>
+    * 
+    * @param skip
+    *           the number of the commits to skip until the next is allowed
+    * @return a new skip filter
+    * @see SkipFilter
+    */
+   public static <T extends VCSCommit> VCSCommitFilter<T> iteration(int skip) {
+      return new IterationFilter<T>(skip);
    }
 
    /**

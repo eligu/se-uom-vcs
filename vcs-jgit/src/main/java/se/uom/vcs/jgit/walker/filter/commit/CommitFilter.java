@@ -19,9 +19,11 @@ import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.revwalk.filter.SkipRevFilter;
 
 import se.uom.vcs.VCSCommit;
+import se.uom.vcs.jgit.walker.FilterParser;
 import se.uom.vcs.walker.filter.commit.AuthorFilter;
 import se.uom.vcs.walker.filter.commit.CommitDateRangeFilter;
 import se.uom.vcs.walker.filter.commit.CommitterFilter;
+import se.uom.vcs.walker.filter.commit.IterationFilter;
 import se.uom.vcs.walker.filter.commit.MaxCounterFilter;
 import se.uom.vcs.walker.filter.commit.MergeFilter;
 import se.uom.vcs.walker.filter.commit.MessageFilter;
@@ -197,6 +199,19 @@ public class CommitFilter {
    }
 
    /**
+    * Creates a new iteration filter.
+    * <p>
+    * 
+    * @param block
+    *           how many iteration should the filter make to allow each commit
+    * @return a new optimized iteration filter to be used with JGit
+    */
+   public static OptimizedCommitFilter<VCSCommit> iteration(int block) {
+      return new OptimizedCommitFilter<VCSCommit>(
+            new JGitIterationFilter(block));
+   }
+
+   /**
     * Creates a new AND filter.
     * <p>
     * 
@@ -255,10 +270,22 @@ public class CommitFilter {
     * 
     * @param filter
     *           to parse
+    * @param newParam
+    *           TODO
     * @return a new optimized filter to be used with JGit library
     */
    public static OptimizedCommitFilter<VCSCommit> parse(
-         VCSCommitFilter<VCSCommit> filter) {
+         VCSCommitFilter<VCSCommit> filter,
+         FilterParser<VCSCommit, OptimizedCommitFilter<VCSCommit>> parser) {
+
+      // Check the given parser if he can parse the filter
+      // If not try to parse it with the default method
+      if (parser != null) {
+         OptimizedCommitFilter<VCSCommit> f = parser.parse(filter);
+         if (f != null) {
+            return f;
+         }
+      }
 
       // Case when this filter is of type OptimizedCommitFilter
       if (OptimizedCommitFilter.class.isAssignableFrom(filter.getClass())) {
@@ -300,20 +327,37 @@ public class CommitFilter {
 
       // Case when this filter is of type VCSCommitNotFilter
       if (VCSCommitNotFilter.class.isAssignableFrom(filter.getClass())) {
-         return parseNot((VCSCommitNotFilter<VCSCommit>) filter);
+         return parseNot((VCSCommitNotFilter<VCSCommit>) filter, null);
       }
 
       // Case when this filter is of type VCSCommitAndFilter
       if (VCSCommitAndFilter.class.isAssignableFrom(filter.getClass())) {
-         return parseAnd((VCSCommitAndFilter<VCSCommit>) filter);
+         return parseAnd((VCSCommitAndFilter<VCSCommit>) filter, null);
       }
 
       // Case when this filter is of type VCSCommitOrFilter
       if (VCSCommitOrFilter.class.isAssignableFrom(filter.getClass())) {
-         return parseOr((VCSCommitOrFilter<VCSCommit>) filter);
+         return parseOr((VCSCommitOrFilter<VCSCommit>) filter, null);
       }
 
+      // Case when this filter is of type IterationFilter
+      if (IterationFilter.class.isAssignableFrom(filter.getClass())) {
+         return parseIteration((IterationFilter<VCSCommit>) filter);
+      }
       return null;
+   }
+
+   /**
+    * Parse an iteration filter.
+    * <p>
+    * 
+    * @param filter
+    *           to parse
+    * @return a corresponding optimized filter to be used with JGit
+    */
+   public static OptimizedCommitFilter<VCSCommit> parseIteration(
+         IterationFilter<VCSCommit> filter) {
+      return iteration(filter.getBlock());
    }
 
    /**
@@ -413,16 +457,19 @@ public class CommitFilter {
     * 
     * @param filter
     *           to parse
+    * @param parser
+    *           TODO
     * @return a corresponding optimized filter to be used with JGit
     */
    public static OptimizedCommitFilter<VCSCommit> parseAnd(
-         VCSCommitAndFilter<VCSCommit> filter) {
+         VCSCommitAndFilter<VCSCommit> filter,
+         FilterParser<VCSCommit, OptimizedCommitFilter<VCSCommit>> parser) {
 
       Set<VCSCommitFilter<VCSCommit>> filters = filter.getFilters();
       List<OptimizedCommitFilter<VCSCommit>> oFilters = new ArrayList<OptimizedCommitFilter<VCSCommit>>();
 
       for (VCSCommitFilter<VCSCommit> f : filters) {
-         OptimizedCommitFilter<VCSCommit> of = parse(f);
+         OptimizedCommitFilter<VCSCommit> of = parse(f, parser);
          if (of != null) {
             oFilters.add(of);
          } else {
@@ -445,16 +492,19 @@ public class CommitFilter {
     * 
     * @param filter
     *           to parse
+    * @param parser
+    *           TODO
     * @return a corresponding optimized filter to be used with JGit
     */
    public static OptimizedCommitFilter<VCSCommit> parseOr(
-         VCSCommitOrFilter<VCSCommit> filter) {
+         VCSCommitOrFilter<VCSCommit> filter,
+         FilterParser<VCSCommit, OptimizedCommitFilter<VCSCommit>> parser) {
 
       Set<VCSCommitFilter<VCSCommit>> filters = filter.getFilters();
       List<OptimizedCommitFilter<VCSCommit>> oFilters = new ArrayList<OptimizedCommitFilter<VCSCommit>>();
 
       for (VCSCommitFilter<VCSCommit> f : filters) {
-         OptimizedCommitFilter<VCSCommit> of = parse(f);
+         OptimizedCommitFilter<VCSCommit> of = parse(f, parser);
          if (of != null) {
             oFilters.add(of);
          } else {
@@ -477,11 +527,14 @@ public class CommitFilter {
     * 
     * @param filter
     *           to parse
+    * @param parser
+    *           TODO
     * @return a corresponding optimized filter to be used with JGit
     */
    public static OptimizedCommitFilter<VCSCommit> parseNot(
-         VCSCommitNotFilter<VCSCommit> filter) {
-      OptimizedCommitFilter<VCSCommit> f = parse(filter.getFilter());
+         VCSCommitNotFilter<VCSCommit> filter,
+         FilterParser<VCSCommit, OptimizedCommitFilter<VCSCommit>> parser) {
+      OptimizedCommitFilter<VCSCommit> f = parse(filter.getFilter(), parser);
       if (f != null) {
          return not(f);
       }

@@ -218,12 +218,14 @@ public class VCSDirectoryImp extends VCSResourceImp implements VCSDirectory {
          walk = TreeUtils.getTreeWalkForPath(this.commit.commit,
                this.commit.repo, this.path);
 
-         OptimizedResourceFilter<VCSResource> of = ResourceFilter.parse(filter,
-               null);
-         if (of != null) {
-            walk.setFilter(AndTreeFilter.create(PathFilter.create(path),
-                  of.getCurrent()));
-            filter = null;
+         if (filter != null) {
+            OptimizedResourceFilter<VCSResource> of = ResourceFilter.parse(
+                  filter, null);
+            if (of != null) {
+               walk.setFilter(AndTreeFilter.create(PathFilter.create(path),
+                     of.getCurrent()));
+               filter = null;
+            }
          }
 
          // The walk should definitely return a subdir because we requested

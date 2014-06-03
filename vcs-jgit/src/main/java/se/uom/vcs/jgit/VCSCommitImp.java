@@ -1295,7 +1295,7 @@ public class VCSCommitImp implements VCSCommit {
          VCSCommitFilter<VCSCommit> commitFilter = visitor.getFilter();
          if (commitFilter != null) {
             OptimizedCommitFilter<VCSCommit> of = CommitFilter
-                  .parse(commitFilter);
+                  .parse(commitFilter, null);
             if (of != null) {
                walk.setRevFilter(of.getCurrent());
                commitFilter = null;
