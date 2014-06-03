@@ -6,6 +6,13 @@ package se.uom.vcs.jgit.integration;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static se.uom.vcs.walker.filter.commit.CommitFilterUtility.and;
+import static se.uom.vcs.walker.filter.commit.CommitFilterUtility.author;
+import static se.uom.vcs.walker.filter.commit.CommitFilterUtility.iteration;
+import static se.uom.vcs.walker.filter.commit.CommitFilterUtility.merge;
+import static se.uom.vcs.walker.filter.commit.CommitFilterUtility.message;
+import static se.uom.vcs.walker.filter.commit.CommitFilterUtility.range;
+import static se.uom.vcs.walker.filter.commit.CommitFilterUtility.skip;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -19,12 +26,8 @@ import se.uom.vcs.VCSCommit;
 import se.uom.vcs.VCSResource;
 import se.uom.vcs.exceptions.VCSRepositoryException;
 import se.uom.vcs.walker.CommitVisitor;
-import se.uom.vcs.walker.filter.VCSFilter;
-import se.uom.vcs.walker.filter.commit.SkipFilter;
 import se.uom.vcs.walker.filter.commit.VCSCommitFilter;
 import se.uom.vcs.walker.filter.resource.VCSResourceFilter;
-
-import static se.uom.vcs.walker.filter.commit.CommitFilterUtility.*;
 
 /**
  * A test case that conducts tests on a real repository for VCSCommitImp.

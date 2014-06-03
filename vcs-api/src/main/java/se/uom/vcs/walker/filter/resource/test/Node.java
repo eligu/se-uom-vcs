@@ -11,7 +11,7 @@ public class Node {
    Set<Node> children;
    Node parent;
    TreeFilter filter;
-   Set objects;
+   Set<?> objects;
 
    public static final Node ALL = new Node("*");
    public static final Node CHILD = new Node(":");
@@ -31,7 +31,7 @@ public class Node {
       objects = new HashSet();
    }
 
-   public Set getObjects() {
+   public Set<?> getObjects() {
       return objects;
    }
    
@@ -39,7 +39,7 @@ public class Node {
       return objects.contains(o);
    }
    
-   public boolean containsAnyObject(Set objects) {
+   public boolean containsAnyObject(Set<?> objects) {
       for(Object o : objects) {
          if(this.objects.contains(o)) {
             return true;
@@ -262,7 +262,7 @@ public class Node {
       Node.getPaths(tree, paths);
       System.out.println(paths);
       System.out.println(Node.getNode(tree, "c/d").getPath());
-      System.out.println(tree.containsPath(tree, "cx"));
+      System.out.println(Node.containsPath(tree, "cx"));
       System.out.println(tree.getPath());
    }
 
@@ -274,7 +274,6 @@ public class Node {
 
       @Override
       public boolean allow(Node node) {
-         // TODO Auto-generated method stub
          return false;
       }
 
