@@ -2,7 +2,7 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>se.uom</groupId>
+  <groupId>gr.uom.se</groupId>
   <artifactId>vcs-jgit</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
@@ -21,7 +21,7 @@
     	<version>3.3.0.201403021825-r</version>
     </dependency>
     <dependency>
-    	<groupId>se.uom</groupId>
+    	<groupId>gr.uom.se</groupId>
     	<artifactId>vcs-api</artifactId>
     	<version>0.0.1-SNAPSHOT</version>
     </dependency>
