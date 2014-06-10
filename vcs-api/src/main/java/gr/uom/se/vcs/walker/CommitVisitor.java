@@ -70,7 +70,7 @@ public interface CommitVisitor<T extends VCSCommit> extends FilterVisitor<T> {
     * 
     * @return the resource filter
     */
-   <R extends VCSResource> VCSResourceFilter<R> getResourceFilter();
+   public <R extends VCSResource> VCSResourceFilter<R> getResourceFilter();
 
    /**
     * {@inheritDoc} Use a {@link VCSCommitFilter} if the returned commits should
@@ -94,5 +94,5 @@ public interface CommitVisitor<T extends VCSCommit> extends FilterVisitor<T> {
     * @see VCSCommitFilter
     */
    @SuppressWarnings("unchecked")
-   VCSCommitFilter<T> getFilter();
+   public VCSCommitFilter<T> getFilter();
 }

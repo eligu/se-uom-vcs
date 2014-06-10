@@ -21,13 +21,12 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
-
 /**
  * A helper class used to collect diffs between two commits.
  * <p>
  * 
  * This class uses JGit {@link DiffCommand} to produce diffs between two
- * commits. The diffs are produced from old to new commit.
+ * commits. The diffs are produced from first to second commit.
  * 
  * @author Elvis Ligu
  * @since 0.0.1
@@ -86,14 +85,8 @@ public class DiffCollector<T extends DiffEntry> implements Collector<T> {
                "commit1 must be different from commit2");
       }
 
-      // Set old and new commits accordingly
-      if (commit1.getCommitTime() > commit2.getCommitTime()) {
-         this.newC = commit1;
-         this.oldC = commit2;
-      } else {
-         this.newC = commit2;
-         this.oldC = commit1;
-      }
+      this.oldC = commit1;
+      this.newC = commit2;
 
       // Create a diff command
       this.command = new Git(repo).diff();
@@ -103,14 +96,14 @@ public class DiffCollector<T extends DiffEntry> implements Collector<T> {
    /**
     * @return old commit
     */
-   public RevCommit getOldCommit() {
+   public RevCommit getFirstCommit() {
       return this.oldC;
    }
 
    /**
     * @return new commit
     */
-   public RevCommit getNewCommit() {
+   public RevCommit getSeccondCommit() {
       return this.newC;
    }
 

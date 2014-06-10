@@ -418,57 +418,6 @@ public class VCSCommitImp implements VCSCommit {
    }
 
    /**
-    * Check the two commits if they are from VCSCommitImp so we can have access
-    * to their {@link RevCommit} object.
-    * <p>
-    * 
-    * If not throw an {@link IllegalArgumentException}. If two commits are equal
-    * return null, otherwise return the new commit at index 0 and the old one at
-    * 1;
-    * 
-    * @param commit1
-    *           the first commit
-    * @param commit2
-    *           the second commit
-    * @return an array that contains the new commit at index 0, and the old one
-    *         at index 1
-    */
-   private static VCSCommitImp[] checkCommitsForDiffAndReturnNewOld(
-         final VCSCommit commit1, final VCSCommit commit2) {
-
-      ArgsCheck.isSubtype("commit1", VCSCommitImp.class, commit1);
-      ArgsCheck.isSubtype("commit2", VCSCommitImp.class, commit2);
-
-      // If commits are equals return null
-      if (AnyObjectId.equals(((VCSCommitImp) commit1).commit,
-            ((VCSCommitImp) commit2).commit)) {
-         return null;
-      }
-
-      // This array will have the new commit in position 0 and the old one in
-      // position 1
-      final VCSCommitImp[] commits = new VCSCommitImp[2];
-      final short OLD = 1;
-      final short NEW = 0;
-
-      // Start by assuming commit1 is the new and commit2 the old
-      commits[NEW] = (VCSCommitImp) commit1;
-      commits[OLD] = (VCSCommitImp) commit2;
-
-      // If commits[0] (at position new) is older than commits[1] (at position
-      // old) swap the values
-      if (commits[OLD].commit.getCommitTime() > commits[NEW].commit
-            .getCommitTime()) {
-
-         final VCSCommitImp temp = commits[NEW]; // the old one
-         commits[NEW] = commits[OLD]; // assign the old to new
-         commits[OLD] = temp;
-      }
-
-      return commits;
-   }
-
-   /**
     * {@inheritDoc}
     */
    @Override
@@ -479,14 +428,15 @@ public class VCSCommitImp implements VCSCommit {
       // The new commit is at position 0 and the old one at position 1
       // if commits is null that means the old and the new are equal so no
       // need to walk changes
-      final VCSCommitImp[] commits = checkCommitsForDiffAndReturnNewOld(commit,
-            this);
-      if (commits == null) {
+      ArgsCheck.isSubtype("commit", VCSCommitImp.class, commit);
+
+      // If commits are equals return nothing
+      VCSCommitImp c1 = this;
+      VCSCommitImp c2 = (VCSCommitImp) commit;
+      if (AnyObjectId.equals(c1.commit, c2.commit)) {
          return;
       }
 
-      final short OLD = 1;
-      final short NEW = 0;
 
       VCSResourceFilter<VCSResource> resourceFilter = visitor
             .getResourceFilter();
@@ -494,7 +444,7 @@ public class VCSCommitImp implements VCSCommit {
       // Use Diff collector to collect diffs
       // Limit the diff only to the specified paths if any
       final DiffCollector<DiffEntry> diffs = new DiffCollector<DiffEntry>(
-            this.repo, commits[OLD].commit, commits[NEW].commit);
+            this.repo, c1.commit, c2.commit);
 
       if (resourceFilter != null) {
          OptimizedResourceFilter<VCSResource> of = ResourceFilter.parse(
@@ -519,8 +469,8 @@ public class VCSCommitImp implements VCSCommit {
       if (resourceFilter == null && changeFilter == null) {
          for (final DiffEntry entry : diffs) {
 
-            final VCSChange<?> change = createChange(entry, commits[OLD],
-                  commits[NEW]);
+            final VCSChange<?> change = createChange(entry, c1,
+                  c2);
 
             if (change != null) {
                // if the visitor returns false then we must stop the
@@ -536,8 +486,8 @@ public class VCSCommitImp implements VCSCommit {
       } else {
          for (final DiffEntry entry : diffs) {
 
-            final VCSChange<?> change = createChange(entry, commits[OLD],
-                  commits[NEW]);
+            final VCSChange<?> change = createChange(entry, c1,
+                  c2);
 
             if (change != null) {
 

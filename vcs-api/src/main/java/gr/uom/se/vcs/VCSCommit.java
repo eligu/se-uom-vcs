@@ -13,7 +13,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
-
 /**
  * Represents the commit of a {@link VCSRepository}.
  * <p>
@@ -125,11 +124,10 @@ public interface VCSCommit {
    /**
     * Given a commit return a list of changes.
     * <p>
-    * The changes will be calculated from older to new commit. That is, if this
-    * commit is older than the given one the changes are calculated as
-    * modifications from this to other one. Changes are returned only if the
-    * current path is a directory or a file. Other VCS systems support paths for
-    * symlink and such, they will be ignored.
+    * The changes will be calculated from this commit to specified argument.
+    * Changes are returned only if the current path is a directory or a file.
+    * Other VCS systems support paths for symlink and such, they will be
+    * ignored.
     * <p>
     * <b>WARNING:</b> There are VCSs that do not track changes on directories,
     * that means no directory will be returned. In such situations this will
