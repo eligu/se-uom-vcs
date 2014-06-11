@@ -58,7 +58,7 @@ public class VCSChangeImpTest extends MainSuite {
       VCSCommit oldCommit = thisRepo
             .resolveCommit("675216792546e7a636ee6186be82fbccab474873");
 
-      changes = commit.getChanges(oldCommit);
+      changes = oldCommit.getChanges(commit);
       // There are only two changes (two additions)
       assertEquals(2, changes.size());
 
@@ -82,20 +82,20 @@ public class VCSChangeImpTest extends MainSuite {
       // implementation because the file changes and general changes
       // return always changes on files. This is due to git not keeping
       // track on directories
-      List<VCSFileDiff<?>> fileChanges = commit.getFileChanges(oldCommit);
+      List<VCSFileDiff<?>> fileChanges = oldCommit.getFileChanges(commit);
       assertEquals(fileChanges, changes);
 
       // Now check all the paths under the specified path
       // These two checks return the same as plain getChanges because
       // there are no paths specified
-      assertEquals(changes, commit.getChanges(oldCommit, true, (String[]) null));
+      assertEquals(changes, oldCommit.getChanges(commit, true, (String[]) null));
       assertEquals(fileChanges,
-            commit.getFileChanges(oldCommit, true, (String[]) null));
+            oldCommit.getFileChanges(commit, true, (String[]) null));
 
       // Will return only one change and that would be the added file
       // at "src/main/java/org/scribe/builder/api/FreelancerAPI.java"
-      changes = commit.getChanges(oldCommit, true, "src/main");
-      fileChanges = commit.getFileChanges(oldCommit, true, "src/main");
+      changes = oldCommit.getChanges(commit, true, "src/main");
+      fileChanges = oldCommit.getFileChanges(commit, true, "src/main");
       // The two sets of changes will be the same
       assertEquals(changes, fileChanges);
       // There will be only one change

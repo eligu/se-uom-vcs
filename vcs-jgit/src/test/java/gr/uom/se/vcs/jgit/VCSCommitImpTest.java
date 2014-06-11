@@ -105,7 +105,7 @@ public class VCSCommitImpTest extends VCSTest {
 
          // Perform a walk on changes and check the results to be equal to
          // mocks
-         this.testWalkChanges(newC, oldC, mocks, changes, visitor);
+         this.testWalkChanges(oldC, newC, mocks, changes, visitor);
 
          // Empty change list where the changes will be stored
          final List<VCSFileDiff<?>> fileChanges = new ArrayList<VCSFileDiff<?>>();
@@ -136,7 +136,7 @@ public class VCSCommitImpTest extends VCSTest {
 
          // Perform a walk on changes and check the results to be equal to
          // mocks
-         this.testWalkFileChanges(newC, oldC, mocks, fileChanges, fileVisitor);
+         this.testWalkFileChanges(oldC, newC, mocks, fileChanges, fileVisitor);
       }
    }
 
@@ -257,7 +257,7 @@ public class VCSCommitImpTest extends VCSTest {
 
          // Perform a walk on changes and check the results to be equal to
          // mocks
-         this.testGetChanges(newC, oldC, mocks, true, changeSet.paths);
+         this.testGetChanges(oldC, newC, mocks, true, changeSet.paths);
       }
    }
 

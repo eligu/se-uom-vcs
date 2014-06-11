@@ -368,7 +368,7 @@ public class VCSResourceImp implements VCSResource {
 
             // Collecting diffs of this commit with the current parent
             final DiffCollector<DiffEntry> diffs = new DiffCollector<DiffEntry>(
-                  resource.commit.repo, thisCommit, parentCommit);
+                  resource.commit.repo, parentCommit, thisCommit);
             diffs.setPathFilters(PathFilter.create(resource.path));
 
             final Collection<DiffEntry> coll = diffs.collect();
