@@ -4,9 +4,10 @@
 package gr.uom.se.vcs;
 
 import gr.uom.se.vcs.exceptions.VCSRepositoryException;
+import gr.uom.se.vcs.walker.CommitVisitor;
 
 import java.util.Collection;
-
+import java.util.Set;
 
 /**
  * The main entry that gives access to a VCS repository.
@@ -57,7 +58,7 @@ public interface VCSRepository {
     * Get the local path where this repository is stored.
     * <p>
     * 
-    * @return
+    * @return the path from where this repository is loaded
     */
    String getLocalPath();
 
@@ -67,7 +68,7 @@ public interface VCSRepository {
     * 
     * Usually if this repository is cloned from a remote.
     * 
-    * @return
+    * @return the origin path from where this repository was cloned
     */
    String getRemotePath();
 
@@ -77,12 +78,18 @@ public interface VCSRepository {
     * 
     * Local path must be an empty directory if it exists. If local path doesn't
     * exist it will create it.
+    * 
+    * @throws VCSRepositoryException
+    *            when a problem occurs during clone
     */
    void cloneRemote() throws VCSRepositoryException;
 
    /**
     * Get from remote locations all updates if any.
     * <p>
+    * 
+    * @throws VCSRepositoryException
+    *            when a problem occurs during update
     */
    void update() throws VCSRepositoryException;
 
@@ -90,7 +97,9 @@ public interface VCSRepository {
     * Return all branches that this repository has.
     * <p>
     * 
-    * @return
+    * @return the branches of this repository
+    * @throws VCSRepositoryException
+    *            when a problem occurs while reading repository
     */
    Collection<VCSBranch> getBranches() throws VCSRepositoryException;
 
@@ -107,6 +116,7 @@ public interface VCSRepository {
     * 
     * @return the selected branch
     * @throws VCSRepositoryException
+    *            when a problem occurs while reading repository
     */
    VCSBranch getSelectedBranch() throws VCSRepositoryException;
 
@@ -120,6 +130,7 @@ public interface VCSRepository {
     * @param branch
     *           the branch to select
     * @throws VCSRepositoryException
+    *            when a problem occurs while selecting the branch
     */
    void selectBranch(VCSBranch branch) throws VCSRepositoryException;
 
@@ -127,7 +138,9 @@ public interface VCSRepository {
     * Return all tags this repository have.
     * <p>
     * 
-    * @return
+    * @return the tags of this repository
+    * @throws VCSRepositoryException
+    *            when a problem occurs while reading the repository
     */
    Collection<VCSTag> getTags() throws VCSRepositoryException;
 
@@ -138,6 +151,8 @@ public interface VCSRepository {
     * @param cid
     *           commit id
     * @return the resolved commit
+    * @throws VCSRepositoryException
+    *            if the commit can not be resolved
     */
    VCSCommit resolveCommit(String cid) throws VCSRepositoryException;
 
@@ -149,6 +164,7 @@ public interface VCSRepository {
     *           branch id
     * @return the resolved branch
     * @throws VCSRepositoryException
+    *            if the branch can not be resolved
     */
    VCSBranch resolveBranch(String bid) throws VCSRepositoryException;
 
@@ -160,6 +176,7 @@ public interface VCSRepository {
     *           the label of tag
     * @return the resolved tag
     * @throws VCSRepositoryException
+    *            if the tag can not be resolved
     */
    VCSTag resolveTag(String tag) throws VCSRepositoryException;
 
@@ -174,6 +191,8 @@ public interface VCSRepository {
     * 
     * @return the HEAD commit this repository points to
     * @throws VCSRepositoryException
+    *            if a branch is not selected or a problem occurs reading
+    *            repository
     */
    public VCSCommit getHead() throws VCSRepositoryException;
 
@@ -183,6 +202,7 @@ public interface VCSRepository {
     * 
     * @return the first commit that was made to repository
     * @throws VCSRepositoryException
+    *            if a branch is not yet selected or while reading the repository
     */
    public VCSCommit getFirst() throws VCSRepositoryException;
 
@@ -195,4 +215,26 @@ public interface VCSRepository {
     */
    public abstract void close();
 
+   /**
+    * Walk all commits at once.
+    * <p>
+    * In most cases walking a single commit is enough, however there are cases
+    * when the user wants to walk several commits at once. This is usually
+    * required when all commits of a repository are required and the user can
+    * walk all heads of the branches in the same time. If the implementation
+    * doesn't support branching, then there is no sense to walk all commits at
+    * once.
+    * 
+    * @param commits
+    *           the commits to walks (usually heads of branches)
+    * @param visitor
+    *           to visit each commit
+    * @param descending
+    *           true for walking from newer to older, false from older to newer.
+    * @throws VCSRepositoryException
+    *            if a problem occurs during walking
+    */
+   public void walkAll(Set<VCSCommit> commits,
+         CommitVisitor<VCSCommit> visitor, boolean descending)
+         throws VCSRepositoryException;
 }

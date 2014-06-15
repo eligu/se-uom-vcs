@@ -8,6 +8,7 @@ import gr.uom.se.vcs.VCSCommit;
 import gr.uom.se.vcs.VCSRepository;
 import gr.uom.se.vcs.VCSTag;
 import gr.uom.se.vcs.exceptions.VCSRepositoryException;
+import gr.uom.se.vcs.walker.CommitVisitor;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,6 +16,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
@@ -37,7 +39,6 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.TagOpt;
-
 
 /**
  * Implementation of {@link VCSRepository} based on JGit library.
@@ -580,5 +581,11 @@ public class VCSRepositoryImp implements VCSRepository {
       } else {
          this.selectedBranch = (VCSBranchImp) branch;
       }
+   }
+
+   public void walkAll(Set<VCSCommit> commits,
+         CommitVisitor<VCSCommit> visitor, boolean descending)
+         throws VCSRepositoryException {
+      VCSCommitImp.walkAll(repo, commits, visitor, descending);
    }
 }
