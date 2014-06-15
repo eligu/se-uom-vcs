@@ -19,26 +19,25 @@ import gr.uom.se.vcs.VCSCommit;
  * @version 0.0.1
  * @since 0.0.1
  */
-public class MergeFilter<T extends VCSCommit> implements VCSCommitFilter<T> {
+public class MergeFilter implements VCSCommitFilter {
 
    /**
     * The holder of this singleton instance.
     * <p>
     */
-   private static MergeFilter<?> INSTANCE = null;
+   private static MergeFilter INSTANCE = null;
 
    private MergeFilter() {}
 
    /**
     * @return the instance of this filter
     */
-   @SuppressWarnings("unchecked")
-   public static <T extends VCSCommit> MergeFilter<T> getInstance() {
+   public static MergeFilter getInstance() {
 
       if (INSTANCE == null) {
-         INSTANCE = new MergeFilter<T>();
+         INSTANCE = new MergeFilter();
       }
-      return (MergeFilter<T>) INSTANCE;
+      return (MergeFilter) INSTANCE;
    }
 
    /**
@@ -48,7 +47,7 @@ public class MergeFilter<T extends VCSCommit> implements VCSCommitFilter<T> {
     * true.
     */
    @Override
-   public boolean include(T entity) {
+   public boolean include(VCSCommit entity) {
       return entity.isMergeCommit();
    }
 

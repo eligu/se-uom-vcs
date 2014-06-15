@@ -20,7 +20,7 @@ import gr.uom.se.vcs.VCSCommit;
  * @since 0.0.1
  * @version 0.0.1
  */
-public class IterationFilter<T extends VCSCommit> implements VCSCommitFilter<T> {
+public class IterationFilter implements VCSCommitFilter {
 
    /**
     * The number of commits to skip.
@@ -67,7 +67,7 @@ public class IterationFilter<T extends VCSCommit> implements VCSCommitFilter<T> 
     * specified when this filter was created.
     */
    @Override
-   public boolean include(T entity) {
+   public boolean include(VCSCommit entity) {
 
       return (counter++ % block) == 0;
    }
@@ -88,7 +88,7 @@ public class IterationFilter<T extends VCSCommit> implements VCSCommitFilter<T> 
          return false;
       if (getClass() != obj.getClass())
          return false;
-      IterationFilter<?> other = (IterationFilter<?>) obj;
+      IterationFilter other = (IterationFilter) obj;
       if (block != other.block)
          return false;
       return true;

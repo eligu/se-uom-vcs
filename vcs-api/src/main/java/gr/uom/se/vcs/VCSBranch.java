@@ -146,6 +146,6 @@ public interface VCSBranch {
     * @throws VCSRepositoryException
     *            if a problem occurs during walk
     */
-   void walkCommits(CommitVisitor<VCSCommit> visitor, boolean descending)
+   void walkCommits(CommitVisitor visitor, boolean descending)
          throws VCSRepositoryException;
 }

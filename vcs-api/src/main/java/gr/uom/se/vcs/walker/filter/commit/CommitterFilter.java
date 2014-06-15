@@ -28,8 +28,8 @@ import java.util.regex.Pattern;
  * @since 0.0.1
  * @version 0.0.1
  */
-public class CommitterFilter<T extends VCSCommit> extends PatternsFilter<T>
-      implements VCSCommitFilter<T> {
+public class CommitterFilter extends PatternsFilter<VCSCommit>
+      implements VCSCommitFilter {
 
    /**
     * Creates a new instance based on the given committer patterns.
@@ -48,7 +48,7 @@ public class CommitterFilter<T extends VCSCommit> extends PatternsFilter<T>
     * committer patterns contained in this filter.
     */
    @Override
-   public boolean include(T entity) {
+   public boolean include(VCSCommit entity) {
 
       String committer = entity.getCommiter();
       if(super.checkCache(committer)) {

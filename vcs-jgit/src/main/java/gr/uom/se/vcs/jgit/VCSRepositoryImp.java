@@ -583,9 +583,8 @@ public class VCSRepositoryImp implements VCSRepository {
       }
    }
 
-   public void walkAll(Set<VCSCommit> commits,
-         CommitVisitor<VCSCommit> visitor, boolean descending)
-         throws VCSRepositoryException {
+   public void walkAll(Set<VCSCommit> commits, CommitVisitor visitor,
+         boolean descending) throws VCSRepositoryException {
       VCSCommitImp.walkAll(repo, commits, visitor, descending);
    }
 }

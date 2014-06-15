@@ -87,7 +87,7 @@ public class VCSBranchImp extends GitReference implements VCSBranch {
    public Collection<VCSCommit> getAllCommits() throws VCSRepositoryException {
 
       final List<VCSCommit> commits = new ArrayList<VCSCommit>();
-      this.walkCommits(new CommitVisitor<VCSCommit>() {
+      this.walkCommits(new CommitVisitor() {
 
          @Override
          public boolean visit(final VCSCommit entity) {
@@ -102,7 +102,7 @@ public class VCSBranchImp extends GitReference implements VCSBranch {
 
          @SuppressWarnings("unchecked")
          @Override
-         public VCSCommitFilter<VCSCommit> getFilter() {
+         public VCSCommitFilter getFilter() {
             return null;
          }
 
@@ -114,7 +114,7 @@ public class VCSBranchImp extends GitReference implements VCSBranch {
     * {@inheritDoc}
     */
    @Override
-   public void walkCommits(final CommitVisitor<VCSCommit> visitor,
+   public void walkCommits(final CommitVisitor visitor,
          boolean descending) throws VCSRepositoryException {
       this.getHead().walkCommits(visitor, descending);
    }

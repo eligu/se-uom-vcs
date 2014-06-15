@@ -3,8 +3,6 @@
  */
 package gr.uom.se.vcs.walker.filter.commit;
 
-import gr.uom.se.vcs.VCSCommit;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -32,9 +30,9 @@ public class CommitFilterUtility {
     * @return a new author filter
     * @see AuthorFilter
     */
-   public static <T extends VCSCommit> VCSCommitFilter<T> author(
+   public static VCSCommitFilter author(
          Set<String> patterns) {
-      return new AuthorFilter<T>(patterns);
+      return new AuthorFilter(patterns);
    }
 
    /**
@@ -46,7 +44,7 @@ public class CommitFilterUtility {
     * @return a new author filter
     * @see AuthorFilter
     */
-   public static <T extends VCSCommit> VCSCommitFilter<T> author(
+   public static VCSCommitFilter author(
          String... patterns) {
       Set<String> authors = new HashSet<String>();
       for (String a : patterns) {
@@ -64,9 +62,9 @@ public class CommitFilterUtility {
     * @return a new committer filter
     * @see CommitterFilter
     */
-   public static <T extends VCSCommit> VCSCommitFilter<T> committer(
+   public static VCSCommitFilter committer(
          Set<String> patterns) {
-      return new CommitterFilter<T>(patterns);
+      return new CommitterFilter(patterns);
    }
 
    /**
@@ -78,7 +76,7 @@ public class CommitFilterUtility {
     * @return a new committer filter
     * @see CommitterFilter
     */
-   public static <T extends VCSCommit> VCSCommitFilter<T> committer(
+   public static VCSCommitFilter committer(
          String... patterns) {
       Set<String> committers = new HashSet<String>();
       for (String a : patterns) {
@@ -98,9 +96,9 @@ public class CommitFilterUtility {
     * @return a commit date range filter
     * @see CommitDateRangeFilter
     */
-   public static <T extends VCSCommit> VCSCommitFilter<T> range(Date start,
+   public static VCSCommitFilter range(Date start,
          Date end) {
-      return new CommitDateRangeFilter<T>(start, end);
+      return new CommitDateRangeFilter(start, end);
    }
 
    /**
@@ -112,8 +110,8 @@ public class CommitFilterUtility {
     * @return a new max counter filter
     * @see MaxCounterFilter
     */
-   public static <T extends VCSCommit> VCSCommitFilter<T> counter(int count) {
-      return new MaxCounterFilter<T>(count);
+   public static VCSCommitFilter counter(int count) {
+      return new MaxCounterFilter(count);
    }
 
    /**
@@ -123,7 +121,7 @@ public class CommitFilterUtility {
     * @return a new merge filter
     * @see MergeFilter
     */
-   public static <T extends VCSCommit> VCSCommitFilter<T> merge() {
+   public static VCSCommitFilter merge() {
       return MergeFilter.getInstance();
    }
 
@@ -136,9 +134,9 @@ public class CommitFilterUtility {
     * @return a new message filter
     * @see MessageFilter
     */
-   public static <T extends VCSCommit> VCSCommitFilter<T> message(
+   public static VCSCommitFilter message(
          Set<String> patterns) {
-      return new MessageFilter<T>(patterns);
+      return new MessageFilter(patterns);
    }
 
    /**
@@ -150,7 +148,7 @@ public class CommitFilterUtility {
     * @return a new message filter
     * @see MessageFilter
     */
-   public static <T extends VCSCommit> VCSCommitFilter<T> message(
+   public static VCSCommitFilter message(
          String... patterns) {
       Set<String> pats = new HashSet<String>();
       for (String a : patterns) {
@@ -168,8 +166,8 @@ public class CommitFilterUtility {
     * @return a new skip filter
     * @see SkipFilter
     */
-   public static <T extends VCSCommit> VCSCommitFilter<T> skip(int skip) {
-      return new SkipFilter<T>(skip);
+   public static VCSCommitFilter skip(int skip) {
+      return new SkipFilter(skip);
    }
 
    /**
@@ -181,8 +179,8 @@ public class CommitFilterUtility {
     * @return a new skip filter
     * @see SkipFilter
     */
-   public static <T extends VCSCommit> VCSCommitFilter<T> iteration(int skip) {
-      return new IterationFilter<T>(skip);
+   public static VCSCommitFilter iteration(int skip) {
+      return new IterationFilter(skip);
    }
 
    /**
@@ -194,9 +192,9 @@ public class CommitFilterUtility {
     * @return a negated filter for the specified one
     * @see VCSCommitNotFilter
     */
-   public static <T extends VCSCommit> VCSCommitFilter<T> not(
-         VCSCommitFilter<T> filter) {
-      return new VCSCommitNotFilter<T>(filter);
+   public static VCSCommitFilter not(
+         VCSCommitFilter filter) {
+      return new VCSCommitNotFilter(filter);
    }
 
    /**
@@ -209,8 +207,7 @@ public class CommitFilterUtility {
     * @return an <code>OR</code> filter for the specified filters
     * @see VCSCommitOrFilter
     */
-   public static <T extends VCSCommit> VCSCommitFilter<T> or(
-         @SuppressWarnings("unchecked") VCSCommitFilter<T>... filters) {
+   public static VCSCommitFilter or(VCSCommitFilter... filters) {
 
       return or(Arrays.asList(filters));
    }
@@ -225,9 +222,9 @@ public class CommitFilterUtility {
     * @return an <code>OR</code> filter for the specified filters
     * @see VCSCommitOrFilter
     */
-   public static <T extends VCSCommit> VCSCommitFilter<T> or(
-         Collection<VCSCommitFilter<T>> filters) {
-      return new VCSCommitOrFilter<T>(filters);
+   public static VCSCommitFilter or(
+         Collection<VCSCommitFilter> filters) {
+      return new VCSCommitOrFilter(filters);
    }
 
    /**
@@ -240,8 +237,7 @@ public class CommitFilterUtility {
     * @return an <code>AND</code> filter for the specified filters
     * @see VCSCommitANDFilter
     */
-   public static <T extends VCSCommit> VCSCommitFilter<T> and(
-         @SuppressWarnings("unchecked") VCSCommitFilter<T>... filters) {
+   public static VCSCommitFilter and(VCSCommitFilter... filters) {
       return and(Arrays.asList(filters));
    }
 
@@ -255,9 +251,9 @@ public class CommitFilterUtility {
     * @return an <code>AND</code> filter for the specified filters
     * @see VCSCommitANDFilter
     */
-   public static <T extends VCSCommit> VCSCommitFilter<T> and(
-         Collection<VCSCommitFilter<T>> filters) {
-      return new VCSCommitAndFilter<T>(filters);
+   public static VCSCommitFilter and(
+         Collection<VCSCommitFilter> filters) {
+      return new VCSCommitAndFilter(filters);
    }
 
 }

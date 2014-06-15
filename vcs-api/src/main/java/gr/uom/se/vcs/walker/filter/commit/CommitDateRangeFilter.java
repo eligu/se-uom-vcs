@@ -28,8 +28,8 @@ import java.util.Date;
  * @version 0.0.1
  * @since 0.0.1
  */
-public class CommitDateRangeFilter<T extends VCSCommit> implements
-      VCSCommitFilter<T> {
+public class CommitDateRangeFilter implements
+      VCSCommitFilter {
 
    /**
     * Include all commits that are after this date including this one.
@@ -94,7 +94,7 @@ public class CommitDateRangeFilter<T extends VCSCommit> implements
    }
 
    @Override
-   public boolean include(T entity) {
+   public boolean include(VCSCommit entity) {
 
       boolean include = false;
       Date cDate = entity.getCommitDate();
@@ -126,7 +126,7 @@ public class CommitDateRangeFilter<T extends VCSCommit> implements
          return false;
       if (getClass() != obj.getClass())
          return false;
-      CommitDateRangeFilter<?> other = (CommitDateRangeFilter<?>) obj;
+      CommitDateRangeFilter other = (CommitDateRangeFilter) obj;
       if (end == null) {
          if (other.end != null)
             return false;

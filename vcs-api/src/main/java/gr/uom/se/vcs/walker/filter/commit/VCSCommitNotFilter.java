@@ -13,14 +13,14 @@ import gr.uom.se.vcs.VCSCommit;
  * @version 0.0.1
  * @since 0.0.1
  */
-public class VCSCommitNotFilter<T extends VCSCommit> implements
-      VCSCommitFilter<T> {
+public class VCSCommitNotFilter implements
+      VCSCommitFilter {
 
    /**
     * The filter to negate its result.
     * <p>
     */
-   private final VCSCommitFilter<T> filter;
+   private final VCSCommitFilter filter;
 
    /**
     * Create a new filter that will negate the include result of the given
@@ -30,7 +30,7 @@ public class VCSCommitNotFilter<T extends VCSCommit> implements
     * @param filter
     *           the include result of which will be negated
     */
-   public VCSCommitNotFilter(VCSCommitFilter<T> filter) {
+   public VCSCommitNotFilter(VCSCommitFilter filter) {
       if (filter == null) {
          throw new IllegalArgumentException("filter must not be null");
       }
@@ -40,7 +40,7 @@ public class VCSCommitNotFilter<T extends VCSCommit> implements
    /**
     * @return the filter this will revert
     */
-   public VCSCommitFilter<T> getFilter() {
+   public VCSCommitFilter getFilter() {
       return this.filter;
    }
 
@@ -49,7 +49,7 @@ public class VCSCommitNotFilter<T extends VCSCommit> implements
     * returned value.
     */
    @Override
-   public boolean include(T entity) {
+   public boolean include(VCSCommit entity) {
       return !filter.include(entity);
    }
 
@@ -69,7 +69,7 @@ public class VCSCommitNotFilter<T extends VCSCommit> implements
          return false;
       if (getClass() != obj.getClass())
          return false;
-      VCSCommitNotFilter<?> other = (VCSCommitNotFilter<?>) obj;
+      VCSCommitNotFilter other = (VCSCommitNotFilter) obj;
       if (filter == null) {
          if (other.filter != null)
             return false;

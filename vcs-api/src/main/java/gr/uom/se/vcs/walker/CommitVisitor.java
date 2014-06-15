@@ -62,7 +62,7 @@ import gr.uom.se.vcs.walker.filter.resource.VCSResourceFilter;
  * @since 0.0.1
  * @see VCSCommit#walkCommits(CommitVisitor, boolean)
  */
-public interface CommitVisitor<T extends VCSCommit> extends FilterVisitor<T> {
+public interface CommitVisitor extends FilterVisitor<VCSCommit> {
 
    /**
     * Return the resource filter.
@@ -94,5 +94,5 @@ public interface CommitVisitor<T extends VCSCommit> extends FilterVisitor<T> {
     * @see VCSCommitFilter
     */
    @SuppressWarnings("unchecked")
-   public VCSCommitFilter<T> getFilter();
+   public VCSCommitFilter getFilter();
 }

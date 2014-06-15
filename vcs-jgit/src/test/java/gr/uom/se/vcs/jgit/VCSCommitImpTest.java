@@ -561,7 +561,7 @@ public class VCSCommitImpTest extends VCSTest {
          assertEquals(mock.id, commit.getID());
 
          final List<VCSCommit> commits = new ArrayList<VCSCommit>();
-         commit.walkCommits(new CommitVisitor<VCSCommit>() {
+         commit.walkCommits(new CommitVisitor() {
 
             @Override
             public boolean visit(final VCSCommit entity) {
@@ -576,7 +576,7 @@ public class VCSCommitImpTest extends VCSTest {
 
             @SuppressWarnings("unchecked")
             @Override
-            public VCSCommitFilter<VCSCommit> getFilter() {
+            public VCSCommitFilter getFilter() {
                return null;
             }
          }, true);
@@ -617,7 +617,7 @@ public class VCSCommitImpTest extends VCSTest {
 
          assertEquals(mock.id, commit.getID());
 
-         commit.walkCommits(new CommitVisitor<VCSCommit>() {
+         commit.walkCommits(new CommitVisitor() {
 
             @Override
             public boolean visit(final VCSCommit entity) {
@@ -637,7 +637,7 @@ public class VCSCommitImpTest extends VCSTest {
 
             @SuppressWarnings("unchecked")
             @Override
-            public VCSCommitFilter<VCSCommit> getFilter() {
+            public VCSCommitFilter getFilter() {
                return null;
             }
          }, true);

@@ -19,14 +19,14 @@ import java.util.Set;
  * @version 0.0.1
  * @since 0.0.1
  */
-public class VCSCommitOrFilter<T extends VCSCommit> implements
-      VCSCommitFilter<T> {
+public class VCSCommitOrFilter implements
+      VCSCommitFilter {
 
    /**
     * The set of filters that will be applied OR.
     * <p>
     */
-   private final Set<VCSCommitFilter<T>> filters;
+   private final Set<VCSCommitFilter> filters;
 
    /**
     * Create a new filter that will check if any of the given filters returns
@@ -37,7 +37,7 @@ public class VCSCommitOrFilter<T extends VCSCommit> implements
     *           the filters to check if any of the filters returns true. Must
     *           not be null and must contain at least two filters.
     */
-   public VCSCommitOrFilter(Collection<VCSCommitFilter<T>> filters) {
+   public VCSCommitOrFilter(Collection<VCSCommitFilter> filters) {
       if (filters == null) {
          throw new IllegalArgumentException("filters must not be null");
       }
@@ -45,9 +45,9 @@ public class VCSCommitOrFilter<T extends VCSCommit> implements
          throw new IllegalArgumentException("filters must not be empty");
       }
 
-      this.filters = new LinkedHashSet<VCSCommitFilter<T>>();
+      this.filters = new LinkedHashSet<VCSCommitFilter>();
 
-      for (VCSCommitFilter<T> f : filters) {
+      for (VCSCommitFilter f : filters) {
          if (f == null) {
             throw new IllegalArgumentException("filters must not contain null");
          }
@@ -70,12 +70,12 @@ public class VCSCommitOrFilter<T extends VCSCommit> implements
     * @param filter
     *           to extract any nested OR.
     */
-   private void extract(VCSCommitFilter<T> filter) {
+   private void extract(VCSCommitFilter filter) {
       // If the specified filter is an OR filter, then it will
       // extract all the filters contained in this filter
       if (this.getClass().isAssignableFrom(filter.getClass())) {
-         VCSCommitOrFilter<T> orFilter = ((VCSCommitOrFilter<T>) filter);
-         for (VCSCommitFilter<T> f : orFilter.filters) {
+         VCSCommitOrFilter orFilter = ((VCSCommitOrFilter) filter);
+         for (VCSCommitFilter f : orFilter.filters) {
             extract(f);
          }
       } else {
@@ -86,7 +86,7 @@ public class VCSCommitOrFilter<T extends VCSCommit> implements
    /**
     * @return an unmodifiable set of filters of this OR operator
     */
-   public Set<VCSCommitFilter<T>> getFilters() {
+   public Set<VCSCommitFilter> getFilters() {
       return Collections.unmodifiableSet(this.filters);
    }
 
@@ -97,9 +97,9 @@ public class VCSCommitOrFilter<T extends VCSCommit> implements
     * true.
     */
    @Override
-   public boolean include(T entity) {
+   public boolean include(VCSCommit entity) {
 
-      for (VCSCommitFilter<T> f : filters) {
+      for (VCSCommitFilter f : filters) {
          if (f.include(entity)) {
             return true;
          }
@@ -123,7 +123,7 @@ public class VCSCommitOrFilter<T extends VCSCommit> implements
          return false;
       if (getClass() != obj.getClass())
          return false;
-      VCSCommitOrFilter<?> other = (VCSCommitOrFilter<?>) obj;
+      VCSCommitOrFilter other = (VCSCommitOrFilter) obj;
       if (filters == null) {
          if (other.filters != null)
             return false;

@@ -19,14 +19,14 @@ import java.util.Set;
  * @version 0.0.1
  * @since 0.0.1
  */
-public class VCSCommitAndFilter<T extends VCSCommit> implements
-      VCSCommitFilter<T> {
+public class VCSCommitAndFilter implements
+      VCSCommitFilter {
 
    /**
     * The set of filters that will be applied AND.
     * <p>
     */
-   private final Set<VCSCommitFilter<T>> filters;
+   private final Set<VCSCommitFilter> filters;
 
    /**
     * Create a new filter that will check if all of the given filters returns
@@ -38,15 +38,15 @@ public class VCSCommitAndFilter<T extends VCSCommit> implements
     *           not be null not or empty or contain a null filter. Must contain
     *           at least 2 filters.
     */
-   public VCSCommitAndFilter(Collection<VCSCommitFilter<T>> filters) {
+   public VCSCommitAndFilter(Collection<VCSCommitFilter> filters) {
       if (filters == null) {
          throw new IllegalArgumentException("filters must not be null");
       }
       if (filters.isEmpty()) {
          throw new IllegalArgumentException("filters must not be empty");
       }
-      this.filters = new LinkedHashSet<VCSCommitFilter<T>>();
-      for (VCSCommitFilter<T> f : filters) {
+      this.filters = new LinkedHashSet<VCSCommitFilter>();
+      for (VCSCommitFilter f : filters) {
          if (f == null) {
             throw new IllegalArgumentException("filters must not contain null");
          }
@@ -70,14 +70,14 @@ public class VCSCommitAndFilter<T extends VCSCommit> implements
     * @param filter
     *           to extract any nested AND.
     */
-   private void extract(VCSCommitFilter<T> filter) {
+   private void extract(VCSCommitFilter filter) {
       // If the given filter is a an AND filter (same class as this)
       // extract each filter that it contains.
       if (this.getClass().isAssignableFrom(filter.getClass())) {
 
-         VCSCommitAndFilter<T> andFilter = ((VCSCommitAndFilter<T>) filter);
+         VCSCommitAndFilter andFilter = ((VCSCommitAndFilter) filter);
 
-         for (VCSCommitFilter<T> f : andFilter.filters) {
+         for (VCSCommitFilter f : andFilter.filters) {
             extract(f);
          }
       } else {
@@ -88,7 +88,7 @@ public class VCSCommitAndFilter<T extends VCSCommit> implements
    /**
     * @return an unmodifiable set of filters of this AND operator
     */
-   public Set<VCSCommitFilter<T>> getFilters() {
+   public Set<VCSCommitFilter> getFilters() {
       return Collections.unmodifiableSet(this.filters);
    }
 
@@ -100,9 +100,9 @@ public class VCSCommitAndFilter<T extends VCSCommit> implements
     * <p>
     */
    @Override
-   public boolean include(T entity) {
+   public boolean include(VCSCommit entity) {
 
-      for (VCSCommitFilter<T> f : filters) {
+      for (VCSCommitFilter f : filters) {
          if (!f.include(entity)) {
             return false;
          }
@@ -126,7 +126,7 @@ public class VCSCommitAndFilter<T extends VCSCommit> implements
          return false;
       if (getClass() != obj.getClass())
          return false;
-      VCSCommitAndFilter<?> other = (VCSCommitAndFilter<?>) obj;
+      VCSCommitAndFilter other = (VCSCommitAndFilter) obj;
       if (filters == null) {
          if (other.filters != null)
             return false;

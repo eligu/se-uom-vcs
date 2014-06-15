@@ -441,6 +441,6 @@ public interface VCSCommit {
     * @throws VCSRepositoryException
     *            if a problem occurs during walk
     */
-   void walkCommits(final CommitVisitor<VCSCommit> visitor, boolean descending)
+   void walkCommits(final CommitVisitor visitor, boolean descending)
          throws VCSRepositoryException;
 }

@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since 0.0.1
  * @version 0.0.1
  */
-public class SkipFilter<T extends VCSCommit> implements VCSCommitFilter<T> {
+public class SkipFilter implements VCSCommitFilter {
 
    /**
     * The number of commits to skip.
@@ -57,7 +57,7 @@ public class SkipFilter<T extends VCSCommit> implements VCSCommitFilter<T> {
     * specified when this filter was created.
     */
    @Override
-   public boolean include(T entity) {
+   public boolean include(VCSCommit entity) {
 
       return counter.getAndAdd(1) > block;
    }
@@ -78,7 +78,7 @@ public class SkipFilter<T extends VCSCommit> implements VCSCommitFilter<T> {
          return false;
       if (getClass() != obj.getClass())
          return false;
-      SkipFilter<?> other = (SkipFilter<?>) obj;
+      SkipFilter other = (SkipFilter) obj;
       if (block != other.block)
          return false;
       return true;

@@ -28,8 +28,8 @@ import java.util.regex.Pattern;
  * @since 0.0.1
  * @version 0.0.1
  */
-public class AuthorFilter<T extends VCSCommit> extends PatternsFilter<T>
-      implements VCSCommitFilter<T> {
+public class AuthorFilter extends PatternsFilter<VCSCommit>
+      implements VCSCommitFilter {
 
    /**
     * Create a new instance based on the given author patterns.
@@ -48,7 +48,7 @@ public class AuthorFilter<T extends VCSCommit> extends PatternsFilter<T>
     * patterns contained in this filter.
     */
    @Override
-   public boolean include(T entity) {
+   public boolean include(VCSCommit entity) {
       
       String author = entity.getAuthor();
       if(super.checkCache(author)) {

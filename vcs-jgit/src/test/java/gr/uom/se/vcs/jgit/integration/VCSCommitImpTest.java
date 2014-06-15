@@ -13,7 +13,6 @@ import static gr.uom.se.vcs.walker.filter.commit.CommitFilterUtility.skip;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
 import gr.uom.se.vcs.VCSCommit;
 import gr.uom.se.vcs.VCSResource;
 import gr.uom.se.vcs.exceptions.VCSRepositoryException;
@@ -113,7 +112,7 @@ public class VCSCommitImpTest extends MainSuite {
       final List<VCSCommit> commits = new ArrayList<VCSCommit>();
       
       // Walking commits with now filter
-      commit.walkCommits(new CommitVisitor<VCSCommit>() {
+      commit.walkCommits(new CommitVisitor() {
 
          @Override
          public boolean visit(VCSCommit entity) {
@@ -129,7 +128,7 @@ public class VCSCommitImpTest extends MainSuite {
          @SuppressWarnings("unchecked")
          @Override
          public
-         VCSCommitFilter<VCSCommit> getFilter() {
+         VCSCommitFilter getFilter() {
             return null;
          }
          
@@ -156,8 +155,7 @@ public class VCSCommitImpTest extends MainSuite {
       Calendar end = new GregorianCalendar(2014, 3, 1);
       
       // Will construct a filter
-      @SuppressWarnings("unchecked")
-      final VCSCommitFilter<VCSCommit> commitFilter = and(
+      final VCSCommitFilter commitFilter = and(
              message("((\\W|^)fixed(\\W|$)|(\\W|^)fix(\\W|$)|(\\W|^)fixes(\\W|$))")
             ,author("fernandezpablo85")
             ,range(start.getTime(), end.getTime())
@@ -167,7 +165,7 @@ public class VCSCommitImpTest extends MainSuite {
             );
       
       // Walking commits with now filter
-      commit.walkCommits(new CommitVisitor<VCSCommit>() {
+      commit.walkCommits(new CommitVisitor() {
 
          @Override
          public boolean visit(VCSCommit entity) {
@@ -183,7 +181,7 @@ public class VCSCommitImpTest extends MainSuite {
          @SuppressWarnings("unchecked")
          @Override
          public
-         VCSCommitFilter<VCSCommit> getFilter() {
+         VCSCommitFilter getFilter() {
             return commitFilter;
          }
          

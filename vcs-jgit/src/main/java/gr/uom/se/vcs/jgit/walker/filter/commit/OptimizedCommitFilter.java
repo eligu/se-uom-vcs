@@ -24,8 +24,8 @@ import org.eclipse.jgit.revwalk.filter.RevFilter;
  * @since 0.0.1
  * @param <T>
  */
-public class OptimizedCommitFilter<T extends VCSCommit> extends
-      OptimizedFilter<T> implements VCSCommitFilter<T> {
+public class OptimizedCommitFilter extends
+      OptimizedFilter<VCSCommit> implements VCSCommitFilter {
 
    /**
     * The current JGit filter that corresponds to the commit filter.

@@ -235,6 +235,6 @@ public interface VCSRepository {
     *            if a problem occurs during walking
     */
    public void walkAll(Set<VCSCommit> commits,
-         CommitVisitor<VCSCommit> visitor, boolean descending)
+         CommitVisitor visitor, boolean descending)
          throws VCSRepositoryException;
 }

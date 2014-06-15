@@ -26,8 +26,8 @@ import java.util.regex.Pattern;
  * @since 0.0.1
  * @version 0.0.1
  */
-public class MessageFilter<T extends VCSCommit> extends PatternsFilter<T>
-      implements VCSCommitFilter<T> {
+public class MessageFilter extends PatternsFilter<VCSCommit>
+      implements VCSCommitFilter {
 
    /**
     * Create a new instance based on given patterns.
@@ -48,7 +48,7 @@ public class MessageFilter<T extends VCSCommit> extends PatternsFilter<T>
     * from the others and that would be very inefficient. 
     */
    @Override
-   public boolean include(T entity) {
+   public boolean include(VCSCommit entity) {
 
       String msg = entity.getMessage();
       for (Pattern p : patterns) {

@@ -19,5 +19,5 @@ import gr.uom.se.vcs.walker.filter.VCSFilter;
  * @since 0.0.1
  * @version 0.0.1
  */
-public interface VCSCommitFilter<T extends VCSCommit> extends VCSFilter<T> {
+public interface VCSCommitFilter extends VCSFilter<VCSCommit> {
 }

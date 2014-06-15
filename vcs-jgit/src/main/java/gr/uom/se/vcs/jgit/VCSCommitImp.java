@@ -1218,100 +1218,70 @@ public class VCSCommitImp implements VCSCommit {
     * 
     */
    @Override
-   public void walkCommits(final CommitVisitor<VCSCommit> visitor,
-         boolean descending) throws VCSRepositoryException {
+   public void walkCommits(final CommitVisitor visitor, boolean descending)
+         throws VCSRepositoryException {
 
       /**
-      ArgsCheck.notNull("visitor", visitor);
-
-      // We have to parse all commits within repository
-      // For each commit we have to determine if it is reachable from
-      // this commit
-
-      // Start with a RevWalk
-      final RevWalk walk = new RevWalk(this.repo);
-      final RevCommit bHEAD;
-
-      try {
-
-         // Resolve this commit
-         final ObjectId oid = this.commit.getId();
-         bHEAD = walk.parseCommit(oid);
-
-         // Start the walk from the head
-         walk.markStart(bHEAD);
-
-         // Trying to set tree filters if possible
-         // First we must check if we can parse this filter and
-         // convert it to a JGit tree filter. If so we set
-         // the provided filter to null so it will not be used,
-         // but applied directly to walker
-         VCSResourceFilter<VCSResource> resourceFilter = visitor
-               .getResourceFilter();
-         if (resourceFilter != null) {
-            OptimizedResourceFilter<VCSResource> of = ResourceFilter.parse(
-                  resourceFilter, null);
-            if (of != null) {
-               walk.setTreeFilter(of.getCurrent());
-            } else {
-               throw new IllegalStateException(
-                     "The current resource filter can not be parsed. Try using a simple one, with the default filters at "
-                           + VCSResourceFilter.class.getPackage().getName());
-            }
-         }
-
-         // We check if we can parse and convert the provided commit filter
-         // to a JGit commit filter, if so we apply this filter directly to
-         // walker, and set the provided filter to null so it will not be used,
-         // otherwise use manually the provided filter.
-         VCSCommitFilter<VCSCommit> commitFilter = visitor.getFilter();
-         if (commitFilter != null) {
-            OptimizedCommitFilter<VCSCommit> of = CommitFilter.parse(
-                  commitFilter, null);
-            if (of != null) {
-               walk.setRevFilter(of.getCurrent());
-               commitFilter = null;
-            }
-         }
-
-         // Set the order of commits
-         if (descending) {
-            walk.sort(RevSort.COMMIT_TIME_DESC, true);
-            walk.sort(RevSort.TOPO, true);
-            walk.sort(RevSort.REVERSE, false);
-         } else {
-            walk.sort(RevSort.REVERSE, true);
-            walk.sort(RevSort.COMMIT_TIME_DESC, false);
-         }
-
-         // All commits that are ancestors of the current HEAD
-         // will be accessible with walk.next(), so collect the commits until
-         // there is no other commit to walk
-         RevCommit current = null;
-         while ((current = walk.next()) != null) {
-            VCSCommit commit = new VCSCommitImp(current, this.repo);
-            if (commitFilter != null) {
-               if (commitFilter.include(commit)) {
-                  if (!visitor.visit(commit)) {
-                     return;
-                  }
-               }
-            } else if (!visitor.visit(commit)) {
-               return;
-            }
-         }
-
-      } catch (final IOException e) {
-         throw new VCSRepositoryException(e);
-      } finally {
-         walk.release();
-      }
-      */
-      walkAll(repo, new HashSet<VCSCommit>(Arrays.asList(this)), visitor, descending);
+       * ArgsCheck.notNull("visitor", visitor);
+       * 
+       * // We have to parse all commits within repository // For each commit we
+       * have to determine if it is reachable from // this commit
+       * 
+       * // Start with a RevWalk final RevWalk walk = new RevWalk(this.repo);
+       * final RevCommit bHEAD;
+       * 
+       * try {
+       * 
+       * // Resolve this commit final ObjectId oid = this.commit.getId(); bHEAD
+       * = walk.parseCommit(oid);
+       * 
+       * // Start the walk from the head walk.markStart(bHEAD);
+       * 
+       * // Trying to set tree filters if possible // First we must check if we
+       * can parse this filter and // convert it to a JGit tree filter. If so we
+       * set // the provided filter to null so it will not be used, // but
+       * applied directly to walker VCSResourceFilter<VCSResource>
+       * resourceFilter = visitor .getResourceFilter(); if (resourceFilter !=
+       * null) { OptimizedResourceFilter<VCSResource> of = ResourceFilter.parse(
+       * resourceFilter, null); if (of != null) {
+       * walk.setTreeFilter(of.getCurrent()); } else { throw new
+       * IllegalStateException(
+       * "The current resource filter can not be parsed. Try using a simple one, with the default filters at "
+       * + VCSResourceFilter.class.getPackage().getName()); } }
+       * 
+       * // We check if we can parse and convert the provided commit filter //
+       * to a JGit commit filter, if so we apply this filter directly to //
+       * walker, and set the provided filter to null so it will not be used, //
+       * otherwise use manually the provided filter. VCSCommitFilter<VCSCommit>
+       * commitFilter = visitor.getFilter(); if (commitFilter != null) {
+       * OptimizedCommitFilter<VCSCommit> of = CommitFilter.parse( commitFilter,
+       * null); if (of != null) { walk.setRevFilter(of.getCurrent());
+       * commitFilter = null; } }
+       * 
+       * // Set the order of commits if (descending) {
+       * walk.sort(RevSort.COMMIT_TIME_DESC, true); walk.sort(RevSort.TOPO,
+       * true); walk.sort(RevSort.REVERSE, false); } else {
+       * walk.sort(RevSort.REVERSE, true); walk.sort(RevSort.COMMIT_TIME_DESC,
+       * false); }
+       * 
+       * // All commits that are ancestors of the current HEAD // will be
+       * accessible with walk.next(), so collect the commits until // there is
+       * no other commit to walk RevCommit current = null; while ((current =
+       * walk.next()) != null) { VCSCommit commit = new VCSCommitImp(current,
+       * this.repo); if (commitFilter != null) { if
+       * (commitFilter.include(commit)) { if (!visitor.visit(commit)) { return;
+       * } } } else if (!visitor.visit(commit)) { return; } }
+       * 
+       * } catch (final IOException e) { throw new VCSRepositoryException(e); }
+       * finally { walk.release(); }
+       */
+      walkAll(repo, new HashSet<VCSCommit>(Arrays.asList(this)), visitor,
+            descending);
    }
 
    public static void walkAll(Repository repo, Set<VCSCommit> commits,
-         CommitVisitor<VCSCommit> visitor, boolean descending) throws VCSRepositoryException {
+         CommitVisitor visitor, boolean descending)
+         throws VCSRepositoryException {
 
       ArgsCheck.notNull("visitor", visitor);
       ArgsCheck.notNull("repo", repo);
@@ -1323,12 +1293,12 @@ public class VCSCommitImp implements VCSCommit {
 
       // Start with a RevWalk
       final RevWalk walk = new RevWalk(repo);
-      
+
       try {
 
          Set<RevCommit> revs = new LinkedHashSet<RevCommit>();
          for (VCSCommit c : commits) {
-            
+
             if (!(c instanceof VCSCommit)) {
                throw new IllegalArgumentException(
                      "provided commit is uknown, required type is "
@@ -1367,10 +1337,9 @@ public class VCSCommitImp implements VCSCommit {
          // to a JGit commit filter, if so we apply this filter directly to
          // walker, and set the provided filter to null so it will not be used,
          // otherwise use manually the provided filter.
-         VCSCommitFilter<VCSCommit> commitFilter = visitor.getFilter();
+         VCSCommitFilter commitFilter = visitor.getFilter();
          if (commitFilter != null) {
-            OptimizedCommitFilter<VCSCommit> of = CommitFilter.parse(
-                  commitFilter, null);
+            OptimizedCommitFilter of = CommitFilter.parse(commitFilter, null);
             if (of != null) {
                walk.setRevFilter(of.getCurrent());
                commitFilter = null;

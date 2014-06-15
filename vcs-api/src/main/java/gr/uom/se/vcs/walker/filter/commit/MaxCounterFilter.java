@@ -25,8 +25,8 @@ import gr.uom.se.vcs.VCSCommit;
  * @version 0.0.1
  * @since 0.0.1
  */
-public class MaxCounterFilter<T extends VCSCommit> implements
-      VCSCommitFilter<T> {
+public class MaxCounterFilter implements
+      VCSCommitFilter {
 
    /**
     * The size of commits chunk.
@@ -66,7 +66,7 @@ public class MaxCounterFilter<T extends VCSCommit> implements
     * <p>
     */
    @Override
-   public boolean include(T entity) {
+   public boolean include(VCSCommit entity) {
 
       return counter++ < size;
    }
@@ -87,7 +87,7 @@ public class MaxCounterFilter<T extends VCSCommit> implements
          return false;
       if (getClass() != obj.getClass())
          return false;
-      MaxCounterFilter<?> other = (MaxCounterFilter<?>) obj;
+      MaxCounterFilter other = (MaxCounterFilter) obj;
       if (size != other.size)
          return false;
       return true;
