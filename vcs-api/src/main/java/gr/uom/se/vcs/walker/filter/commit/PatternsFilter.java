@@ -157,7 +157,7 @@ public abstract class PatternsFilter<T> implements VCSFilter<T> {
          // At this point we are sure that there is enough memory to put
          // the new value
          cache.put(value, matching);
-         cacheSize += value.length();
+         cacheSize += length;
       }
    }
 

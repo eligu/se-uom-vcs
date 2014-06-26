@@ -71,9 +71,12 @@ public class CommitEdits implements Comparable<CommitEdits> {
       if (oldC.equals(newC)) {
          throw new IllegalArgumentException("oldC must not be equal to newC");
       }
+      // TODO must check for consistency
+      /*
       if (oldC.getCommitDate().after(newC.getCommitDate())) {
          throw new IllegalArgumentException("oldC must be before newC");
       }
+      */
 
       this.edits = new ArrayList<VCSFileDiff<?>>();
       if (changes != null) {

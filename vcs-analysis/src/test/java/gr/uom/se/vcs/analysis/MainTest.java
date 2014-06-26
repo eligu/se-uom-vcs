@@ -3,6 +3,7 @@ package gr.uom.se.vcs.analysis;
 import gr.uom.se.util.pattern.processor.AbstractProcessorQueue;
 import gr.uom.se.util.pattern.processor.BlockingQueue;
 import gr.uom.se.util.pattern.processor.Processor;
+import gr.uom.se.util.pattern.processor.ProcessorQueue;
 import gr.uom.se.util.pattern.processor.SerialQueue;
 import gr.uom.se.util.pattern.processor.ThreadQueue;
 import gr.uom.se.vcs.VCSChange;
@@ -33,6 +34,7 @@ import gr.uom.se.vcs.walker.filter.resource.VCSResourceFilter;
 import java.io.File;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -56,7 +58,7 @@ public class MainTest {
     * Path to a small 'remote' git repository.
     * <p>
     */
-   public static final String REMOTE_GIT_PATH = "https://github.com/Netflix/RxJava.git";
+   public static final String REMOTE_GIT_PATH = "https://github.com/Netflix/RxJava";
 
    /**
     * The repository under test.
@@ -64,7 +66,72 @@ public class MainTest {
     */
    public static VCSRepository repo = null;
 
-   public MainTest() throws VCSRepositoryException {
+   public MainTest() throws VCSRepositoryException, InterruptedException {
+   }
+   
+   /**
+    * A simple use case, where a processor is constructed on the fly
+    * and count prime numbers of each number within a region.
+    * 
+    * @throws InterruptedException
+    */
+   static void runPrimes() throws InterruptedException {
+      long st = System.currentTimeMillis();
+      ProcessorQueue<Integer> squeue = new ThreadQueue<Integer>(8, null);
+      final Map<Integer, AtomicInteger> primes = 
+            new HashMap<Integer, AtomicInteger>();
+      int start = 100000;
+      int end = 100009;
+      // Init map
+      for(int i = start; i < end; i++) {
+         primes.put(i, new AtomicInteger(0));
+      }
+      Processor<Integer> primeCounter = new Processor<Integer> () {
+
+         @Override
+         public boolean process(Integer entity) {
+            // 1 is prime for sure
+            primes.get(entity).incrementAndGet();
+            for(int i = entity; i > 2; i--) {
+               if(i % 2 == 0) {
+                  continue;
+               }
+               boolean prime = true;
+               for(int j = i - 1; j > 2; j--) {
+                   if(i % j == 0) {
+                      prime = false;
+                      break;
+                   }
+               }
+               if(prime) 
+                  primes.get(entity).incrementAndGet();
+            }
+            return true;
+         }
+
+         @Override
+         public void stop() throws InterruptedException {}
+
+         @Override
+         public void start() {}
+
+         @Override
+         public String getId() {
+            return "PRIME_GEN";
+         }
+
+         @Override
+         public boolean isStarted() { return false; }
+         
+      };
+     
+      squeue.add(primeCounter);
+      squeue.start();
+      for(int i = start; i < end; i++) {
+         squeue.process(i);
+      }
+      squeue.stop();
+      System.out.println(System.currentTimeMillis() - st);
    }
 
    public static void main(String[] args) throws VCSRepositoryException,
@@ -75,12 +142,13 @@ public class MainTest {
       // Test 1 uses available processors to compute a part of its data
       // and then to compute lines/files added/remove and so on, it does
       // this manually by the data that VersionChangeProcessor return.
-      test1();
+      //test1();
       // Test 2 compute all metrics using only processors, he avoids computing
       // directly its metrics from the data retained from VersionChangeProcessor
       // but uses some 'special' processors that can be inserted into version
       // change processor. Thus it will perform only one pass for all metrics
       test2();
+      //runPrimes();
    }
 
    public static void test1() throws InterruptedException,
@@ -359,7 +427,7 @@ public class MainTest {
       // Create a processor to count the deleted lines per version
       final KeyValueProcessor<CommitEdits, String, Integer> oldLinesPerVersion = getVersionLinesCounter(
             versionProvider, false, null, null, (VCSChange.Type[]) null);
-
+      
       // Create a processor to count the commits within a version that
       // add/modify a .java test
       // file
@@ -383,25 +451,29 @@ public class MainTest {
             javaNotTestFilter,
             EnumSet.of(VCSChange.Type.ADDED, VCSChange.Type.MODIFIED), null,
             javaTestFilter);
-
+   
       // Create a serial processor to add all KeyValue processors (they will be
       // called
       // by a change processor, because each of them deals with a CommitEdits
       // object
       // This is the first part of processors, that do not require I/O operations.
       // They will be run in parallel (2 threads mostly)
-      ThreadQueue<CommitEdits> nonIOOperations = getBlockingParallelProcessor(2, 100,
-            filesAddedPerVersion, filesDeletedPerVersion,
-            filesModifiedPerVersion, testFilesPerCommitsInVersion,
-            javaFilesAddedNoTestInVersion, javaFilesAddedWithTestInVersion);
+      
+      ThreadQueue<CommitEdits> nonIOOperations = getBlockingParallelProcessor(2, 1000,
+            filesAddedPerVersion, 
+            filesDeletedPerVersion,
+            filesModifiedPerVersion 
+            , testFilesPerCommitsInVersion,
+            javaFilesAddedNoTestInVersion, javaFilesAddedWithTestInVersion
+            );
 
       // Previously we did not entered the newLines and oldLines processor in the same
       // queue, because it was serial, and these two operators requires to read from disks
       // the files that are deleted/added in order to count their lines, and this would
       // block other processors to process. We are separating non I/O processors from
       // I/O processors.
-      ThreadQueue<CommitEdits> iOOperations = getBlockingParallelProcessor(
-            2, 100, newLinesPerVersion, oldLinesPerVersion);
+      ThreadQueue<CommitEdits> iOOperations = getBlockingParallelProcessor(2, 1000,
+            newLinesPerVersion, oldLinesPerVersion);
       // Now we have the serial processor to run these two blocks of processors
       // and pass it to the change processor.
       Processor<CommitEdits> editsProcessor = getSerialProcessor(nonIOOperations, iOOperations);
@@ -526,12 +598,11 @@ public class MainTest {
       Map<String, Set<String>> authorsPerVersion = authorsPerV.getResult();
       Map<String, Set<String>> committersPerVersion = committersPerV
             .getResult();
-      // Map<String, Set<CommitEdits>> intermediateChanges =
-      // linesPerV.getResult();
-      // Map<String, CommitEdits> versionChanges =
-      // linesPerV.getVersionsChanges();
+      
       int commitCounter = 0;
-
+      int offset = findLargestVersionName(versionProvider);
+      printRepeat(" ", offset);
+      printHead();
       // Use version provider to iterate over versions as it gives
       // a sorted view of versions
       for (String ver : versionProvider.getVersionNames()) {
@@ -540,32 +611,23 @@ public class MainTest {
          commitCounter += commitsCounter.get(ver);
 
          // Print the number of commits for the current version
-         System.out.format("%1s has %2s commits\n", ver,
-               commitsCounter.get(ver));
-
-         // Print the authors of current version
-         printAuthors(authorsPerVersion, ver);
-
-         printCommitters(committersPerVersion, ver);
-         // Counting the lines added or deleted is time consuming
-         // especially if we have a lot of added/removed files
-         // because it need to load each file from disk and
-         // check its contents by counting the lines
-         // printVersionChanges(versionChanges, ver);
-         System.out.println("ADDED FILES: "
-               + filesAddedPerVersion.getValue(ver));
-         System.out.println("DELETED FILES: "
-               + filesDeletedPerVersion.getValue(ver));
-         System.out.println("MODIFIED FILES: "
-               + filesModifiedPerVersion.getValue(ver));
-         System.out.println("Added lines: " + newLinesPerVersion.getValue(ver));
-         System.out.println("Added lines: " + oldLinesPerVersion.getValue(ver));
-         System.out.println("Commits that adds java files with tests: "
-               + javaFilesAddedWithTestInVersion.getValue(ver));
-         System.out.println("Commits that adds java files no tests: "
-               + javaFilesAddedNoTestInVersion.getValue(ver));
-         System.out.println("Commits that adds/modify test files: "
-               + testFilesPerCommitsInVersion.getValue(ver));
+         //System.out.format("%1s has %2s commits\n", ver,
+         //      commitsCounter.get(ver));
+         System.out.print(ver);
+         printRepeat(" ", offset - ver.length());
+         printValues(commitsCounter.get(ver),
+               authorsPerVersion.get(ver).size(),
+               committersPerVersion.get(ver).size(),
+               filesAddedPerVersion.getValue(ver).get(),
+               filesDeletedPerVersion.getValue(ver).get(),
+               filesModifiedPerVersion.getValue(ver).get(),
+               newLinesPerVersion.getValue(ver),
+               oldLinesPerVersion.getValue(ver),
+               javaFilesAddedWithTestInVersion.getValue(ver).get(),
+               javaFilesAddedNoTestInVersion.getValue(ver).get(),
+               testFilesPerCommitsInVersion.getValue(ver).get()
+               );
+         System.out.println();
       }
 
       long end = System.currentTimeMillis();
@@ -575,6 +637,30 @@ public class MainTest {
       System.out.format("Releases: %1s\n", authorsPerVersion.size());
    }
 
+   static void printHead() {
+      System.out.println(
+            "\tCOMMITS\tAUTHORS\tCOMMITTERS\tADDED FILES\tDELETED FILES\tMODIFIED FILES\tADDED LINES\tDELETED LINES\tSOURCE TEST\tSOURCE NO TEST\tTESTS");
+   }
+   static void printValues(Number... vals) {
+      System.out.format(
+            "\t%7d\t%7d\t%10d\t%11d\t%13d\t%14d\t%11d\t%13d\t%11d\t%14d\t%5d", (Object[])vals);
+   }
+   static void printRepeat(String str, int num) {
+      for(int i = 0; i < num; i++) {
+         System.out.print(str);
+      }
+   }
+   static int findLargestVersionName(VersionProvider provider) {
+      int maxLen = 0;
+      for(String name : provider.getVersionNames()) {
+         int len = name.length();
+         if(len > maxLen) {
+            maxLen = len;
+         }
+      }
+      return maxLen;
+   }
+   
    // THE FOLLOWING FILTERS WILL BE USED TO GATHER INFO ONLY FOR
    // .JAVA FILES AND IN A SPECIAL CASE COVERED IN TEST METHOD.
    // We need a .java filter
@@ -602,7 +688,7 @@ public class MainTest {
       @Override
       public boolean enter(VCSFile resource) {
          // nothing to do here
-         return false;
+         return true;
       }
    };
    // Here we construct a mixed filter for .java files under some /test/

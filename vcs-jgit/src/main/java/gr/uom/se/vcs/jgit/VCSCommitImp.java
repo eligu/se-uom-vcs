@@ -862,7 +862,6 @@ public class VCSCommitImp implements VCSCommit {
       }
 
       return heads;
-
    }
 
    /**

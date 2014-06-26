@@ -528,6 +528,12 @@ public class VersionChangeProcessor extends CommitVersionProcessor implements
          return (F) changeFilter;
       }
 
+      @SuppressWarnings("unchecked")
+      @Override
+      public <R extends VCSResource> VCSResourceFilter<R> getResourceFilter() {
+         return (VCSResourceFilter<R>) resourceFilter;
+      }
+      
       @Override
       public boolean visit(VCSFileDiff<?> entity) {
 
@@ -539,12 +545,6 @@ public class VersionChangeProcessor extends CommitVersionProcessor implements
          }
          // Always return true
          return true;
-      }
-
-      @SuppressWarnings("unchecked")
-      @Override
-      public <R extends VCSResource> VCSResourceFilter<R> getResourceFilter() {
-         return (VCSResourceFilter<R>) resourceFilter;
       }
    }
 }

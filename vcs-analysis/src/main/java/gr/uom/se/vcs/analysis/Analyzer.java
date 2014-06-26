@@ -273,7 +273,7 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
          Class<A> analyzer) {
       analyzersLock.writeLock().lock();
       try {
-      DEFAULT_ANALYZERS.put(type, analyzer);
+         DEFAULT_ANALYZERS.put(type, analyzer);
       } finally {
          analyzersLock.writeLock().unlock();
       }
@@ -325,18 +325,19 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
     * <p>
     */
    private void startParallel() {
-      if (parallelProcessors == null) {
-         if (blocking) {
-            parallelProcessors = new BlockingQueue<T>(threads, tasks, "PARPRO");
-         } else {
-            parallelProcessors = new ThreadQueue<T>(threads, "PARPRO");
-         }
-         serialProcessorsLock.writeLock().lock();
-         try {
+      serialProcessorsLock.writeLock().lock();
+      try {
+         if (parallelProcessors == null) {
+            if (blocking) {
+               parallelProcessors = new BlockingQueue<T>(threads, tasks,
+                     "PARPRO");
+            } else {
+               parallelProcessors = new ThreadQueue<T>(threads, "PARPRO");
+            }
             serialProcessors.addFirst(parallelProcessors);
-         } finally {
-            serialProcessorsLock.writeLock().unlock();
          }
+      } finally {
+         serialProcessorsLock.writeLock().unlock();
       }
    }
 
@@ -473,7 +474,9 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
    @Override
    public void removeAll() {
       serialProcessors.removeAll();
-      parallelProcessors.removeAll();
+      if (parallelProcessors != null) {
+         parallelProcessors.removeAll();
+      }
    }
 
    /**

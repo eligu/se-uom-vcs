@@ -11,7 +11,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-
 /**
  * A utility class containing static methods that helps in constructing resource
  * filters.
@@ -78,7 +77,8 @@ public class ResourceFilterUtility {
     * @return a new suffix filter
     * @see SuffixFilter
     */
-   public static <T extends VCSResource> VCSResourceFilter<T> suffix(String... paths) {
+   public static <T extends VCSResource> VCSResourceFilter<T> suffix(
+         String... paths) {
       return new SuffixFilter<T>(Arrays.asList(paths));
    }
 
@@ -137,7 +137,8 @@ public class ResourceFilterUtility {
     * @return a new prefix filter
     * @see PathPrefixFilter
     */
-   public static <T extends VCSResource> VCSResourceFilter<T> prefix(String... paths) {
+   public static <T extends VCSResource> VCSResourceFilter<T> prefix(
+         String... paths) {
       return new PathPrefixFilter<T>(Arrays.asList(paths));
    }
 
@@ -179,7 +180,7 @@ public class ResourceFilterUtility {
     * @see VCSResourceAndFilter
     */
    public static <T extends VCSResource> VCSResourceFilter<T> and(
-         @SuppressWarnings("unchecked") VCSResourceFilter<T>... filters) {
+         VCSResourceFilter<T>... filters) {
       return and(Arrays.asList(filters));
    }
 
@@ -219,7 +220,7 @@ public class ResourceFilterUtility {
     * @see VCSResourceOrFilter
     */
    public static <T extends VCSResource> VCSResourceFilter<T> or(
-         @SuppressWarnings("unchecked") VCSResourceFilter<T>... filters) {
+         VCSResourceFilter<T>... filters) {
       return new VCSResourceOrFilter<T>(Arrays.asList(filters));
    }
 

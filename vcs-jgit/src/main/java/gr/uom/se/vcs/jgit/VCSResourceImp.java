@@ -159,7 +159,9 @@ public class VCSResourceImp implements VCSResource {
          final LogCommand logCommand = git.log().all().addPath(this.path);
 
          for (final RevCommit rc : logCommand.call()) {
-            visitor.visit(new VCSCommitImp(rc, this.commit.repo));
+            if(!visitor.visit(new VCSCommitImp(rc, this.commit.repo))) {
+               return;
+            }
          }
 
       } catch (final RevisionSyntaxException e) {
