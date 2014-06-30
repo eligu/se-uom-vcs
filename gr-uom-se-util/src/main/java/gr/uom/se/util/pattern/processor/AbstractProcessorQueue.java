@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -15,16 +14,18 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * <p>
  * 
  * Before running the method <code>start</code> should be called. When this
- * method is called this will put all processors to a queue of running
- * processors. Each time an entity comes, it will be delivered to all processors
- * that are in the running queue. If a processor doesn't need any more entities
- * and return false when its <code>process</code> method is called, it will be
- * moved to a list of stopped processors.
+ * method is called this will put all processors to a queue of <b>running
+ * processors</b>. Each time an entity comes, it will be delivered to all
+ * processors that are in the running queue. If a processor doesn't need any
+ * more entities and return false when its <code>process</code> method is
+ * called, it will be moved to a list of <b>stopped processors</b>.
  * <p>
  * If a processor throws an exception while processing an entity the exception
- * will be cached and put to a list of thrown exceptions. When the queue is
- * stopped, all processors that are in the running queue will be stopped, those
- * that stopped preliminary are not stopped by the queue (the processor itself
+ * will be catch and put to a list of <b>thrown exceptions</b>. When the queue
+ * is stopped, all processors that are in the running queue will be moved to
+ * stopped processors queue, and all processors in the stopped queue will be
+ * stopped. Those that stopped preliminary are not stopped by the queue at
+ * processing stage but only when this queue is stopped (the processor itself
  * should be responsible for knowing its state and stopping it self if something
  * gets wrong or wants to stop early). At this point all cached exceptions
  * messages will be aggregated to one and an exception will throw (if there are
@@ -34,8 +35,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * accept any entity, and will always return false when an entity comes for
  * processing.
  * <p>
- * The stopped processors queue and the thrown exceptions will clear after this
- * queue starts again.
+ * If a processor is added to this queue while is running, it will be added to
+ * running processors too. If a processor is removed while this queue is running
+ * it will be moved from running to stopped queue (if it is there), and will be
+ * stopped when the queue will stop. The stopped processors queue and the thrown
+ * exceptions will clear after this queue starts again.
  * 
  * @author Elvis Ligu
  * @version 0.0.1
@@ -43,10 +47,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @param <T>
  *           the type of entity
  */
-public abstract class AbstractProcessorQueue<T> implements ProcessorQueue<T> {
+public abstract class AbstractProcessorQueue<T> extends AbstractProcessor<T>
+      implements ProcessorQueue<T> {
 
    /**
-    * The list of runningProcessors to whom each entity will be delivered.
+    * The list of running processors to whom each entity will be delivered.
     * <p>
     */
    protected List<Processor<T>> runningProcessors;
@@ -97,30 +102,14 @@ public abstract class AbstractProcessorQueue<T> implements ProcessorQueue<T> {
     * <p>
     */
    protected final ReadWriteLock thrownExceptionsLock = new ReentrantReadWriteLock();
-   /**
-    * The number of instances that are created until now.
-    * <p>
-    * Used for id.
-    */
-   private static final AtomicInteger instances = new AtomicInteger(0);
-   /**
-    * The default processor id.
-    * <p>
-    */
-   private static final String DEFAULT_PID = "SQueue";
 
    /**
-    * @return a default id for this type of processor
+    * Set the default processor id.
+    * <p>
     */
-   protected static String generateDefaultId() {
-      return DEFAULT_PID + instances.incrementAndGet();
+   static {
+      DEFAULT_PID = "AQueue";
    }
-
-   /**
-    * The id of this processor.
-    * <p>
-    */
-   protected final String id;
 
    /**
     * Add the element in the specified collection if its not there.
@@ -151,16 +140,15 @@ public abstract class AbstractProcessorQueue<T> implements ProcessorQueue<T> {
       // recursive mode
       if (processor.equals(this)) {
          throw new IllegalArgumentException(
-               "adding a queue processor to its self is not allowed");
+               "adding a queue processor to it self is not allowed");
       }
 
       // The state of running should not be changed while performing this
-      // tasks as it may cause problems in the future (start/stop)
+      // task as it may cause problems in the future (start/stop)
       runningLock.readLock().lock();
       try {
-         // We may release the processors lock because
-         // we are sure the state of running will not be
-         // changed
+         // Requires a lock for all processors queue
+         // And add the processor to this queue
          processorsLock.writeLock().lock();
          boolean added = false;
          try {
@@ -170,7 +158,9 @@ public abstract class AbstractProcessorQueue<T> implements ProcessorQueue<T> {
          }
 
          // If this queue is running we should add this processor to the running
-         // queue too
+         // queue too, that will allow the processor to immediately start
+         // getting
+         // entities
          if (added && running) {
             runningProcessorsLock.writeLock().lock();
             try {
@@ -200,14 +190,11 @@ public abstract class AbstractProcessorQueue<T> implements ProcessorQueue<T> {
     *           of this queue. If null a default id will be given.
     */
    public AbstractProcessorQueue(String id) {
-      if (id == null) {
-         id = generateDefaultId();
-      }
+      super(id);
       runningProcessors = new ArrayList<Processor<T>>(10);
       stoppedProcessors = new ArrayList<Processor<T>>(10);
       processors = new ArrayList<Processor<T>>(10);
       thrownExceptions = new ArrayList<InterruptedException>();
-      this.id = id;
    }
 
    /**
@@ -229,22 +216,11 @@ public abstract class AbstractProcessorQueue<T> implements ProcessorQueue<T> {
          boolean removed = false;
          try {
             removed = processors.remove(processor);
-            if (removed && running) {
-               runningProcessorsLock.writeLock().lock();
-               try {
-                  removed = runningProcessors.remove(processor);
-               } finally {
-                  runningProcessorsLock.writeLock().unlock();
-               }
-            } else {
-               // not removed from running so no need to schedule stop
-               removed = false;
-            }
          } finally {
             processorsLock.writeLock().unlock();
          }
 
-         if (removed) {
+         if (removed && running) {
             scheduleForStop(processor);
          }
       } finally {
@@ -268,36 +244,27 @@ public abstract class AbstractProcessorQueue<T> implements ProcessorQueue<T> {
       // tasks quietly.
       if (running) {
          runningProcessorsLock.writeLock().lock();
+         boolean removed = false;
          try {
-            boolean removed = runningProcessors.remove(processor);
-            if (removed) {
-               stoppedProcessorsLock.writeLock().lock();
-               try {
-                  addIfNot(stoppedProcessors, processor);
-               } finally {
-                  stoppedProcessorsLock.writeLock().unlock();
-               }
-            }
-
+            removed = runningProcessors.remove(processor);
          } finally {
             runningProcessorsLock.writeLock().unlock();
+         }
+         // We first release the running processors so the queue can
+         // normally process
+         if (removed) {
+            stoppedProcessorsLock.writeLock().lock();
+            try {
+               addIfNot(stoppedProcessors, processor);
+            } finally {
+               stoppedProcessorsLock.writeLock().unlock();
+            }
          }
       }
    }
 
-   /**
-    * {@inheritDoc}
-    */
    @Override
-   public void stop() throws InterruptedException {
-
-      // We need a write lock on running state so no one can execute any other
-      // code that is based on the state of this queue. Because we are cleaning
-      // our state here.
-      runningLock.writeLock().lock();
-      if (!running) {
-         return;
-      }
+   protected void stopping() throws InterruptedException {
 
       // A queue may have multiply interruption exceptions
       // because any processor that is stopped may throw
@@ -348,8 +315,6 @@ public abstract class AbstractProcessorQueue<T> implements ProcessorQueue<T> {
                + e.getMessage()));
       } finally {
 
-         // Set this queue to not running
-         running = false;
          // Check if any of the processors has thrown an exception,
          // if so throw an exception too
          InterruptedException toBeThrown = null;
@@ -365,38 +330,19 @@ public abstract class AbstractProcessorQueue<T> implements ProcessorQueue<T> {
             toBeThrown = new InterruptedException(exceptMsg.toString());
          }
 
-         runningLock.writeLock().unlock();
          if (toBeThrown != null)
             throw toBeThrown;
       }
    }
 
-   /**
-    * {@inheritDoc}
-    */
    @Override
-   public void start() {
+   protected void starting() {
+      // Schedule all processors for running
+      runningProcessors.addAll(processors);
 
-      // We need a write lock on running state so no one can execute any other
-      // code that is based on the state of this queue. Because we are cleaning
-      // our state here.
-      runningLock.writeLock().lock();
-      try {
-         if (running) {
-            return;
-         }
-
-         // Schedule all processors for running
-         runningProcessors.addAll(processors);
-
-         // Start each processor now
-         for (Processor<?> p : runningProcessors) {
-            p.start();
-         }
-         // Set this queue as running
-         running = true;
-      } finally {
-         runningLock.writeLock().unlock();
+      // Start each processor now
+      for (Processor<?> p : runningProcessors) {
+         p.start();
       }
    }
 
@@ -425,19 +371,6 @@ public abstract class AbstractProcessorQueue<T> implements ProcessorQueue<T> {
          return null;
       } finally {
          processorsLock.readLock().unlock();
-      }
-   }
-
-   /**
-    * {@inheritDoc}
-    */
-   @Override
-   public boolean isStarted() {
-      runningLock.readLock().lock();
-      try {
-         return running;
-      } finally {
-         runningLock.readLock().unlock();
       }
    }
 

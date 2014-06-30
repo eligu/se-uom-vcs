@@ -4,7 +4,7 @@
 package gr.uom.se.util.pattern.processor;
 
 /**
- * This a processor that will return a result.
+ * A processor that may be used to return a result.
  * <p>
  * This interface is decoupled from the plain processor interface because not
  * all type of processors need to return a specific result. For example all
@@ -25,6 +25,8 @@ public interface ResultProcessor<T, V> extends Processor<T> {
     * <p>
     * It is highly recommended that this method should be called after the
     * {@link #stop()} is called, so the processor could finish up its work.
+    * Implementations may choose to throw an exception when this method is called
+    * before stopping the processor.
     * 
     * @return the result of this processors.
     */

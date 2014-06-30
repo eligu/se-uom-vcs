@@ -700,6 +700,7 @@ public class MainTest {
    // directory. Because resource filter utility doesn't support NOT filter
    // we construct one on the fly
    
+   @SuppressWarnings("unchecked")
    final static VCSFilter<VCSFile> javaNotTestFilter = new VCSAndFilter<VCSFile>(
          Arrays.asList(new VCSNotFilter<VCSFile>(testDirFilter), javaFilter));
 
@@ -786,7 +787,7 @@ public class MainTest {
    }
 
    static <T> AbstractProcessorQueue<T> getSerialProcessor(
-         @SuppressWarnings("unchecked") Processor<T>... processors) {
+         Processor<T>... processors) {
       SerialQueue<T> serial = new SerialQueue<T>();
       for (Processor<T> p : processors) {
          serial.add(p);
@@ -795,7 +796,7 @@ public class MainTest {
    }
 
    static <T> ThreadQueue<T> getBlockingParallelProcessor(
-         int threads, int tasks, @SuppressWarnings("unchecked") Processor<T>... processors) {
+         int threads, int tasks, Processor<T>... processors) {
       BlockingQueue<T> queue = new BlockingQueue<T>(threads, tasks, null);
       for (Processor<T> p : processors) {
          queue.add(p);
