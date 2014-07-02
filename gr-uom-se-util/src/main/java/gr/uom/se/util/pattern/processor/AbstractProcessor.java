@@ -118,14 +118,9 @@ public abstract class AbstractProcessor<T> implements Processor<T> {
     * default implementation of {@link #stop()} method. If not the the
     * {@link #stop()} method should be overridden.
     * <p>
-    * Every call to the default implementation of this method will throw an
-    * {@link UnsupportedOperationException}.
-    * 
     * @throws InterruptedException
     */
-   protected void stopping() throws InterruptedException {
-      throw new UnsupportedOperationException("not implemented");
-   }
+   protected void stopping() throws InterruptedException {}
 
    @Override
    public void start() {
@@ -150,12 +145,8 @@ public abstract class AbstractProcessor<T> implements Processor<T> {
     * default implementation of {@link #start()} method. If not the
     * {@link #start()} method should be overridden.
     * <p>
-    * Every call to the default implementation of this method will throw an
-    * {@link UnsupportedOperationException}.
     */
-   protected void starting() {
-      throw new UnsupportedOperationException("not implemented");
-   }
+   protected void starting() {}
 
    @Override
    public String getId() {

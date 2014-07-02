@@ -40,6 +40,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * it will be moved from running to stopped queue (if it is there), and will be
  * stopped when the queue will stop. The stopped processors queue and the thrown
  * exceptions will clear after this queue starts again.
+ * <p>
+ * This queue is thread safe and implementations should not break the invariants.
  * 
  * @author Elvis Ligu
  * @version 0.0.1
@@ -82,16 +84,7 @@ public abstract class AbstractProcessorQueue<T> extends AbstractProcessor<T>
     * <p>
     */
    protected final ReadWriteLock processorsLock = new ReentrantReadWriteLock();
-   /**
-    * Flag that indicates if this queue is running.
-    * <p>
-    */
-   protected Boolean running = false;
-   /**
-    * The lock of running.
-    * <p>
-    */
-   protected final ReadWriteLock runningLock = new ReentrantReadWriteLock();
+   
    /**
     * A list of collected exceptions, while running.
     * <p>
