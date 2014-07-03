@@ -8,18 +8,25 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * A processor that calculates the number of primes for each before each value
+ * between a range.
+ * <p>
+ * The processor will be used within tests.
+ * 
  * @author Elvis Ligu
  * @version 0.0.1
  * @since 0.0.1
  */
-public class PrimeCounterProcessor extends AbstractProcessor<Integer> implements ResultProcessor<Integer, Map<Integer, AtomicInteger>>{
+public class PrimeCounterProcessor extends AbstractProcessor<Integer> implements
+      ResultProcessor<Integer, Map<Integer, AtomicInteger>> {
 
    Map<Integer, AtomicInteger> primes;
    final int start;
    final int end;
+
    public PrimeCounterProcessor(int start, int end) {
-     this.start = start;
-     this.end = end;
+      this.start = start;
+      this.end = end;
    }
 
    @Override
@@ -30,18 +37,19 @@ public class PrimeCounterProcessor extends AbstractProcessor<Integer> implements
          primes.put(i, new AtomicInteger(0));
       }
    }
-   
+
    @Override
    public boolean process(Integer entity) {
       runningLock.readLock().lock();
       try {
-         if(!running) {
-            throw new IllegalStateException("can not process entities while not running");
+         if (!running) {
+            throw new IllegalStateException(
+                  "can not process entities while not running");
          }
          // 1 and 2 are primes for sure
-         if(entity >= 1)
+         if (entity >= 1)
             primes.get(entity).incrementAndGet();
-         if(entity >= 2) {
+         if (entity >= 2) {
             primes.get(entity).incrementAndGet();
          }
          for (int i = entity; i > 2; i--) {
@@ -68,7 +76,7 @@ public class PrimeCounterProcessor extends AbstractProcessor<Integer> implements
    public Map<Integer, AtomicInteger> getResult() {
       runningLock.readLock().lock();
       try {
-         if(running) {
+         if (running) {
             throw new IllegalStateException("Can not get results while running");
          }
          return primes;

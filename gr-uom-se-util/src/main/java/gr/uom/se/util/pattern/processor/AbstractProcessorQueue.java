@@ -491,9 +491,9 @@ public abstract class AbstractProcessorQueue<T> extends AbstractProcessor<T>
          thrownExceptionsLock.writeLock().lock();
       }
       try {
-         Iterator<Processor<T>> it = processors.iterator();
-         while (it.hasNext()) {
-            this.remove(it.next());
+         List<Processor<T>> copy = new ArrayList<Processor<T>>(processors);
+         for(Processor<T> p : copy) {
+            this.remove(p);
          }
       } finally {
          if (running) {

@@ -30,6 +30,19 @@ public class BlockingQueue<T> extends ThreadQueue<T> {
    protected int maxTasksAllowed = 0;
 
    /**
+    * We use this queue to control the number of pending tasks. When a task is
+    * created an object is inserted to the queue. If the queue is full then the
+    * thread will block, thus no more tasks are submitted. On the other hand,
+    * each finishing task must remove an object from this queue, and that will
+    * cause the thread that submit tasks to submit a new task.
+    */
+   private ArrayBlockingQueue<Object> queue = null;
+   /**
+    * This is a dummy object that is inserted to the blocking queue.
+    */
+   private Object queueObject = new Object();
+   
+   /**
     * Creates a new instance that will maintain a private thread pool when
     * processing entities.
     * <p>
@@ -64,7 +77,7 @@ public class BlockingQueue<T> extends ThreadQueue<T> {
     */
    public BlockingQueue(int threads, int taskQueueSize, String id) {
 
-      super(threads, (id == null ? generateDefaultId("B") : id));
+      super(threads, id);
       if (taskQueueSize < threads) {
          throw new IllegalArgumentException(
                "taskQueueSize must be equal or greater then the number of threads");
@@ -75,6 +88,14 @@ public class BlockingQueue<T> extends ThreadQueue<T> {
       queue = new ArrayBlockingQueue<Object>(maxTasksAllowed);
    }
 
+   /**
+    * Set the static field to define a default id for all processors
+    * of this class.
+    */
+   static {
+      DEFAULT_PID = "BQUEUE";
+   }
+   
    protected void submitTaskFor(final Processor<T> p, final T entity) {
       // Increment the number of tasks submitted
       tasksSubmitted.incrementAndGet();
@@ -114,17 +135,4 @@ public class BlockingQueue<T> extends ThreadQueue<T> {
          }
       });
    }
-
-   /**
-    * We use this queue to control the number of pending tasks. When a task is
-    * created an object is inserted to the queue. If the queue is full then the
-    * thread will block, thus no more tasks are submitted. On the other hand,
-    * each finishing task must remove an object from this queue, and that will
-    * cause the thread that submit tasks to submit a new task.
-    */
-   ArrayBlockingQueue<Object> queue = null;
-   /**
-    * This is a dummy object that is inserted to the blocking queue.
-    */
-   Object queueObject = new Object();
 }

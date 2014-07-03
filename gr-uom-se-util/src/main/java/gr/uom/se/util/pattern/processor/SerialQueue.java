@@ -50,6 +50,14 @@ import java.util.Iterator;
 public class SerialQueue<T> extends AbstractProcessorQueue<T> {
 
    /**
+    * Set the static field to define a default id for all processors
+    * of this class.
+    */
+   static {
+      DEFAULT_PID = "SQUEUE";
+   }
+   
+   /**
     * Creates a new instance of this queue.
     * <p>
     */

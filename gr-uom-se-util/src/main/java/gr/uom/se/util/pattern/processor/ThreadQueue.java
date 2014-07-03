@@ -58,7 +58,7 @@ public class ThreadQueue<T> extends AbstractProcessorQueue<T> {
     * <p>
     */
    protected CompletionService<T> lock = null;
-   
+
    /**
     * Creates a new instance based on the given thread pool.
     * <p>
@@ -72,7 +72,7 @@ public class ThreadQueue<T> extends AbstractProcessorQueue<T> {
     *           to which all tasks produced by this processor will be submitted
     */
    public ThreadQueue(ExecutorService pool, String id) {
-      super((id == null ? generateDefaultId(null) : id));
+      super(id);
       if (pool == null) {
          throw new IllegalArgumentException("pool must not be null");
       }
@@ -104,7 +104,7 @@ public class ThreadQueue<T> extends AbstractProcessorQueue<T> {
    public ThreadQueue(int threads, String id) {
       this(checkAndCreateExecutor(threads), id);
    }
-  
+
    private static ExecutorService checkAndCreateExecutor(int threads) {
       if (threads < 1 || threads > MAX_NUM_OF_RUNNING_THREADS) {
          throw new IllegalArgumentException(
@@ -190,7 +190,7 @@ public class ThreadQueue<T> extends AbstractProcessorQueue<T> {
     */
    protected class ThreadProcessor implements Processor<T> {
 
-      final Processor<T> p;
+      Processor<T> p;
       volatile AtomicBoolean shouldContinue = new AtomicBoolean(true);
 
       public ThreadProcessor(Processor<T> p) {
@@ -236,14 +236,20 @@ public class ThreadQueue<T> extends AbstractProcessorQueue<T> {
             return true;
          if (obj == null)
             return false;
-         if (getClass() != obj.getClass())
+         if (!Processor.class.isAssignableFrom(obj.getClass()))
             return false;
-         @SuppressWarnings("unchecked")
-         ThreadProcessor other = (ThreadProcessor) obj;
+         Processor<?> otherP = null;
+         if (getClass() == obj.getClass()) {
+            @SuppressWarnings("unchecked")
+            ThreadProcessor other = (ThreadProcessor) obj;
+            otherP = other.p;
+         } else {
+            otherP = (Processor<?>) obj;
+         }
          if (p == null) {
-            if (other.p != null)
+            if (otherP != null)
                return false;
-         } else if (!p.equals(other.p))
+         } else if (!p.equals(otherP))
             return false;
          return true;
       }
@@ -255,44 +261,26 @@ public class ThreadQueue<T> extends AbstractProcessorQueue<T> {
    }
 
    @Override
-   public void stop() throws InterruptedException {
-
-      runningLock.writeLock().lock();
+   protected void stopping() throws InterruptedException {
       // Here we do not want to shut down the executor
       // because it may be useful for an other execution,
       // thus we just wait all pending tasks to
       // finish before stopping any processor
       try {
-
          while (tasksSubmitted.get() > 0) {
             lock.take();
          }
-         super.stop();
       } finally {
-         runningLock.writeLock().unlock();
+         super.stopping();
       }
    }
 
    /**
-    * The number of instances that are created until now.
-    * <p>
-    * Used for id.
+    * Set the static field to define a default id for all processors of this
+    * class.
     */
-   private static AtomicInteger instances = new AtomicInteger(0);
-
-   /**
-    * The default processor id.
-    * <p>
-    */
-   private static final String DEFAULT_PID = "PQueue";
-
-   /**
-    * @return a default id for this type of processor adding the specified
-    *         prefix to id.
-    */
-   protected static String generateDefaultId(String prefix) {
-      return (prefix != null ? prefix : "") + DEFAULT_PID
-            + instances.incrementAndGet();
+   static {
+      DEFAULT_PID = "TQUEUE";
    }
 
    @Override
@@ -302,6 +290,23 @@ public class ThreadQueue<T> extends AbstractProcessorQueue<T> {
          return ((ThreadProcessor) p).p;
       }
       return null;
+   }
+
+   /**
+    * A container used to remove a processor
+    */
+   private ThreadProcessor removeProcessor = new ThreadProcessor(null);
+
+   @Override
+   public void remove(Processor<T> processor) {
+      if(processor.getClass().equals(ThreadProcessor.class)) {
+         super.remove(processor);
+      } else {
+         synchronized (removeProcessor) {
+            removeProcessor.p = processor;
+            super.remove(removeProcessor);
+         }
+      }
    }
 
    /**
