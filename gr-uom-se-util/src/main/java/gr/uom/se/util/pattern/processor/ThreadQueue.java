@@ -60,6 +60,14 @@ public class ThreadQueue<T> extends AbstractProcessorQueue<T> {
    protected CompletionService<T> lock = null;
 
    /**
+    * Set the static field to define a default id for all processors of this
+    * class.
+    */
+   static {
+      DEFAULT_PID = "TQUEUE";
+   }
+
+   /**
     * Creates a new instance based on the given thread pool.
     * <p>
     * Note, this is important when we want to have a single thread pool for the
@@ -77,12 +85,6 @@ public class ThreadQueue<T> extends AbstractProcessorQueue<T> {
          throw new IllegalArgumentException("pool must not be null");
       }
       init(pool);
-   }
-
-   private void init(ExecutorService pool) {
-      threadPool = pool;
-      tasksSubmitted = new AtomicInteger(0);
-      lock = new ExecutorCompletionService<T>(threadPool);
    }
 
    /**
@@ -105,6 +107,26 @@ public class ThreadQueue<T> extends AbstractProcessorQueue<T> {
       this(checkAndCreateExecutor(threads), id);
    }
 
+   /**
+    * Used to initialize this object.
+    * 
+    * @param pool
+    */
+   private void init(ExecutorService pool) {
+      threadPool = pool;
+      tasksSubmitted = new AtomicInteger(0);
+      lock = new ExecutorCompletionService<T>(threadPool);
+   }
+
+   /**
+    * Will check the number of threads and create an executor service based on
+    * the number of threads.
+    * 
+    * @param threads
+    *           must be greater than 0 and less than
+    *           {@value #MAX_NUM_OF_RUNNING_THREADS}
+    * @return a new fixed thread pool
+    */
    private static ExecutorService checkAndCreateExecutor(int threads) {
       if (threads < 1 || threads > MAX_NUM_OF_RUNNING_THREADS) {
          throw new IllegalArgumentException(
@@ -112,11 +134,6 @@ public class ThreadQueue<T> extends AbstractProcessorQueue<T> {
                      + MAX_NUM_OF_RUNNING_THREADS);
       }
       return Executors.newFixedThreadPool(threads);
-   }
-
-   @Override
-   public void add(Processor<T> processor) {
-      super.add(new ThreadProcessor(processor));
    }
 
    @Override
@@ -148,9 +165,12 @@ public class ThreadQueue<T> extends AbstractProcessorQueue<T> {
     * Submit a task for the given processor and the given entity. The
     * implementation makes sure that when a task is submitted the taskSubmitted
     * counter will increase, and when the task is finished it should decrease by
-    * one this counter. This queue relies o tasksSubmitted counter to work
-    * properly, because it uses it when a its stopped, to wait all unfinished
+    * one this counter. This queue relies on tasksSubmitted counter to work
+    * properly, because it uses it when it is stopped, to wait all unfinished
     * tasks to finish.
+    * <p>
+    * Subclasses may override this method in order to define a new
+    * implementation of how the tasks are submitted.
     * 
     * @param p
     *           the processor for the entity
@@ -179,6 +199,74 @@ public class ThreadQueue<T> extends AbstractProcessorQueue<T> {
             }
          }
       });
+   }
+
+   /**
+    * {@inheritDoc}
+    * <p>
+    * This implementation will wait first for all tasks to be stopped and then
+    * will call the super implementation to stop this queue.
+    */
+   @Override
+   protected void stopping() throws InterruptedException {
+      // Here we do not want to shut down the executor
+      // because it may be useful for an other execution,
+      // thus we just wait all pending tasks to
+      // finish before stopping any processor
+      try {
+         while (tasksSubmitted.get() > 0) {
+            lock.take();
+         }
+      } finally {
+         super.stopping();
+      }
+   }
+
+   @Override
+   public Processor<T> getProcessor(String pid) {
+      Processor<T> p = super.getProcessor(pid);
+      if (p != null) {
+         return ((ThreadProcessor) p).p;
+      }
+      return null;
+   }
+
+   /**
+    * {@inheritDoc}
+    * <p>
+    * Each added processor will be wrapped to a new {@link ThreadProcessor}.
+    */
+   @Override
+   public void add(Processor<T> processor) {
+      super.add(new ThreadProcessor(processor));
+   }
+
+   /**
+    * A container used to remove a processor
+    */
+   private ThreadProcessor removeProcessor = new ThreadProcessor(null);
+
+   @Override
+   public void remove(Processor<T> processor) {
+      if (processor.getClass().equals(ThreadProcessor.class)) {
+         super.remove(processor);
+      } else {
+         synchronized (removeProcessor) {
+            removeProcessor.p = processor;
+            super.remove(removeProcessor);
+         }
+      }
+   }
+
+   /**
+    * Shut down this queue, by shutting down any remaining threads.
+    * <p>
+    * 
+    * @throws InterruptedException
+    */
+   public void shutdown() throws InterruptedException {
+      this.threadPool.shutdown();
+      this.threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
    }
 
    /**
@@ -258,65 +346,5 @@ public class ThreadQueue<T> extends AbstractProcessorQueue<T> {
       public boolean isStarted() {
          return p.isStarted();
       }
-   }
-
-   @Override
-   protected void stopping() throws InterruptedException {
-      // Here we do not want to shut down the executor
-      // because it may be useful for an other execution,
-      // thus we just wait all pending tasks to
-      // finish before stopping any processor
-      try {
-         while (tasksSubmitted.get() > 0) {
-            lock.take();
-         }
-      } finally {
-         super.stopping();
-      }
-   }
-
-   /**
-    * Set the static field to define a default id for all processors of this
-    * class.
-    */
-   static {
-      DEFAULT_PID = "TQUEUE";
-   }
-
-   @Override
-   public Processor<T> getProcessor(String pid) {
-      Processor<T> p = super.getProcessor(pid);
-      if (p != null) {
-         return ((ThreadProcessor) p).p;
-      }
-      return null;
-   }
-
-   /**
-    * A container used to remove a processor
-    */
-   private ThreadProcessor removeProcessor = new ThreadProcessor(null);
-
-   @Override
-   public void remove(Processor<T> processor) {
-      if(processor.getClass().equals(ThreadProcessor.class)) {
-         super.remove(processor);
-      } else {
-         synchronized (removeProcessor) {
-            removeProcessor.p = processor;
-            super.remove(removeProcessor);
-         }
-      }
-   }
-
-   /**
-    * Shut down this queue, by shutting down any remaining threads.
-    * <p>
-    * 
-    * @throws InterruptedException
-    */
-   public void shutdown() throws InterruptedException {
-      this.threadPool.shutdown();
-      this.threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
    }
 }

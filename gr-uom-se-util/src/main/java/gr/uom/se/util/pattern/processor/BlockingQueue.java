@@ -41,17 +41,20 @@ public class BlockingQueue<T> extends ThreadQueue<T> {
     * This is a dummy object that is inserted to the blocking queue.
     */
    private Object queueObject = new Object();
-   
+
    /**
     * Creates a new instance that will maintain a private thread pool when
     * processing entities.
     * <p>
     * 
-    * A thread pool is of type {@link ExecutorService}.
+    * A thread pool is of type {@link ExecutorService}. This queue will block
+    * when the number of scheduled tasks equals to the number of threads.
     * 
     * @param threads
     *           the number of simultaneously running threads. Must be greater
     *           then 1 but not greater then {@link #MAX_NUM_OF_RUNNING_THREADS}.
+    * @param id
+    *           the id of this queue
     */
    public BlockingQueue(int threads, String id) {
       this(threads, threads, id);
@@ -68,12 +71,14 @@ public class BlockingQueue<T> extends ThreadQueue<T> {
     * then the thread calling {@code process()} will block until a worker thread
     * from the pool is finished.
     * 
-    * @param the
+    * @param threads
     *           number of simultaneously running threads. Must be greater then 2
     *           but not greater then {@link #MAX_NUM_OF_RUNNING_THREADS}.
     * @param taskQueueSize
     *           the maximum number of submitted tasks that will remain in queue
     *           until they are finished.
+    * @param id
+    *           the id of this queue
     */
    public BlockingQueue(int threads, int taskQueueSize, String id) {
 
@@ -89,13 +94,48 @@ public class BlockingQueue<T> extends ThreadQueue<T> {
    }
 
    /**
-    * Set the static field to define a default id for all processors
-    * of this class.
+    * Create a new instance that will maintain a shared thread pool.
+    * <p>
+    * 
+    * This should be use in case you have a central thread pool that defines the
+    * number of threads to maintain, and you use this pool also for other tasks
+    * in your application.
+    * 
+    * <b>WARNING</b>: It is strongly recommended that you do not shut down this
+    * queue because it will shut down the thread pool and it may cause problems
+    * to other tasks submitted not related to this queue.
+    * 
+    * @param threadPool
+    *           the pool of threads which will accept processors tasks and run
+    *           them when a thread is available
+    * @param taskQueueSize
+    *           the maximum number of submitted tasks that will remain in queue
+    *           until they are finished. The tasks here are only related to
+    *           processors tasks and have no relation to other tasks submitted
+    *           to thread pool outside of this queue.
+    * @param id
+    *           the id of this queue
+    */
+   public BlockingQueue(ExecutorService threadPool, int taskQueueSize, String id) {
+      super(threadPool, id);
+      if (taskQueueSize < 1) {
+         throw new IllegalArgumentException(
+               "taskQueueSize must be equal or greater then 1");
+      }
+
+      this.tasksSubmitted = new AtomicInteger(0);
+      this.maxTasksAllowed = taskQueueSize;
+      queue = new ArrayBlockingQueue<Object>(maxTasksAllowed);
+   }
+
+   /**
+    * Set the static field to define a default id for all processors of this
+    * class.
     */
    static {
       DEFAULT_PID = "BQUEUE";
    }
-   
+
    protected void submitTaskFor(final Processor<T> p, final T entity) {
       // Increment the number of tasks submitted
       tasksSubmitted.incrementAndGet();
