@@ -7,7 +7,7 @@ import gr.uom.se.util.pattern.processor.BlockingQueue;
 import gr.uom.se.util.pattern.processor.Processor;
 import gr.uom.se.util.pattern.processor.ProcessorQueue;
 import gr.uom.se.util.pattern.processor.SerialQueue;
-import gr.uom.se.util.pattern.processor.ThreadQueue;
+import gr.uom.se.util.pattern.processor.ThreadQueueImp;
 import gr.uom.se.vcs.walker.Visitor;
 
 import java.util.Collection;
@@ -35,7 +35,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * methods at VCS API.
  * <p>
  * An analyzer makes possible to run a set of processors in parallel, by
- * maintaining a parallel processors queue (see {@link ThreadQueue} and or in
+ * maintaining a parallel processors queue (see {@link ThreadQueueImp} and or in
  * the main thread (in serial, see {@link SerialQueue}). When using an analyzer
  * to visit entities make sure all light weight processors to run in serial (for
  * example a commit counter processor is preferable to run in serial, while a
@@ -76,7 +76,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * // you should shut it down in order to stop any background threads.
  * // Otherwise you may leave running threads in background. However if
  * // you plan to use the analyzer in subsequent calls you can leave it
- * // as is. To shut it down you should do:
+ * // as is. Once the analyzer is shut down it can not be used in the future.
+ * // To shut it down you should do:
  * analyzer.shutDownThreads();
  * 
  * </pre>
@@ -153,9 +154,12 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
    /**
     * The parallel queue of the processors.
     * <p>
-    * This would be added to this queue.
+    * This will be added to serial queue.
     */
-   protected ThreadQueue<T> parallelProcessors;
+   protected ThreadQueueImp<T> parallelProcessors;
+   /**
+    * The lock of parallelProcessors field
+    */
    protected ReadWriteLock parallelProcessorsLock = new ReentrantReadWriteLock();
 
    /**
@@ -195,6 +199,7 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
     * Used for id.
     */
    private static final AtomicInteger instances = new AtomicInteger(0);
+
    /**
     * The default processor id.
     * <p>
@@ -234,6 +239,7 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
     * Default analyzer implementations will be stored here.
     */
    private static final Map<Class<?>, Class<? extends Analyzer<?>>> DEFAULT_ANALYZERS = new HashMap<Class<?>, Class<? extends Analyzer<?>>>();
+
    /** The lock for default analyzers */
    private static final ReadWriteLock analyzersLock = new ReentrantReadWriteLock();
 
@@ -304,14 +310,12 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
    private void init(Collection<Processor<T>> processors) {
       serialProcessors = new SerialQueue<T>();
       if (processors != null) {
-         synchronized (processors) {
-            for (Processor<T> processor : processors) {
-               if (processor == null) {
-                  throw new IllegalArgumentException(
-                        "processors must not contain a null element");
-               }
-               this.add(processor);
+         for (Processor<T> processor : processors) {
+            if (processor == null) {
+               throw new IllegalArgumentException(
+                     "processors must not contain a null element");
             }
+            this.add(processor);
          }
       }
       threads = DEFAULT_THREADS_NO;
@@ -321,23 +325,24 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
 
    /**
     * Each time a parallel processor is added or removed this method will check
-    * if the parallel processors queue is initialized or not.
+    * if the parallel processors queue is initialized or not. If not it will
+    * create a new thread queue.
     * <p>
     */
    private void startParallel() {
-      serialProcessorsLock.writeLock().lock();
+      parallelProcessorsLock.writeLock().lock();
       try {
          if (parallelProcessors == null) {
             if (blocking) {
                parallelProcessors = new BlockingQueue<T>(threads, tasks,
-                     "PARPRO");
+                     "BPARPRO");
             } else {
-               parallelProcessors = new ThreadQueue<T>(threads, "PARPRO");
+               parallelProcessors = new ThreadQueueImp<T>(threads, "PARPRO");
             }
             serialProcessors.addFirst(parallelProcessors);
          }
       } finally {
-         serialProcessorsLock.writeLock().unlock();
+         parallelProcessorsLock.writeLock().unlock();
       }
    }
 
@@ -349,7 +354,7 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
     * will be moved to parallel processors.
     * 
     * @param processor
-    *           to add to parallel queue
+    *           to add to parallel queue. Must not be null.
     */
    public void addParallel(Processor<T> processor) {
       serialProcessors.remove(processor);
@@ -391,9 +396,14 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
          throw new IllegalStateException("processor is not stopped");
       }
 
-      if (parallelProcessors != null) {
-         parallelProcessors.shutdown();
-         parallelProcessors = null;
+      parallelProcessorsLock.writeLock().lock();
+      try {
+         if (parallelProcessors != null) {
+            parallelProcessors.shutdown();
+            parallelProcessors = null;
+         }
+      } finally {
+         parallelProcessorsLock.writeLock().unlock();
       }
    }
 
@@ -405,12 +415,17 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
     * more entities will accept.
     * 
     * @param processor
-    *           to be removed from this queue
+    *           to be removed from this queue. Must not be null.
     */
    public void remove(Processor<T> processor) {
       this.serialProcessors.remove(processor);
-      if (parallelProcessors != null) {
-         parallelProcessors.remove(processor);
+      parallelProcessorsLock.writeLock().lock();
+      try {
+         if (parallelProcessors != null) {
+            parallelProcessors.remove(processor);
+         }
+      } finally {
+         parallelProcessorsLock.writeLock().unlock();
       }
    }
 
@@ -644,7 +659,7 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
        */
       public <A extends Analyzer<T>> A build(Class<A> clazz) {
          try {
-            ThreadQueue<T> parq = null;
+            ThreadQueueImp<T> parq = null;
             A instance = clazz.newInstance();
             instance.blocking = blockingQueue;
             instance.threads = threads;
@@ -655,7 +670,7 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
                if (blockingQueue) {
                   parq = new BlockingQueue<T>(threads, taskSize, "PARPRO");
                } else {
-                  parq = new ThreadQueue<T>(threads, "PARPRO");
+                  parq = new ThreadQueueImp<T>(threads, "PARPRO");
                }
                for (Processor<T> p : parallel) {
                   parq.add(p);

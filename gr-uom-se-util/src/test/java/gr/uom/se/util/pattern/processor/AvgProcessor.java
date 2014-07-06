@@ -1,5 +1,7 @@
 package gr.uom.se.util.pattern.processor;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -16,7 +18,8 @@ public class AvgProcessor extends AbstractProcessor<Integer> implements
 
    AtomicInteger sum = new AtomicInteger(0);
    AtomicInteger counter = new AtomicInteger(0);
-
+   Collection<Integer> numbers = new HashSet<Integer>();
+   
    @Override
    public boolean process(Integer entity) {
       runningLock.readLock().lock();
@@ -27,16 +30,23 @@ public class AvgProcessor extends AbstractProcessor<Integer> implements
          }
          sum.addAndGet(entity);
          counter.incrementAndGet();
+         synchronized(numbers) {
+            if(numbers.contains(entity)) {
+               throw new IllegalStateException("already processed this " + entity);
+            }
+            numbers.add(entity);
+         }
+         return true;
       } finally {
          runningLock.readLock().unlock();
       }
-      return true;
    }
 
    @Override
    protected void starting() {
       sum.set(0);
       counter.set(0);
+      numbers.clear();
    }
 
    @Override

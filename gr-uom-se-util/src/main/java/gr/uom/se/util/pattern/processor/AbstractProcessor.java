@@ -56,7 +56,7 @@ public abstract class AbstractProcessor<T> implements Processor<T> {
     * The id of this processor.
     * <p>
     */
-   protected final String id;
+   protected String id;
 
    /**
     * The lock of running.
@@ -94,6 +94,21 @@ public abstract class AbstractProcessor<T> implements Processor<T> {
       this.id = id.trim();
    }
 
+   /**
+    * Used to check the running state of a processor.
+    * <p>
+    * If running is false it will throw an {@link IllegalStateException}
+    * to inform the user that this processor can not process any entities.
+    *  
+    * @param running the state to check
+    */
+   static void assertRunning(boolean running) {
+      if (!running) {
+         throw new IllegalStateException(
+               "processor can not process any entity without first being started");
+      }
+   }
+
    @Override
    public void stop() throws InterruptedException {
       // We need a write lock on running state so no one can execute any other
@@ -105,7 +120,7 @@ public abstract class AbstractProcessor<T> implements Processor<T> {
             return;
          }
          stopping();
-         
+
       } finally {
          // Set this queue as running
          running = false;
@@ -118,9 +133,11 @@ public abstract class AbstractProcessor<T> implements Processor<T> {
     * default implementation of {@link #stop()} method. If not the the
     * {@link #stop()} method should be overridden.
     * <p>
+    * 
     * @throws InterruptedException
     */
-   protected void stopping() throws InterruptedException {}
+   protected void stopping() throws InterruptedException {
+   }
 
    @Override
    public void start() {
@@ -146,7 +163,8 @@ public abstract class AbstractProcessor<T> implements Processor<T> {
     * {@link #start()} method should be overridden.
     * <p>
     */
-   protected void starting() {}
+   protected void starting() {
+   }
 
    @Override
    public String getId() {

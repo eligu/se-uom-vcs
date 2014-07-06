@@ -41,7 +41,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * stopped when the queue will stop. The stopped processors queue and the thrown
  * exceptions will clear after this queue starts again.
  * <p>
- * This queue is thread safe and implementations should not break the invariants.
+ * This queue is thread safe and implementations should not break the
+ * invariants.
  * 
  * @author Elvis Ligu
  * @version 0.0.1
@@ -84,7 +85,7 @@ public abstract class AbstractProcessorQueue<T> extends AbstractProcessor<T>
     * <p>
     */
    protected final ReadWriteLock processorsLock = new ReentrantReadWriteLock();
-   
+
    /**
     * A list of collected exceptions, while running.
     * <p>
@@ -116,7 +117,8 @@ public abstract class AbstractProcessorQueue<T> extends AbstractProcessor<T>
     */
    protected static <T> boolean addIfNot(Collection<T> collection, T element) {
       if (!collection.contains(element)) {
-         return collection.add(element);
+         collection.add(element);
+         return true;
       }
       return false;
    }
@@ -138,7 +140,7 @@ public abstract class AbstractProcessorQueue<T> extends AbstractProcessor<T>
 
       // The state of running should not be changed while performing this
       // task as it may cause problems in the future (start/stop)
-      runningLock.readLock().lock();
+      runningLock.writeLock().lock();
       try {
          // Requires a lock for all processors queue
          // And add the processor to this queue
@@ -163,7 +165,7 @@ public abstract class AbstractProcessorQueue<T> extends AbstractProcessor<T>
             }
          }
       } finally {
-         runningLock.readLock().unlock();
+         runningLock.writeLock().unlock();
       }
    }
 
@@ -200,7 +202,7 @@ public abstract class AbstractProcessorQueue<T> extends AbstractProcessor<T>
 
       // The state of running should not be changed while performing this
       // tasks as it may cause problems in the future (start/stop)
-      runningLock.readLock().lock();
+      runningLock.writeLock().lock();
       try {
          // We may release the processors lock because
          // we are sure the state of running will not be
@@ -208,7 +210,10 @@ public abstract class AbstractProcessorQueue<T> extends AbstractProcessor<T>
          processorsLock.writeLock().lock();
          boolean removed = false;
          try {
-            removed = processors.remove(processor);
+            if (processors.contains(processor)) {
+               processors.remove(processor);
+               removed = true;
+            }
          } finally {
             processorsLock.writeLock().unlock();
          }
@@ -217,7 +222,7 @@ public abstract class AbstractProcessorQueue<T> extends AbstractProcessor<T>
             scheduleForStop(processor);
          }
       } finally {
-         runningLock.readLock().unlock();
+         runningLock.writeLock().unlock();
       }
    }
 
@@ -239,7 +244,11 @@ public abstract class AbstractProcessorQueue<T> extends AbstractProcessor<T>
          runningProcessorsLock.writeLock().lock();
          boolean removed = false;
          try {
-            removed = runningProcessors.remove(processor);
+            if(runningProcessors.contains(processor)) {
+               runningProcessors.remove(processor);
+               removed = true;
+            }
+            
          } finally {
             runningProcessorsLock.writeLock().unlock();
          }
@@ -382,10 +391,7 @@ public abstract class AbstractProcessorQueue<T> extends AbstractProcessor<T>
       // The running value is changed only on stop and start methods
       runningLock.readLock().lock();
       try {
-         if (!running) {
-            throw new IllegalStateException(
-                  "processor can not process any entity without first being started");
-         }
+         assertRunning(running);
 
          // While we are at this point no changes should be made to the running
          // queue, we get first a read lock and then change it to a write lock
@@ -483,7 +489,7 @@ public abstract class AbstractProcessorQueue<T> extends AbstractProcessor<T>
     */
    @Override
    public void removeAll() {
-      runningLock.readLock().lock();
+      runningLock.writeLock().lock();
       processorsLock.writeLock().lock();
       if (running) {
          runningProcessorsLock.writeLock().lock();
@@ -492,7 +498,7 @@ public abstract class AbstractProcessorQueue<T> extends AbstractProcessor<T>
       }
       try {
          List<Processor<T>> copy = new ArrayList<Processor<T>>(processors);
-         for(Processor<T> p : copy) {
+         for (Processor<T> p : copy) {
             this.remove(p);
          }
       } finally {
@@ -502,7 +508,7 @@ public abstract class AbstractProcessorQueue<T> extends AbstractProcessor<T>
             runningProcessorsLock.writeLock().lock();
          }
          processorsLock.writeLock().unlock();
-         runningLock.readLock().unlock();
+         runningLock.writeLock().unlock();
       }
    }
 

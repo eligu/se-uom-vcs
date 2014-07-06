@@ -50,13 +50,13 @@ import java.util.Iterator;
 public class SerialQueue<T> extends AbstractProcessorQueue<T> {
 
    /**
-    * Set the static field to define a default id for all processors
-    * of this class.
+    * Set the static field to define a default id for all processors of this
+    * class.
     */
    static {
       DEFAULT_PID = "SQUEUE";
    }
-   
+
    /**
     * Creates a new instance of this queue.
     * <p>
@@ -96,7 +96,8 @@ public class SerialQueue<T> extends AbstractProcessorQueue<T> {
             // Collect this exception
             thrownExceptionsLock.writeLock().lock();
             try {
-               thrownExceptions.add(new InterruptedException(e.getMessage()));
+               thrownExceptions.add(new InterruptedException("PID " + p.getId()
+                     + " " + e.getMessage()));
             } finally {
                thrownExceptionsLock.writeLock().unlock();
             }

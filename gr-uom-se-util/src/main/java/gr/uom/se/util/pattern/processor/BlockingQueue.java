@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @version 0.0.1
  * @since 0.0.1
  */
-public class BlockingQueue<T> extends ThreadQueue<T> {
+public class BlockingQueue<T> extends ThreadQueueImp<T> {
 
    /**
     * The maximum number of tasks that are allowed to be submitted
@@ -166,7 +166,7 @@ public class BlockingQueue<T> extends ThreadQueue<T> {
                return null;
             } catch (Exception e) {
                thrownExceptions.add(new InterruptedException("PID " + p.getId()
-                     + e.getMessage()));
+                     + " " + e.getMessage()));
                return null;
             } finally {
                tasksSubmitted.decrementAndGet();

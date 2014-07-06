@@ -65,17 +65,17 @@ public class ProcessorTest extends TestCase {
    }
 
    /**
-    * A general test for ThreadQueue, is the same as testQueue but will call
+    * A general test for ThreadQueueImp, is the same as testQueue but will call
     * shutdown in the end of the test.
     * <p>
     * 
     * @throws InterruptedException
-    * @see {@link ThreadQueue}
+    * @see {@link ThreadQueueImp}
     */
    @Test
    public void testThreadQueue() throws InterruptedException {
 
-      ThreadQueue<Integer> queue = new ThreadQueue<Integer>(8, null);
+      ThreadQueueImp<Integer> queue = new ThreadQueueImp<Integer>(8, null);
       testThreadQueue(queue);
    }
 
@@ -89,8 +89,19 @@ public class ProcessorTest extends TestCase {
     */
    @Test
    public void testBlockQueue() throws InterruptedException {
-      ThreadQueue<Integer> queue = new BlockingQueue<Integer>(8, 100, null);
+      ThreadQueueImp<Integer> queue = new BlockingQueue<Integer>(8, 100, null);
       testThreadQueue(queue);
+   }
+
+   @Test
+   public void testMixQueue() throws InterruptedException {
+      MixQueue<Integer> queue = new MixQueue<Integer>(2, true, 1000, false,
+            null);
+      testMixQueue(queue);
+      queue.shutdown();
+      queue = new MixQueue<Integer>(2, true, 1000, true, null);
+      testMixQueue(queue);
+      queue.shutdown();
    }
 
    /**
@@ -99,7 +110,7 @@ public class ProcessorTest extends TestCase {
     * Will create each queue instance, and then will test each queue
     * independently by calling {@link #testQueue(ProcessorQueue pq)}. Then will
     * combine each two queues to run them together and check the results for
-    * equality ({@link #testMix(ProcessorQueue q1, ProcessorQueue q2)}).
+    * equality ({@link #testBothQueues(ProcessorQueue q1, ProcessorQueue q2)}).
     * Generally speaking this test shows if the processors running in parallel
     * compute the same result as the processors running in sequential.
     * 
@@ -107,17 +118,22 @@ public class ProcessorTest extends TestCase {
     */
    @Test
    public void testAll() throws InterruptedException {
-      ThreadQueue<Integer> tQueue = new ThreadQueue<Integer>(8, null);
-      ThreadQueue<Integer> bQueue = new BlockingQueue<Integer>(8, 100, null);
+      ThreadQueueImp<Integer> tQueue = new ThreadQueueImp<Integer>(8, null);
+      ThreadQueueImp<Integer> bQueue = new BlockingQueue<Integer>(8, 100, null);
       SerialQueue<Integer> sQueue = new SerialQueue<Integer>();
+      MixQueue<Integer> mQueue = new MixQueue<Integer>(2, true, 1000, true,
+            null);
+
+      testMixQueue(mQueue);
       testQueue(tQueue);
       testQueue(bQueue);
       testQueue(sQueue);
-      testMix(tQueue, bQueue);
-      testMix(tQueue, sQueue);
-      testMix(sQueue, bQueue);
+      testBothQueues(tQueue, bQueue);
+      testBothQueues(tQueue, sQueue);
+      testBothQueues(sQueue, bQueue);
       tQueue.shutdown();
       bQueue.shutdown();
+      mQueue.shutdown();
    }
 
    /**
@@ -128,7 +144,7 @@ public class ProcessorTest extends TestCase {
     * @param queue
     * @throws InterruptedException
     */
-   private void testThreadQueue(ThreadQueue<Integer> queue)
+   private void testThreadQueue(ThreadQueueImp<Integer> queue)
          throws InterruptedException {
       testQueue(queue);
       queue.shutdown();
@@ -147,7 +163,7 @@ public class ProcessorTest extends TestCase {
     * @param queue2
     * @throws InterruptedException
     */
-   public void testMix(ProcessorQueue<Integer> queue1,
+   public void testBothQueues(ProcessorQueue<Integer> queue1,
          ProcessorQueue<Integer> queue2) throws InterruptedException {
       // Independent test of queues
       testQueue(queue1);
@@ -199,6 +215,117 @@ public class ProcessorTest extends TestCase {
 
       // Check the results of two same processors ran from two threads
       assertEquals(avgProcessor1.getResult(), avgProcessor2.getResult());
+
+      Map<Integer, AtomicInteger> result1 = primeProcessor1.getResult();
+      Map<Integer, AtomicInteger> result2 = primeProcessor2.getResult();
+
+      for (Integer i : result1.keySet()) {
+         AtomicInteger v1 = result1.get(i);
+         AtomicInteger v2 = result2.get(i);
+         assertNotNull(v1);
+         assertNotNull(v2);
+         assertEquals(v1.get(), v2.get());
+      }
+      for (Integer i : result2.keySet()) {
+         AtomicInteger v1 = result1.get(i);
+         AtomicInteger v2 = result2.get(i);
+         assertNotNull(v1);
+         assertNotNull(v2);
+         assertEquals(v1.get(), v2.get());
+      }
+   }
+
+   public void testMixQueue(MixQueue<Integer> queue)
+         throws InterruptedException {
+
+      // Create 4 processors to use with queues
+      int start = 1;
+      int end = 1000;
+
+      PrimeCounterProcessor primeProcessor1 = new PrimeCounterProcessor(start,
+            end);
+      primeProcessor1.id = "PP1";
+      AvgProcessor avgProcessor1 = new AvgProcessor();
+      avgProcessor1.id = "AP1";
+      PrimeCounterProcessor primeProcessor2 = new PrimeCounterProcessor(start,
+            end);
+      primeProcessor2.id = "PP2";
+      AvgProcessor avgProcessor2 = new AvgProcessor();
+      avgProcessor2.id = "AP2";
+      Set<Processor<Integer>> set = new HashSet<Processor<Integer>>();
+      set.add(avgProcessor1);
+      set.add(primeProcessor1);
+      set.add(avgProcessor2);
+      set.add(primeProcessor2);
+
+      queue.removeAll();
+      assertEquals(0, queue.getProcessorsCount());
+
+      // Add processors to queue
+      queue.add(primeProcessor1);
+      queue.add(avgProcessor1);
+      queue.addParallel(primeProcessor2);
+      queue.addParallel(avgProcessor2);
+
+      // Test this queue
+      testProcessor(queue);
+      testContainment(queue, set);
+
+      queue.removeAll();
+      assertEquals(0, queue.getProcessorsCount());
+
+      // Add processors to queue
+      queue.add(primeProcessor1);
+      queue.add(avgProcessor1);
+      queue.addParallel(primeProcessor2);
+      queue.addParallel(avgProcessor2);
+
+      // Test Run 1: check results
+      queue.start();
+      for (int i = start; i <= end; i++) {
+         queue.process(i);
+      }
+      queue.stop();
+
+      // Check primes
+      testPrimeResults(primeProcessor1);
+      testPrimeResults(primeProcessor2);
+
+      // Check avg
+      assertEquals(calcAvg(start, end), avgProcessor1.getResult());
+      assertEquals(calcAvg(start, end), avgProcessor2.getResult());
+
+      queue.removeAll();
+      assertEquals(0, queue.getProcessorsCount());
+
+      // Add processors to queue
+      queue.add(primeProcessor1);
+      queue.add(avgProcessor1);
+      queue.addParallel(primeProcessor2);
+      queue.addParallel(avgProcessor2);
+      
+      // First run test
+      testRun(queue, primeProcessor1, avgProcessor1, primeProcessor2, avgProcessor2);
+      queue.removeAll();
+      assertEquals(0, queue.getProcessorsCount());
+
+      // Add processors to queue
+      queue.add(primeProcessor1);
+      queue.add(avgProcessor1);
+      queue.addParallel(primeProcessor2);
+      queue.addParallel(avgProcessor2);
+      double avg1 = avgProcessor1.getResult();
+      double avg2 = avgProcessor2.getResult();
+      
+      // Second run test (check for subsequent run)
+      testRun(queue, primeProcessor1, avgProcessor1, primeProcessor2, avgProcessor2);
+
+      // Check the results of two same processors ran from two threads
+      assertEquals(avgProcessor1.getResult(), avg1);
+      assertEquals(avgProcessor2.getResult(), avg2);
+      // Check avg
+      assertEquals(calcAvg(start, end), avgProcessor1.getResult());
+      assertEquals(calcAvg(start, end), avgProcessor2.getResult());
 
       Map<Integer, AtomicInteger> result1 = primeProcessor1.getResult();
       Map<Integer, AtomicInteger> result2 = primeProcessor2.getResult();
@@ -290,8 +417,12 @@ public class ProcessorTest extends TestCase {
       int counter = 2;
       boolean removedPrime = false;
       boolean removedAvg = false;
+      int avgCounter = 0;
       for (int i = start; i <= end; i++) {
          queue.process(i);
+         if(queue.getProcessor(avgProcessor.getId()) != null) {
+            avgCounter++;
+         }
          if (i % 3 == 0) {
             if (!removedPrime) {
                counter--;
@@ -334,6 +465,35 @@ public class ProcessorTest extends TestCase {
          assertEquals(counter, queue.getProcessorsCount());
       }
       queue.stop();
+      
+      assertEquals(avgProcessor.numbers.size(), avgCounter);
+      
+   }
+
+   /**
+    * Run a queue which contains the following processors and check its
+    * operations, while running, such as removing/adding a processor while
+    * running.
+    */
+   void testRun(MixQueue<Integer> queue, PrimeCounterProcessor primeProcessor1,
+         AvgProcessor avgProcessor1, PrimeCounterProcessor primeProcessor2,
+         AvgProcessor avgProcessor2) throws InterruptedException {
+      // Test Run 2: check add/remove processor while running
+      // Test Run 1: check results
+      int start = primeProcessor1.start;
+      int end = primeProcessor1.end;
+      queue.start();
+      
+      for (int i = start; i <= end; i++) {
+         queue.process(i);
+      }
+      queue.stop();
+      
+      assertEquals(end, avgProcessor1.counter.get());
+      assertEquals(end, avgProcessor2.counter.get());
+      assertTrue(avgProcessor1.numbers.containsAll(avgProcessor2.numbers));
+      assertTrue(avgProcessor2.numbers.containsAll(avgProcessor1.numbers));
+      assertEquals(avgProcessor1.getResult(), avgProcessor2.getResult());
    }
 
    /**

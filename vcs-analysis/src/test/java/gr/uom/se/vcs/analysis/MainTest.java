@@ -3,9 +3,8 @@ package gr.uom.se.vcs.analysis;
 import gr.uom.se.util.pattern.processor.AbstractProcessorQueue;
 import gr.uom.se.util.pattern.processor.BlockingQueue;
 import gr.uom.se.util.pattern.processor.Processor;
-import gr.uom.se.util.pattern.processor.ProcessorQueue;
 import gr.uom.se.util.pattern.processor.SerialQueue;
-import gr.uom.se.util.pattern.processor.ThreadQueue;
+import gr.uom.se.util.pattern.processor.ThreadQueueImp;
 import gr.uom.se.vcs.VCSChange;
 import gr.uom.se.vcs.VCSCommit;
 import gr.uom.se.vcs.VCSFile;
@@ -34,7 +33,6 @@ import gr.uom.se.vcs.walker.filter.resource.VCSResourceFilter;
 import java.io.File;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -68,71 +66,6 @@ public class MainTest {
 
    public MainTest() throws VCSRepositoryException, InterruptedException {
    }
-   
-   /**
-    * A simple use case, where a processor is constructed on the fly
-    * and count prime numbers of each number within a region.
-    * 
-    * @throws InterruptedException
-    */
-   static void runPrimes() throws InterruptedException {
-      long st = System.currentTimeMillis();
-      ProcessorQueue<Integer> squeue = new ThreadQueue<Integer>(8, null);
-      final Map<Integer, AtomicInteger> primes = 
-            new HashMap<Integer, AtomicInteger>();
-      int start = 100000;
-      int end = 100009;
-      // Init map
-      for(int i = start; i < end; i++) {
-         primes.put(i, new AtomicInteger(0));
-      }
-      Processor<Integer> primeCounter = new Processor<Integer> () {
-
-         @Override
-         public boolean process(Integer entity) {
-            // 1 is prime for sure
-            primes.get(entity).incrementAndGet();
-            for(int i = entity; i > 2; i--) {
-               if(i % 2 == 0) {
-                  continue;
-               }
-               boolean prime = true;
-               for(int j = i - 1; j > 2; j--) {
-                   if(i % j == 0) {
-                      prime = false;
-                      break;
-                   }
-               }
-               if(prime) 
-                  primes.get(entity).incrementAndGet();
-            }
-            return true;
-         }
-
-         @Override
-         public void stop() throws InterruptedException {}
-
-         @Override
-         public void start() {}
-
-         @Override
-         public String getId() {
-            return "PRIME_GEN";
-         }
-
-         @Override
-         public boolean isStarted() { return false; }
-         
-      };
-     
-      squeue.add(primeCounter);
-      squeue.start();
-      for(int i = start; i < end; i++) {
-         squeue.process(i);
-      }
-      squeue.stop();
-      System.out.println(System.currentTimeMillis() - st);
-   }
 
    public static void main(String[] args) throws VCSRepositoryException,
          InterruptedException {
@@ -148,7 +81,6 @@ public class MainTest {
       // but uses some 'special' processors that can be inserted into version
       // change processor. Thus it will perform only one pass for all metrics
       test2();
-      //runPrimes();
    }
 
    public static void test1() throws InterruptedException,
@@ -459,7 +391,7 @@ public class MainTest {
       // This is the first part of processors, that do not require I/O operations.
       // They will be run in parallel (2 threads mostly)
       
-      ThreadQueue<CommitEdits> nonIOOperations = getBlockingParallelProcessor(2, 1000,
+      ThreadQueueImp<CommitEdits> nonIOOperations = getBlockingParallelProcessor(2, 1000,
             filesAddedPerVersion, 
             filesDeletedPerVersion,
             filesModifiedPerVersion 
@@ -472,7 +404,7 @@ public class MainTest {
       // the files that are deleted/added in order to count their lines, and this would
       // block other processors to process. We are separating non I/O processors from
       // I/O processors.
-      ThreadQueue<CommitEdits> iOOperations = getBlockingParallelProcessor(2, 1000,
+      ThreadQueueImp<CommitEdits> iOOperations = getBlockingParallelProcessor(2, 1000,
             newLinesPerVersion, oldLinesPerVersion);
       // Now we have the serial processor to run these two blocks of processors
       // and pass it to the change processor.
@@ -795,7 +727,7 @@ public class MainTest {
       return serial;
    }
 
-   static <T> ThreadQueue<T> getBlockingParallelProcessor(
+   static <T> ThreadQueueImp<T> getBlockingParallelProcessor(
          int threads, int tasks, Processor<T>... processors) {
       BlockingQueue<T> queue = new BlockingQueue<T>(threads, tasks, null);
       for (Processor<T> p : processors) {

@@ -28,7 +28,7 @@ package gr.uom.se.util.pattern.processor;
  * <ul>
  * <li>{@link SerialQueue} - works the same as the above code. Each data is
  * passed to the list of processors in a serial way (no threads)</li>
- * <li>{@link ThreadQueue} - works the same as the above code, but you can
+ * <li>{@link ThreadQueueImp} - works the same as the above code, but you can
  * specify a number of threads so the incoming data (from
  * {@link #process(Object)} method) will be passed to each processor in the
  * queue who will run in parallel, depending on the number of threads.</li>
