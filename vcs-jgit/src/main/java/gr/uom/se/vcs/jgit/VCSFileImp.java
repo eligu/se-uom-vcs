@@ -7,12 +7,12 @@ import gr.uom.se.vcs.jgit.utils.TreeUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.treewalk.TreeWalk;
-
 
 /**
  * Implementation of {@link VCSFileDiff} based on JGit library.
@@ -58,9 +58,25 @@ public class VCSFileImp extends VCSResourceImp implements VCSFile {
    @Override
    public void getContents(final OutputStream target) throws IOException {
 
+      final ObjectLoader loader = getObjectLoader(this);
+      // Use the loader to copy the contents to the stream
+      loader.copyTo(target);
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public InputStream getContentStream() throws IOException {
+      // Load the object to read contents
+      final ObjectLoader loader = getObjectLoader(this);
+      return loader.openStream();
+   }
+
+   static ObjectLoader getObjectLoader(VCSFileImp file) throws IOException {
       // create a tree walker and set path filter to this path only
       final TreeWalk treeWalk = TreeUtils.createTreeWalkForPathAndCheckIfExist(
-            this.commit.commit, this.commit.repo, true, this.path);
+            file.commit.commit, file.commit.repo, true, file.path);
 
       // get the first object of this walker within tree
       final ObjectId objectId = treeWalk.getObjectId(0);
@@ -71,9 +87,8 @@ public class VCSFileImp extends VCSResourceImp implements VCSFile {
       }
 
       // Open an object loader to read file contents
-      final ObjectLoader loader = this.commit.repo.open(objectId);
+      final ObjectLoader loader = file.commit.repo.open(objectId);
 
-      // Use the loader to copy the contents to the stream
-      loader.copyTo(target);
+      return loader;
    }
 }
