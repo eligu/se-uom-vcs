@@ -48,13 +48,12 @@ public class IOLoader {
     * 
     * @param input
     *           the stream to read from
-    * @return a new stream that contains all data loaded into memory
+    * @return a new array that contains all data loaded into memory
     * @throws IOException
     *            if a I/O problem occurs or there is not enough memory to
     *            contain the data.
     */
-   public static ByteArrayInputStream loadInMemory(InputStream input)
-         throws IOException {
+   public static byte[] loadInMemory(InputStream input) throws IOException {
       return loadInMemory(input, DEFAULT_BUFFER_SZ, DEFAULT_MAX_MEMORY_SZ);
    }
 
@@ -82,7 +81,7 @@ public class IOLoader {
     *            if a I/O problem occurs or there is not enough memory to
     *            contain the data.
     */
-   public static ByteArrayInputStream loadInMemory(InputStream input, int bufferSize,
+   public static byte[] loadInMemory(InputStream input, int bufferSize,
          int maxMemory) throws IOException {
 
       ArgsCheck.notNull("input", input);
@@ -92,7 +91,13 @@ public class IOLoader {
             maxMemory);
 
       if (input instanceof ByteArrayInputStream) {
-         return (ByteArrayInputStream) input;
+         ByteArrayInputStream bais = ((ByteArrayInputStream) input);
+         bufferSize = bais.available();
+         if (bufferSize > maxMemory) {
+            throw new IOException("buffer size exceeds memory limit: "
+                  + maxMemory);
+         }
+         return copyBytes(bais);
       }
 
       // Try to set a chunk at 1/4 of buffer
@@ -158,6 +163,33 @@ public class IOLoader {
             buff = Arrays.copyOf(buff, bufferSize);
          }
       }
-      return new ByteArrayInputStream(buff, 0, len);
+      if(len > buff.length) {
+         throw new IllegalStateException("length is expected to be: " + len);
+      }
+      return len == buff.length ? buff : Arrays.copyOf(buff, len);
+   }
+
+   /**
+    * Copy content of the given stream to a new byte array.
+    * <p>
+    * 
+    * @param bais
+    *           the stream of bytes
+    * @return a new byte array containing all bytes coming from the stream
+    */
+   public static byte[] copyBytes(ByteArrayInputStream bais) {
+      int size = bais.available();
+      if (size < 1) {
+         return new byte[0];
+      }
+      byte[] buffer = new byte[size];
+      try {
+         bais.read(buffer);
+         return buffer;
+      } catch (IOException e) {
+         throw new IllegalStateException(
+               "uknown state of byte array output stream buffer: "
+                     + e.getMessage());
+      }
    }
 }
