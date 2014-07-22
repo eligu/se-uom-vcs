@@ -53,7 +53,7 @@ public class IOLoader {
     *            if a I/O problem occurs or there is not enough memory to
     *            contain the data.
     */
-   public ByteArrayInputStream loadInMemory(InputStream input)
+   public static ByteArrayInputStream loadInMemory(InputStream input)
          throws IOException {
       return loadInMemory(input, DEFAULT_BUFFER_SZ, DEFAULT_MAX_MEMORY_SZ);
    }
@@ -82,7 +82,7 @@ public class IOLoader {
     *            if a I/O problem occurs or there is not enough memory to
     *            contain the data.
     */
-   public ByteArrayInputStream loadInMemory(InputStream input, int bufferSize,
+   public static ByteArrayInputStream loadInMemory(InputStream input, int bufferSize,
          int maxMemory) throws IOException {
 
       ArgsCheck.notNull("input", input);
