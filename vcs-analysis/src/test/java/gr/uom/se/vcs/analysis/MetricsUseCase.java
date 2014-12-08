@@ -31,13 +31,14 @@ import gr.uom.se.vcs.walker.filter.resource.ResourceFilterUtility;
 import gr.uom.se.vcs.walker.filter.resource.VCSResourceFilter;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class MainTest {
+public class MetricsUseCase {
 
    /**
     * Path to test resources.
@@ -64,18 +65,18 @@ public class MainTest {
     */
    public static VCSRepository repo = null;
 
-   public MainTest() throws VCSRepositoryException, InterruptedException {
+   public MetricsUseCase() throws VCSRepositoryException, InterruptedException {
    }
 
-   public static void main(String[] args) throws VCSRepositoryException,
-         InterruptedException {
-
+   public static void main(String[] arg) throws VCSRepositoryException,
+         InterruptedException, IOException {
+      
       setUp();
       // These two use cases compute the same thing, but in a different way.
       // Test 1 uses available processors to compute a part of its data
       // and then to compute lines/files added/remove and so on, it does
       // this manually by the data that VersionChangeProcessor return.
-      //test1();
+      test1();
       // Test 2 compute all metrics using only processors, he avoids computing
       // directly its metrics from the data retained from VersionChangeProcessor
       // but uses some 'special' processors that can be inserted into version
@@ -786,6 +787,6 @@ public class MainTest {
                (int) (((System.currentTimeMillis() - start) / 1000) + 0.5));
       }
 
-      MainTest.repo = repo;
+      MetricsUseCase.repo = repo;
    }
 }
