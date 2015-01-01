@@ -1,6 +1,6 @@
 package gr.uom.se.vcs.jgit.walker.filter.resource;
 
-import gr.uom.se.vcs.jgit.ArgsCheck;
+import gr.uom.se.util.validation.ArgsCheck;
 import gr.uom.se.vcs.walker.filter.resource.AbstractPathFilter;
 
 import java.io.IOException;

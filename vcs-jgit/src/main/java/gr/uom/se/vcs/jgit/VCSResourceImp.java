@@ -1,5 +1,6 @@
 package gr.uom.se.vcs.jgit;
 
+import gr.uom.se.util.validation.ArgsCheck;
 import gr.uom.se.vcs.VCSChange;
 import gr.uom.se.vcs.VCSCommit;
 import gr.uom.se.vcs.VCSResource;

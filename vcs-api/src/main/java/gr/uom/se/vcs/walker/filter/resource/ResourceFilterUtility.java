@@ -179,6 +179,7 @@ public class ResourceFilterUtility {
     * @return a new AND filter
     * @see VCSResourceAndFilter
     */
+   @SafeVarargs
    public static <T extends VCSResource> VCSResourceFilter<T> and(
          VCSResourceFilter<T>... filters) {
       return and(Arrays.asList(filters));
@@ -219,6 +220,7 @@ public class ResourceFilterUtility {
     * @return a new OR filter
     * @see VCSResourceOrFilter
     */
+   @SafeVarargs
    public static <T extends VCSResource> VCSResourceFilter<T> or(
          VCSResourceFilter<T>... filters) {
       return new VCSResourceOrFilter<T>(Arrays.asList(filters));

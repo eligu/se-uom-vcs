@@ -1,8 +1,8 @@
 package gr.uom.se.vcs.jgit.utils;
 
+import gr.uom.se.util.validation.ArgsCheck;
 import gr.uom.se.vcs.exceptions.VCSRepositoryException;
 import gr.uom.se.vcs.exceptions.VCSResourceNotFoundException;
-import gr.uom.se.vcs.jgit.ArgsCheck;
 
 import java.io.IOException;
 

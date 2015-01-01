@@ -40,5 +40,10 @@
     	<artifactId>gitective-core</artifactId>
     	<version>0.9.9</version>
     </dependency>
+    <dependency>
+    	<groupId>gr.uom.se</groupId>
+    	<artifactId>gr-uom-se-util</artifactId>
+    	<version>0.0.1-SNAPSHOT</version>
+    </dependency>
   </dependencies>
 </project>
