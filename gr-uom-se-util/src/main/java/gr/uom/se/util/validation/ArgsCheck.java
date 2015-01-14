@@ -352,6 +352,32 @@ public class ArgsCheck {
                "{0} must not be empty", name));
       }
    }
+   
+   /**
+    * Check the given args array if it is empty.
+    * <p>
+    * 
+    * Throw an {@link IllegalArgumentException} if the condition is not
+    * fulfilled. The args argument will be checked for null using
+    * {@link #notNull(String, Object)}. Exception message format will be:
+    * 
+    * <pre>
+    * &quot;{0} must not be empty&quot;
+    * </pre>
+    * 
+    * @param name
+    *           argument name
+    * @param args
+    *           the array to check for null
+    */
+   public static void notEmpty(final String name, final Object[] args) {
+      notNull(name, args);
+
+      if (args.length == 0) {
+         throw new IllegalArgumentException(MessageFormat.format(
+               "{0} must not be empty", name));
+      }
+   }
 
    /**
     * Check the given string arg if it is empty.
