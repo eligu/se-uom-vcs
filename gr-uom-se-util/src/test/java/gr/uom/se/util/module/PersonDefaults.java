@@ -14,5 +14,4 @@ public class PersonDefaults {
    public static final String PERSON_AGE_STATIC_METHOD = "14";
    public static final String PERSON_DOMAIN = "def_person";
    
-   
 }
