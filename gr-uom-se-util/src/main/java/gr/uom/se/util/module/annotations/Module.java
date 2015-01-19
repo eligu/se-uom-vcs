@@ -22,13 +22,13 @@ import java.lang.annotation.Target;
 public @interface Module {
 
    /**
-    * Define the loader of the type this is annotating.
+    * Define the provider of the type this is annotating.
     * <p>
     * The default value is of type {@link NULLVal}.
     * 
     * @return
     */
-   Class<?> loader() default NULLVal.class;
+   Class<?> provider() default NULLVal.class;
 
    /**
     * Properties of this module, if any.

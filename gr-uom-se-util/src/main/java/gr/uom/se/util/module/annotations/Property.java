@@ -14,5 +14,5 @@ public @interface Property {
     
     String name();
     String domain() default "default";
-    String stringVal() default "";
+    String stringVal() default NULLVal.NULL_STR;
 }

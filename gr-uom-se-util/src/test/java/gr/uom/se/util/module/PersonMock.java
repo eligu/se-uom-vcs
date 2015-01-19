@@ -3,9 +3,9 @@
  */
 package gr.uom.se.util.module;
 
-import gr.uom.se.util.module.annotations.LoadModule;
 import gr.uom.se.util.module.annotations.Module;
 import gr.uom.se.util.module.annotations.Property;
+import gr.uom.se.util.module.annotations.ProvideModule;
 
 /**
  * @author Elvis Ligu
@@ -20,18 +20,27 @@ import gr.uom.se.util.module.annotations.Property;
             domain = PersonDefaults.PERSON_DOMAIN, 
             name = "age", 
             stringVal = PersonDefaults.PERSON_AGE_MODULE) }, 
-      loader = PersonLoader.class)
+      provider = PersonLoader.class)
 public class PersonMock {
    
-   String name;
-   int age;
+   @Property(
+         domain = PersonDefaults.PERSON_DOMAIN, 
+         name = "name", 
+         stringVal = PersonDefaults.PERSON_NAME_INJECTED)
+   private String name;
+   
+   @Property(
+         domain = PersonDefaults.PERSON_DOMAIN, 
+         name = "age", 
+         stringVal = PersonDefaults.PERSON_AGE_INJECTED)
+   private int age;
 
    public PersonMock() {
       this.name = PersonDefaults.PERSON_NAME_CONSTRUCTOR;
       this.age = Integer.parseInt(PersonDefaults.PERSON_AGE_CONSTRUCTOR);
    }
 
-   @LoadModule
+   @ProvideModule
    public PersonMock(
          @Property(
                domain = PersonDefaults.PERSON_DOMAIN, 
@@ -47,7 +56,7 @@ public class PersonMock {
       this.age = age;
    }
 
-   @LoadModule
+   @ProvideModule
    public static PersonMock newPerson(
          @Property(
                domain = PersonDefaults.PERSON_DOMAIN, 
@@ -65,11 +74,19 @@ public class PersonMock {
       return person;
    }
 
+   public int getAge() {
+      return age;
+   }
+   public String getName() {
+      return name;
+   }
+   
    @Override
    public String toString() {
       return "Name: " + name + "\n" + "Age: " + age;
    }
-
+   
+   
    @Override
    public int hashCode() {
       final int prime = 31;

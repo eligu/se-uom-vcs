@@ -1,6 +1,6 @@
 package gr.uom.se.util.module;
 
-import gr.uom.se.util.module.annotations.LoadModule;
+import gr.uom.se.util.module.annotations.ProvideModule;
 import gr.uom.se.util.module.annotations.Property;
 
 public class PersonLoader {
@@ -9,7 +9,7 @@ public class PersonLoader {
       
    }
 
-   @LoadModule
+   @ProvideModule
    public PersonMock createPerson(
          @Property(
                domain = PersonDefaults.PERSON_DOMAIN, 

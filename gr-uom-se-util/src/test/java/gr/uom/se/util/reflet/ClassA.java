@@ -9,6 +9,7 @@ package gr.uom.se.util.reflet;
  */
 public class ClassA extends AbstractClassA {
 
+   @SuppressWarnings("unused")
    private ClassA() {
       
    }

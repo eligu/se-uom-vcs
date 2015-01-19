@@ -3,10 +3,10 @@ package gr.uom.se.util.module;
 import gr.uom.se.filter.Filter;
 import gr.uom.se.filter.FilterUtils;
 import gr.uom.se.util.manager.ConfigManager;
-import gr.uom.se.util.module.annotations.LoadModule;
 import gr.uom.se.util.module.annotations.Module;
 import gr.uom.se.util.module.annotations.NULLVal;
 import gr.uom.se.util.module.annotations.Property;
+import gr.uom.se.util.module.annotations.ProvideModule;
 import gr.uom.se.util.reflect.AccessibleMemberFilter;
 import gr.uom.se.util.reflect.ReflectionUtils;
 import gr.uom.se.util.validation.ArgsCheck;
@@ -16,12 +16,10 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import net.minidev.json.JSONValue;
-import net.minidev.json.parser.ParseException;
 
 /**
  * The default implementation of {@link ModuleLoader}.
@@ -36,12 +34,12 @@ import net.minidev.json.parser.ParseException;
  * and creates configuration domains.</li>
  * <li>If a loader type is specified then:</li>
  * <ol>
- * <li>Look for an instance method {@link LoadModule} annotation.</li>
+ * <li>Look for an instance method {@link ProvideModule} annotation.</li>
  * <li>If an instance method was found then go to step 1, to load the loader.</li>
- * <li>If not, then find a static method with {@link LoadModule} annotation.</li>
+ * <li>If not, then find a static method with {@link ProvideModule} annotation.</li>
  * </ol>
  * <li>If no loader is provided then find a constructor of the module with
- * annotation {@link LoadModule}.</li>
+ * annotation {@link ProvideModule}.</li>
  * <li>If no annotated constructor is found then look for the default
  * constructor to create the new instance.</li>
  * </ol>
@@ -76,13 +74,22 @@ public class DefaultModuleLoader implements ModuleLoader {
     * The global config manager used to load values of properties, when creating
     * modules.
     * <p>
-    * Values of properties are required at metho arguments when a method is
-    * annotated using @LoadModule.
+    * Values of properties are required at method arguments when a method is
+    * annotated using @ProvideModule.
     */
    private ConfigManager config;
 
-   public DefaultModuleLoader(ConfigManager config) {
+   /**
+    * The parameter provider is used to provide the parameters when a call to a
+    * method or constructor is required.
+    * <p>
+    */
+   private ParameterProvider parameterProvider;
+
+   public DefaultModuleLoader(ConfigManager config, ParameterProvider provider) {
       this.config = config;
+      ArgsCheck.notNull("provider", provider);
+      this.parameterProvider = provider;
    }
 
    @Override
@@ -116,13 +123,13 @@ public class DefaultModuleLoader implements ModuleLoader {
       // or a loader specified
       // The defaults will be used to load the module
       if (moduleAnnotation == null
-            || moduleAnnotation.loader().equals(NULLVal.class)) {
+            || moduleAnnotation.provider().equals(NULLVal.class)) {
          return loadNoLoader(clazz);
       }
 
       // 2 - Case when a @Module annotation is present and a default loader
       // is specified
-      return loadModule(clazz, moduleAnnotation.loader());
+      return loadModule(clazz, moduleAnnotation.provider());
    }
 
    /**
@@ -142,13 +149,13 @@ public class DefaultModuleLoader implements ModuleLoader {
       // 1- There is a specified loader, so this loader should be used to
       // load the module
       // 2 - There is not a specified loader
-      // a) The class has a constructor with the @LoadModule instance
+      // a) The class has a constructor with the @ProvideModule instance
       // b) The class has a default constructor which will be used to load it
 
       Method method = getInstanceLoaderMethod(moduleType, loader);
-      Object loaderInstance = null;
+      Object providerInstance = null;
       if (method != null) {
-         loaderInstance = load(loader);
+         providerInstance = getProvider(moduleType, loader);
       } else {
          method = getStaticLoaderMethod(moduleType, loader);
       }
@@ -157,27 +164,58 @@ public class DefaultModuleLoader implements ModuleLoader {
          throw new IllegalArgumentException(
                "the specified loader: "
                      + loader
-                     + " doesn't have a method annotated with @LoadModule with a return type of: "
+                     + " doesn't have a method annotated with @ProvideModule with a return type of: "
                      + moduleType);
       }
       // Try to execute the method with annotation
-      // @LoadModule
-      Map<String, Map<String, String>> properties = getModuleConfig(moduleType
+      // @ProvideModule
+      Map<String, Map<String, Object>> properties = getModuleConfig(moduleType
             .getAnnotation(Module.class));
       Class<?>[] parameterTypes = method.getParameterTypes();
       Annotation[][] annotations = method.getParameterAnnotations();
       Object[] args = getParameters(parameterTypes, annotations, properties);
       try {
-         return (T) method.invoke(loaderInstance, args);
+         return (T) method.invoke(providerInstance, args);
       } catch (IllegalAccessException | IllegalArgumentException
             | InvocationTargetException ex) {
+         Arrays.toString(args);
          throw new IllegalArgumentException(ex);
       }
    }
 
+   private <T> T getProvider(Class<?> type, Class<T> provider) {
+      // Given a type we need a provider
+      // 1 - Try to find the provider under type's default config domain
+      String domain = ModuleConstants.getDefaultConfigFor(type);
+      String name = ModuleConstants.getProviderNameFor(type);
+      T pInstance = DefaultParameterProvider.getCompatibleProperty(domain,
+            name, provider, null, config);
+
+      // If the provider was not found then try to find it under
+      // module's default domain
+      if (pInstance == null) {
+         domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+         pInstance = DefaultParameterProvider.getCompatibleProperty(domain,
+               name, provider, null, config);
+      }
+
+      // If the provider was not found then we should create
+      // the provider by using the parameter provider
+      if (pInstance == null) {
+         // It will create it first by looking for a loader (like this one)
+         // if a loader was not found then it will create a loader
+         // and load the provider
+         pInstance = parameterProvider.getParameter(provider, null, null);
+         if (pInstance == null) {
+            pInstance = load(provider);
+         }
+      }
+      return pInstance;
+   }
+
    /**
-    * Get the static method annotated with {@link LoadModule}, member of loader
-    * with a return type of returnType.
+    * Get the static method annotated with {@link ProvideModule}, member of
+    * loader with a return type of returnType.
     * <p>
     * 
     * @param returnType
@@ -199,7 +237,7 @@ public class DefaultModuleLoader implements ModuleLoader {
    }
 
    /**
-    * Get the instance method annotated with {@link LoadModule}, member of
+    * Get the instance method annotated with {@link ProvideModule}, member of
     * loader with a return type of returnType.
     * <p>
     * 
@@ -231,11 +269,11 @@ public class DefaultModuleLoader implements ModuleLoader {
     *           the annotation with properties
     * @return a configuration based on module properties
     */
-   static Map<String, Map<String, String>> getModuleConfig(Module module) {
-      Map<String, Map<String, String>> properties = new HashMap<>();
+   static Map<String, Map<String, Object>> getModuleConfig(Module module) {
+      Map<String, Map<String, Object>> properties = new HashMap<>();
       if (module != null) {
          for (Property p : module.properties()) {
-            Map<String, String> domain = properties.get(p.domain());
+            Map<String, Object> domain = properties.get(p.domain());
             if (domain == null) {
                domain = new HashMap<>();
                properties.put(p.domain(), domain);
@@ -249,7 +287,7 @@ public class DefaultModuleLoader implements ModuleLoader {
 
    private <T> T loadNoLoader(Class<T> moduleType) {
       // To load a module without a @Module annotations
-      // 1) There is a constructor with an annotation @LoadModule
+      // 1) There is a constructor with an annotation @ProvideModule
       // 2) There is no constructor with such annotation but there is
       // a default constructor
 
@@ -263,7 +301,7 @@ public class DefaultModuleLoader implements ModuleLoader {
       Filter<Constructor<?>> filter = FilterUtils.and(constructorLoaderFilter,
             accessFilter);
 
-      // Find any constructor with @LoadModule annotation
+      // Find any constructor with @ProvideModule annotation
       // If no such constructor then find the default one
       Set<Constructor<T>> cons = ReflectionUtils.getConstructors(moduleType,
             filter);
@@ -276,7 +314,7 @@ public class DefaultModuleLoader implements ModuleLoader {
 
       if (constructor == null) {
          throw new IllegalArgumentException(
-               "no annotated (@LoadModule) or default constructor found");
+               "no annotated (@ProvideModule) or default constructor found");
       }
 
       // Execute the default constructor if this is the default
@@ -290,8 +328,8 @@ public class DefaultModuleLoader implements ModuleLoader {
       }
 
       // Try to execute the constructor with annotation
-      // @LoadModule
-      Map<String, Map<String, String>> properties = getModuleConfig(module);
+      // @ProvideModule
+      Map<String, Map<String, Object>> properties = getModuleConfig(module);
       Class<?>[] parameterTypes = constructor.getParameterTypes();
       Annotation[][] annotations = constructor.getParameterAnnotations();
       Object[] args = getParameters(parameterTypes, annotations, properties);
@@ -323,163 +361,18 @@ public class DefaultModuleLoader implements ModuleLoader {
     * @return parameter values
     */
    protected Object[] getParameters(Class<?>[] parameterTypes,
-         Annotation[][] annotations, Map<String, Map<String, String>> properties) {
+         Annotation[][] annotations, Map<String, Map<String, Object>> properties) {
 
       Object[] parameterValues = new Object[parameterTypes.length];
       for (int i = 0; i < parameterTypes.length; i++) {
-         parameterValues[i] = getParameter(parameterTypes[i], annotations[i],
-               properties);
+         parameterValues[i] = parameterProvider.getParameter(parameterTypes[i],
+               annotations[i], properties);
       }
       return parameterValues;
    }
 
    /**
-    * Return a value for the given type based on its annotations and the default
-    * module config/
-    * <p>
-    * 
-    * @param parameterType
-    * @param annotations
-    * @param properties
-    * @return
-    */
-   protected Object getParameter(Class<?> parameterType,
-         Annotation[] annotations, Map<String, Map<String, String>> properties) {
-
-      // If there are not annotation the loader will try to parse the
-      // parameter metadata and to find info if it can be loaded
-      // by this loader
-      if (annotations == null || annotations.length == 0) {
-         return load(parameterType);
-      }
-
-      // We should check the number of @Property annotations
-      // and will be skipping other non related annotations
-      Property propertyAnnotation = null;
-      int count = 0;
-      for (Annotation an : annotations) {
-         if (an.annotationType().equals(Property.class)) {
-            count++;
-            propertyAnnotation = (Property) an;
-         }
-      }
-
-      // Check for more than one property annotation
-      if (count > 1) {
-         throw new IllegalArgumentException(
-               "found more than 1 annotation @Property for parameter");
-      }
-
-      // In case this parameter has other annotations
-      // rather than known ones
-      if (propertyAnnotation == null) {
-         return load(parameterType);
-      }
-
-      // We have a @Property annotation
-      // and we should extract info from there
-      return extractValue(parameterType, propertyAnnotation, properties);
-   }
-
-   /**
-    * Extract a value for the given parameter based on its annotation, and the
-    * configuration.
-    * <p>
-    * If the value can not be extracted from the configuration then the default
-    * stringval value will be converted to a value. The parameter should be a
-    * primitive type.
-    * 
-    * @param parameterType
-    * @param annotation
-    * @param properties
-    * @return
-    */
-   protected Object extractValue(Class<?> parameterType, Property annotation,
-         Map<String, Map<String, String>> properties) {
-      String domain = annotation.domain();
-      String name = annotation.name();
-      String strval = null;
-      Object val = null;
-
-      // Check first the local properties defined in annotations
-      if (config != null) {
-         val = config.getProperty(domain, name);
-      }
-
-      // If there is not a value defined then check for a
-      // specific value within the metadata provided by the class
-      // itself
-      if (val == null) {
-         Map<String, String> propDomain = properties.get(domain);
-         if (propDomain != null) {
-            strval = propDomain.get(name);
-         }
-
-         if (strval == null) {
-            strval = annotation.stringVal();
-         }
-
-         if (strval != null && !strval.isEmpty()) {
-            return getPrimitiveValue(parameterType, strval);
-         }
-      }
-
-      // The property could not be initialized so a null value is returned
-      return val;
-   }
-
-   /**
-    * Use jsano-smart library to extract a primitive type from a string value.
-    * <p>
-    * 
-    * @param type
-    * @param strval
-    * @return
-    */
-   @SuppressWarnings("unchecked")
-   static <T> T getPrimitiveValue(Class<T> type, String strval) {
-      try {
-         return (T) JSONValue.parseWithException(strval, wrapType(type));
-      } catch (ParseException ex) {
-         throw new IllegalArgumentException(ex);
-      }
-   }
-
-   /**
-    * If the given type is a primitive type, wrap it to its corresponding Java
-    * type.
-    * <p>
-    * 
-    * @param type
-    *           the type to wrap
-    * @return the wrapped primitive
-    */
-   static Class<?> wrapType(Class<?> type) {
-      Class<?> wrapper = primitives.get(type);
-      if (wrapper != null) {
-         return wrapper;
-      }
-      return type;
-   }
-
-   /**
-    * Mapped primitives to their Java objects.
-    * <p>
-    */
-   private final static Map<Class<?>, Class<?>> primitives = new HashMap<>();
-   static {
-      primitives.put(int.class, Integer.class);
-      primitives.put(double.class, Double.class);
-      primitives.put(float.class, Float.class);
-      primitives.put(long.class, Long.class);
-      primitives.put(short.class, Short.class);
-      primitives.put(char.class, Character.class);
-      primitives.put(boolean.class, Boolean.class);
-      primitives.put(byte.class, Byte.class);
-   }
-
-   /**
-    * Used to find an annotated with @LoadModule instance method.
+    * Used to find an annotated with @ProvideModule instance method.
     * <p>
     * 
     * @author Elvis
@@ -489,14 +382,14 @@ public class DefaultModuleLoader implements ModuleLoader {
       @Override
       public boolean accept(Method t) {
          return !Modifier.isStatic(t.getModifiers())
-               && t.getAnnotation(LoadModule.class) != null;
+               && t.getAnnotation(ProvideModule.class) != null;
       }
    }
 
    private static final InstanceMethodLoaderFilter instanceMethodLoaderFilter = new InstanceMethodLoaderFilter();
 
    /**
-    * Used to find an annotated with @LoadModule static method.
+    * Used to find an annotated with @ProvideModule static method.
     * <p>
     * 
     * @author Elvis
@@ -506,14 +399,14 @@ public class DefaultModuleLoader implements ModuleLoader {
       @Override
       public boolean accept(Method t) {
          return Modifier.isStatic(t.getModifiers())
-               && t.getAnnotation(LoadModule.class) != null;
+               && t.getAnnotation(ProvideModule.class) != null;
       }
    }
 
    private static final StaticMethodLoaderFilter staticMethodLoaderFilter = new StaticMethodLoaderFilter();
 
    /**
-    * Used to find an annotated with @LoadModule constructor.
+    * Used to find an annotated with @ProvideModule constructor.
     * <p>
     * 
     * @author Elvis
@@ -523,7 +416,7 @@ public class DefaultModuleLoader implements ModuleLoader {
 
       @Override
       public boolean accept(Constructor<?> t) {
-         return t.getAnnotation(LoadModule.class) != null;
+         return t.getAnnotation(ProvideModule.class) != null;
       }
    }
 

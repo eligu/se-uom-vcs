@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * A simple annotation to mark a loader method, that may be used to create an
+ * A simple annotation to mark a provider method, that may be used to provide an
  * instance of a given type (called module).
  * <p>
  * 
@@ -14,5 +14,5 @@ import java.lang.annotation.Target;
  */
 @Target(value = { ElementType.METHOD, ElementType.CONSTRUCTOR })
 @Retention(value = RetentionPolicy.RUNTIME)
-public @interface LoadModule {
+public @interface ProvideModule {
 }
