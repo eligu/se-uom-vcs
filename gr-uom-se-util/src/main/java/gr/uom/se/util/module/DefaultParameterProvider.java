@@ -15,10 +15,64 @@ import net.minidev.json.JSONValue;
 import net.minidev.json.parser.ParseException;
 
 /**
+ * An implementation of parameter provider which is based on a configuration
+ * manager, from where it can retrieve the values of required parameters.
+ * <p>
+ * Each parameter is resolved using the following algorithm:
+ * <ol>
+ * <li>If the parameter has a {@link Property} annotation:</li>
+ * <ol>
+ * <li>The configuration domain and the property name will be read from
+ * annotation.</li>
+ * <li>Based on these coordinates (domain, name) the configuration manager will
+ * be queried for the parameter value. If found it will be returned.</li>
+ * <li>If the value was not found on the previous step, the map provided when
+ * the method {@link #getParameter(Class, Annotation[], Map)} is called will be
+ * queried for the value. If found and the value is the same as type as the
+ * parameter then it will be returned. If found and the value is not the same
+ * type as the parameter, then its toString() method will be called and the
+ * string representation of it will be converted to a value which is compatible
+ * with the parameter.</li>
+ * <li>If the value was not found in the previous step then the
+ * {@code stringVal} value of the annotation will be analyzed. If the string
+ * value is equals to {@link NULLVal#NULL_STR} a null will be returned. If it is
+ * equals to {@link NULLVal#LOAD_STR} the parameter will be considered a module
+ * and it will be loaded by an instance of a {@link ModuleLoader}. If the string
+ * value is none of the above it will be considered a string representation of
+ * the parameter and will be converted to a value that is compatible with the
+ * parameter.</li>
+ * </ol>
+ * <li>If the parameter is not annotated it will be considered a module and it
+ * will be loaded using an instance of {@link ModuleLoader}.</li> </ol>
+ * 
+ * The strategy to use a module loader to load a parameter that is not annotated
+ * or can not be resolved is as follows:
+ * <ol>
+ * <li>Look for the loader under domain
+ * {@link ModuleConstants#getDefaultConfigFor(Class)} and property name
+ * {@link ModuleConstants#LOADER_PROPERTY}, where Class is the type of
+ * parameter. If the loader was found use it.</li>
+ * <li>If the loader was not found in previous step, then look for it under
+ * domain {@link ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN} and property name
+ * {@link ModuleConstants#DEFAULT_MODULE_LOADER_PROPERTY}. If found then use it.
+ * </li>
+ * <li>If the loader was not found in previous step, then check if a loader was
+ * provided when the instance of this class was created. If not, then create an
+ * instance of {@link DefaultModuleLoader} and use it. If yes, then use the
+ * provided loader.</li>
+ * </ol>
+ * Each time this provider looks for a property it will look first in
+ * configuration manager (provided when created, null or not) if the value is
+ * not found there it will look under the provided map (if the map is not null).
+ * 
+ * @see DefaultModuleLoader
  * @author Elvis Ligu
  * @version 0.0.1
  * @since 0.0.1
  */
+@Property(
+      domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
+      name = ModuleConstants.DEFAULT_PARAMETER_PROVIDER_PROPERTY)
 public class DefaultParameterProvider implements ParameterProvider {
 
    /**
@@ -40,7 +94,15 @@ public class DefaultParameterProvider implements ParameterProvider {
     * <p>
     * Both parameters can be null.
     */
-   public DefaultParameterProvider(ConfigManager config, ModuleLoader loader) {
+   public DefaultParameterProvider(
+         @Property(
+               domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
+               name = ModuleConstants.CONFIG_MANAGER_PROPERTY)
+         ConfigManager config,
+         @Property(
+               domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
+               name = ModuleConstants.DEFAULT_MODULE_LOADER_PROPERTY)
+         ModuleLoader loader) {
       this.config = config;
       this.loader = loader;
    }
@@ -76,7 +138,7 @@ public class DefaultParameterProvider implements ParameterProvider {
 
    /**
     * Return a loader to load any parameter that is not annotated and its value
-    * can not be obtain by a configuration.
+    * can not be obtained by a configuration.
     * <p>
     * 
     * @param type
@@ -236,8 +298,18 @@ public class DefaultParameterProvider implements ParameterProvider {
          strval = annotation.stringVal();
       }
 
-      if (strval != null && strval.equals(NULLVal.NULL_STR)) {
-         return null;
+      // In this case the string val should have a value
+      // If the value is same as NULL_STR that means we
+      // should return a null value, if it is LOAD_STR then
+      // we should consider this property as a module that
+      // should be loaded by a loader
+      if (strval != null) {
+         if (strval.equals(NULLVal.NULL_STR)) {
+            return null;
+         }
+         if (strval.equals(NULLVal.LOAD_STR)) {
+            return getParameter(parameterType, null, properties);
+         }
       }
 
       if (strval != null && !strval.isEmpty()) {

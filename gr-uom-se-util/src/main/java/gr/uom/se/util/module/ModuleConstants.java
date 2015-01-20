@@ -44,6 +44,26 @@ public class ModuleConstants {
    public static final String PROVIDER_PROPERTY = "moduleProvider";
 
    /**
+    * The name of the property that stores the configuration manager to be
+    * resolved.
+    * <p>
+    */
+   public static final String CONFIG_MANAGER_PROPERTY = "configManager";
+
+   /**
+    * The name of the property where the default parameter provider is stored.
+    * <p>
+    */
+   public static final String DEFAULT_PARAMETER_PROVIDER_PROPERTY = "defaultParameterProvider";
+
+   /**
+    * The name of the property where the default property injector will be
+    * stored.
+    * <p>
+    */
+   public static final String DEFAUL_PROPERTY_INJECTOR_PROPERTY = "defaultPropertyInjector";
+
+   /**
     * Get the default config domain for the given class.
     * <p>
     * This will return the fully qualified name of the given class.
@@ -59,8 +79,9 @@ public class ModuleConstants {
     * Get the name of the property where the system can find the provider of the
     * given class.
     * <p>
-    * By default the provider is stored at a property named same as the
-    * fully qualified name of the class it provides appended .moduleProvider.
+    * By default the provider is stored at a property named same as the fully
+    * qualified name of the class it provides appended .moduleProvider.
+    * 
     * @param clazz
     * @return
     */

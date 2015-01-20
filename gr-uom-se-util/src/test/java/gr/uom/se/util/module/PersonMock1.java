@@ -4,6 +4,7 @@
 package gr.uom.se.util.module;
 
 import gr.uom.se.util.module.annotations.Module;
+import gr.uom.se.util.module.annotations.NULLVal;
 import gr.uom.se.util.module.annotations.Property;
 import gr.uom.se.util.module.annotations.ProvideModule;
 
@@ -21,7 +22,7 @@ import gr.uom.se.util.module.annotations.ProvideModule;
             name = "age", 
             stringVal = PersonDefaults.PERSON_AGE_MODULE) }, 
       provider = PersonLoader.class)
-public class PersonMock {
+public class PersonMock1 {
    
    @Property(
          domain = PersonDefaults.PERSON_DOMAIN, 
@@ -35,13 +36,25 @@ public class PersonMock {
          stringVal = PersonDefaults.PERSON_AGE_INJECTED)
    private int age;
 
-   public PersonMock() {
+   @Property(
+         domain = PersonDefaults.PERSON_DOMAIN, 
+         name = "address", 
+         stringVal = NULLVal.NULL_STR)
+   private String address;
+   
+   @Property(
+         domain = PersonDefaults.PERSON_DOMAIN, 
+         name = "partner", 
+         stringVal = NULLVal.LOAD_STR)
+   private PersonMock2 partner;
+   
+   public PersonMock1() {
       this.name = PersonDefaults.PERSON_NAME_CONSTRUCTOR;
       this.age = Integer.parseInt(PersonDefaults.PERSON_AGE_CONSTRUCTOR);
    }
 
    @ProvideModule
-   public PersonMock(
+   public PersonMock1(
          @Property(
                domain = PersonDefaults.PERSON_DOMAIN, 
                name = "name", 
@@ -57,7 +70,7 @@ public class PersonMock {
    }
 
    @ProvideModule
-   public static PersonMock newPerson(
+   public static PersonMock1 newPerson(
          @Property(
                domain = PersonDefaults.PERSON_DOMAIN, 
                name = "name", 
@@ -68,7 +81,7 @@ public class PersonMock {
                name = "age", 
                stringVal = PersonDefaults.PERSON_AGE_STATIC_METHOD) 
          int age) {
-      PersonMock person = new PersonMock();
+      PersonMock1 person = new PersonMock1();
       person.name = name;
       person.age = age;
       return person;
@@ -79,6 +92,12 @@ public class PersonMock {
    }
    public String getName() {
       return name;
+   }
+   public String getAddress() {
+      return address;
+   }
+   public PersonMock2 getPartner() {
+      return partner;
    }
    
    @Override
@@ -104,7 +123,7 @@ public class PersonMock {
          return false;
       if (getClass() != obj.getClass())
          return false;
-      PersonMock other = (PersonMock) obj;
+      PersonMock1 other = (PersonMock1) obj;
       if (age != other.age)
          return false;
       if (name == null) {

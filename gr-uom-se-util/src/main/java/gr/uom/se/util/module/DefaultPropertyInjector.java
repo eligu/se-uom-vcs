@@ -13,8 +13,21 @@ import java.util.Collection;
 import java.util.List;
 
 /**
+ * An implementation of a property injector that is based on a parameter
+ * provider.
+ * <p>
+ * This injector will try to inject values to any declared property of a given
+ * bean, that is annotated with a {@link Property} annotation. The values
+ * injected are resolved using an instance of {@link ParameterProvider}, thus
+ * the algorithm of resolving the values should be implemented in a parameter
+ * provider. This implementation will not resolve inherited properties. It is
+ * advisable that inherited properties (private or not) are resolved by the
+ * super constructor or when creating the instance of the bean.
+ * 
  * @author Elvis Ligu
  */
+@Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
+name = ModuleConstants.DEFAUL_PROPERTY_INJECTOR_PROPERTY)
 public class DefaultPropertyInjector implements PropertyInjector {
 
    /**
@@ -30,7 +43,11 @@ public class DefaultPropertyInjector implements PropertyInjector {
     * @param provider
     *           used by this injector to retrieve annotated values
     */
-   public DefaultPropertyInjector(ParameterProvider provider) {
+   public DefaultPropertyInjector(
+         @Property(
+               domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
+               name = ModuleConstants.DEFAULT_PARAMETER_PROVIDER_PROPERTY)
+         ParameterProvider provider) {
       ArgsCheck.notNull("provider", provider);
       this.provider = provider;
    }
@@ -59,8 +76,8 @@ public class DefaultPropertyInjector implements PropertyInjector {
          }
 
          // Use the provider to get the value
-         Object val = provider.getParameter(bean.getClass(),
-               f.getAnnotations(), null);
+         Object val = provider.getParameter(f.getType(), f.getAnnotations(),
+               null);
          try {
             f.set(bean, val);
          } catch (IllegalArgumentException | IllegalAccessException e) {

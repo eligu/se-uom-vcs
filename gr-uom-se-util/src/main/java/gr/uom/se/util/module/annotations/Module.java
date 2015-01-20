@@ -12,8 +12,8 @@ import java.lang.annotation.Target;
  * <p>
  * A module is a type whose instances can be loaded using an implementation of
  * {@link ModuleLoader} interface. Using this annotation the module can describe
- * properties that may be used by the loader, such as the loader or other
- * properties.
+ * properties that may be used by the loader, such as the provider of the class
+ * who is annotated by this annotation or other properties.
  * 
  * @author Elvis Ligu
  */
@@ -24,7 +24,8 @@ public @interface Module {
    /**
     * Define the provider of the type this is annotating.
     * <p>
-    * The default value is of type {@link NULLVal}.
+    * The default value is of type {@link NULLVal}, that is the module loader
+    * can read it as non specified.
     * 
     * @return
     */

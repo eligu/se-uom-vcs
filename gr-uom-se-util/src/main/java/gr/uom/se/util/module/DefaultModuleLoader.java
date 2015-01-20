@@ -26,48 +26,67 @@ import java.util.Set;
  * <p>
  * The strategy of this loader is based on annotations, thus it is class
  * agnostic. It provides a fall-back mechanism that allows the creation of
- * instances even when the required annotation are absent. The module algorithm
+ * instances even when the required annotations are absent. The module algorithm
  * is as follows:
  * <ol>
  * <li>{@link #load(Class)} call with a type.</li>
  * <li>If a {@link Module} annotation is present read the properties it contains
  * and creates configuration domains.</li>
- * <li>If a loader type is specified then:</li>
+ * <li>If a provider type is specified then:</li>
  * <ol>
  * <li>Look for an instance method {@link ProvideModule} annotation.</li>
- * <li>If an instance method was found then go to step 1, to load the loader.</li>
+ * <li>If an instance method was found then proceed with loading of provider as
+ * follows:</li>
+ * <ol>
+ * <li>Look up the provider at a config domain
+ * {@link ModuleConstants#getDefaultConfigFor(Class)} where the Class is the
+ * module that the provider should return, with a property name of
+ * {@link ModuleConstants#getProviderNameFor(Class)}.</li>
+ * <li>If the provider was not found there then look up at config domain
+ * {@link ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN} which is the default
+ * module configuration domain.</li>
+ * <li>If the provider is not found at these default places within configuration
+ * manager then try to load the provider using an instance of
+ * {@link ParameterProvider#getParameter(Class, Annotation[], Map)}</li>
+ * <li>If the provider can not be loaded it will cause a null pointer exception.
+ * </li>
+ * </ol>
  * <li>If not, then find a static method with {@link ProvideModule} annotation.</li>
+ * <li>If the method that provides the module is found execute it (if an
+ * instance method, then use the provider instance at step 3.2). The parameters
+ * of provider method will be retrieved using an instance of
+ * {@link ParameterProvider}.</li>
  * </ol>
  * <li>If no loader is provided then find a constructor of the module with
- * annotation {@link ProvideModule}.</li>
+ * annotation {@link ProvideModule}. If found then execute it just like in step
+ * 3.4.</li>
  * <li>If no annotated constructor is found then look for the default
- * constructor to create the new instance.</li>
+ * constructor to create the new instance, and execute it.</li>
  * </ol>
  * 
- * After locating the method to load the module (an annotated method or a
- * constructor) then the strategy of invoking it to load the module is as
- * follows (except in the case of default constructor):
+ * After locating the method that provides the module (an annotated method or a
+ * constructor) then the strategy of invoking it to get the module is as
+ * follows:
  * <ol>
  * <li>If the target (method or constructor) has no parameters then invoke it.</li>
- * <li>If the target has parameters then if the parameter is annotated with
- * {@link Property} try to get its value using the provided
- * {@link ConfigManager} (use annotation info for domain and property name), if
- * no value is contained in config manager, then use the default properties that
- * are specified in {@link Module} annotation if it is present. If a property
- * can not be loaded even after looking at default properties then try to load
- * it from the annotation itself by using {@code stringval} value. The string
- * value will be converted to a Java value by using json-smart library.
- * Primitive types are supported unless they are multidimensional arrays.</li>
- * <li>If a parameter has no annotation it will be considered a module and it
- * will be loaded using this loader (start from step 1).</li>
+ * <li>If the target has parameters then use an instance of
+ * {@link ParameterProvider} to get the value for each parameter.</li>
  * </ol>
  * 
- * NOTE: this loader makes recursive calls to load any object that it doesn't
- * recognize (the module loader is considered a module if it should be loaded),
- * thus the caller should ensure this doesn't lead to endless recursive loops.
+ * NOTE 1: this loader may fall into recursive calls in order to load any
+ * module. This is the case when a module defines a specific provider and that
+ * provider defines the module itself as its provider. Especially when both of
+ * them must be created.
+ * <p>
+ * NOTE 2: the strategy of injecting the values at parameters of a provider
+ * method (or constructor) is left to an instance of {@link ParameterProvider}
+ * which is specified when constructing this loader. A known implementation of
+ * it is {@link DefaultParameterProvider}.
  * 
  * @author Elvis Ligu
  */
+@Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
+          name = ModuleConstants.DEFAULT_MODULE_LOADER_PROPERTY)
 public class DefaultModuleLoader implements ModuleLoader {
 
    /**
@@ -86,7 +105,17 @@ public class DefaultModuleLoader implements ModuleLoader {
     */
    private ParameterProvider parameterProvider;
 
-   public DefaultModuleLoader(ConfigManager config, ParameterProvider provider) {
+   @ProvideModule
+   public DefaultModuleLoader(
+         @Property(
+               domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
+               name = ModuleConstants.CONFIG_MANAGER_PROPERTY)
+         ConfigManager config,
+         
+         @Property(
+               domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
+               name = ModuleConstants.DEFAULT_PARAMETER_PROVIDER_PROPERTY)
+         ParameterProvider provider) {
       this.config = config;
       ArgsCheck.notNull("provider", provider);
       this.parameterProvider = provider;
