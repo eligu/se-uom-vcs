@@ -10,5 +10,5 @@ package gr.uom.se.util.manager;
  */
 public class ConfigConstants {
 
-   public static final String DEFAUL_CONFIG_DOMAIN = "default";
+   public static final String DEFAULT_CONFIG_DOMAIN = "default";
 }

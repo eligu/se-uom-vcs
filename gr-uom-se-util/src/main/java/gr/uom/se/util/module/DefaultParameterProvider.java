@@ -70,9 +70,7 @@ import net.minidev.json.parser.ParseException;
  * @version 0.0.1
  * @since 0.0.1
  */
-@Property(
-      domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
-      name = ModuleConstants.DEFAULT_PARAMETER_PROVIDER_PROPERTY)
+@Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.DEFAULT_PARAMETER_PROVIDER_PROPERTY)
 public class DefaultParameterProvider implements ParameterProvider {
 
    /**
@@ -95,14 +93,8 @@ public class DefaultParameterProvider implements ParameterProvider {
     * Both parameters can be null.
     */
    public DefaultParameterProvider(
-         @Property(
-               domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
-               name = ModuleConstants.CONFIG_MANAGER_PROPERTY)
-         ConfigManager config,
-         @Property(
-               domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
-               name = ModuleConstants.DEFAULT_MODULE_LOADER_PROPERTY)
-         ModuleLoader loader) {
+         @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.CONFIG_MANAGER_PROPERTY) ConfigManager config,
+         @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.DEFAULT_MODULE_LOADER_PROPERTY) ModuleLoader loader) {
       this.config = config;
       this.loader = loader;
    }
@@ -118,7 +110,7 @@ public class DefaultParameterProvider implements ParameterProvider {
       // parameter metadata and to find info if it can be loaded
       // by this loader
       if (annotations == null || annotations.length == 0) {
-         return getLoader(parameterType, properties).load(parameterType);
+         return resolveLoader(parameterType, properties).load(parameterType);
       }
 
       // We should check the number of @Property annotations
@@ -128,7 +120,7 @@ public class DefaultParameterProvider implements ParameterProvider {
       // In case this parameter has other annotations
       // rather than known ones
       if (propertyAnnotation == null) {
-         return getLoader(parameterType, properties).load(parameterType);
+         return resolveLoader(parameterType, properties).load(parameterType);
       }
 
       // We have a @Property annotation
@@ -136,35 +128,9 @@ public class DefaultParameterProvider implements ParameterProvider {
       return extractValue(parameterType, propertyAnnotation, properties);
    }
 
-   /**
-    * Return a loader to load any parameter that is not annotated and its value
-    * can not be obtained by a configuration.
-    * <p>
-    * 
-    * @param type
-    *           of parameter to load
-    * @param properties
-    * @return
-    */
-   protected ModuleLoader getLoader(Class<?> type,
+   protected ModuleLoader resolveLoader(Class<?> type,
          Map<String, Map<String, Object>> properties) {
-      // Check first under the default domain of the given class
-      // if there is any loader available
-      String loaderProperty = ModuleConstants.LOADER_PROPERTY;
-      String loaderDomain = ModuleConstants.getDefaultConfigFor(type);
-
-      ModuleLoader loader = getCompatibleProperty(loaderDomain, loaderProperty,
-            ModuleLoader.class, properties, config);
-
-      // If a loader is not available then check under the default
-      // module's domain if a loader is available
-      if (loader == null) {
-         loaderProperty = ModuleConstants.DEFAULT_MODULE_LOADER_PROPERTY;
-         loaderDomain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
-         loader = getCompatibleProperty(loaderDomain, loaderProperty,
-               ModuleLoader.class, properties, config);
-      }
-
+      ModuleLoader loader = InternalModuleUtils.getLoader(type, properties, config);
       // If no loader was found then create a default module loader
       // if it is not created
       if (loader == null) {
@@ -174,35 +140,6 @@ public class DefaultParameterProvider implements ParameterProvider {
          loader = this.loader;
       }
       return loader;
-   }
-
-   @SuppressWarnings("unchecked")
-   static <T> T getCompatibleProperty(String domain, String name,
-         Class<T> type, Map<String, Map<String, Object>> properties,
-         ConfigManager config) {
-
-      T val = null;
-      if (config != null) {
-         val = config.getProperty(domain, name);
-      }
-
-      if (val == null && properties != null) {
-         // Check first for a value within default config
-         Map<String, Object> propDomain = properties.get(domain);
-         if (propDomain != null) {
-            Object pVal = propDomain.get(name);
-
-            // If the value is within the default config,
-            // check if it is a compatible type with T, if so
-            // return the value
-            if (pVal != null) {
-               if (type.isAssignableFrom(pVal.getClass())) {
-                  return (T) pVal;
-               }
-            }
-         }
-      }
-      return val;
    }
 
    /**

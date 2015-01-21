@@ -3,6 +3,7 @@
  */
 package gr.uom.se.util.module;
 
+import gr.uom.se.util.manager.ConfigManager;
 import gr.uom.se.util.module.annotations.Property;
 import gr.uom.se.util.validation.ArgsCheck;
 
@@ -11,6 +12,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * An implementation of a property injector that is based on a parameter
@@ -26,8 +28,7 @@ import java.util.List;
  * 
  * @author Elvis Ligu
  */
-@Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
-name = ModuleConstants.DEFAUL_PROPERTY_INJECTOR_PROPERTY)
+@Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.DEFAUL_PROPERTY_INJECTOR_PROPERTY)
 public class DefaultPropertyInjector implements PropertyInjector {
 
    /**
@@ -37,6 +38,13 @@ public class DefaultPropertyInjector implements PropertyInjector {
    private ParameterProvider provider;
 
    /**
+    * A config manager to look for parameter provider each time a property
+    * should be injected.
+    * <p>
+    */
+   private ConfigManager config;
+
+   /**
     * Create a new injector given the property provider.
     * <p>
     * 
@@ -44,10 +52,7 @@ public class DefaultPropertyInjector implements PropertyInjector {
     *           used by this injector to retrieve annotated values
     */
    public DefaultPropertyInjector(
-         @Property(
-               domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
-               name = ModuleConstants.DEFAULT_PARAMETER_PROVIDER_PROPERTY)
-         ParameterProvider provider) {
+         @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.DEFAULT_PARAMETER_PROVIDER_PROPERTY) ParameterProvider provider) {
       ArgsCheck.notNull("provider", provider);
       this.provider = provider;
    }
@@ -76,8 +81,8 @@ public class DefaultPropertyInjector implements PropertyInjector {
          }
 
          // Use the provider to get the value
-         Object val = provider.getParameter(f.getType(), f.getAnnotations(),
-               null);
+         Object val = resolveParameterProvider(f.getType(), null).getParameter(
+               f.getType(), f.getAnnotations(), null);
          try {
             f.set(bean, val);
          } catch (IllegalArgumentException | IllegalAccessException e) {
@@ -86,6 +91,32 @@ public class DefaultPropertyInjector implements PropertyInjector {
             f.setAccessible(accessible);
          }
       }
+   }
+
+   /**
+    * Resolve a parameter provider for the given type.
+    * <p>
+    * The parameter will be searched at the default domains using
+    * {@link InternalModuleUtils#getParameterProvider(Class, Map, ConfigManager)}
+    * if it was not found there, it will be created using a default parameter
+    * provider.
+    * 
+    * @param type
+    * @param properties
+    * @return
+    */
+   protected ParameterProvider resolveParameterProvider(Class<?> type,
+         Map<String, Map<String, Object>> properties) {
+      ParameterProvider provider = InternalModuleUtils.getParameterProvider(
+            type, properties, config);
+      // If no provider was found then create a default provider
+      if (provider == null) {
+         if (this.provider == null) {
+            this.provider = new DefaultParameterProvider(config, null);
+         }
+         provider = this.provider;
+      }
+      return provider;
    }
 
    /**
