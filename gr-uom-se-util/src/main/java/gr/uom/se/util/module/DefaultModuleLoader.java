@@ -85,8 +85,7 @@ import java.util.Set;
  * 
  * @author Elvis Ligu
  */
-@Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
-          name = ModuleConstants.DEFAULT_MODULE_LOADER_PROPERTY)
+@Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.DEFAULT_MODULE_LOADER_PROPERTY)
 public class DefaultModuleLoader implements ModuleLoader {
 
    /**
@@ -107,15 +106,9 @@ public class DefaultModuleLoader implements ModuleLoader {
 
    @ProvideModule
    public DefaultModuleLoader(
-         @Property(
-               domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
-               name = ModuleConstants.CONFIG_MANAGER_PROPERTY)
-         ConfigManager config,
-         
-         @Property(
-               domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
-               name = ModuleConstants.DEFAULT_PARAMETER_PROVIDER_PROPERTY)
-         ParameterProvider provider) {
+         @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.CONFIG_MANAGER_PROPERTY) ConfigManager config,
+
+         @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.DEFAULT_PARAMETER_PROVIDER_PROPERTY) ParameterProvider provider) {
       this.config = config;
       ArgsCheck.notNull("provider", provider);
       this.parameterProvider = provider;
@@ -184,7 +177,7 @@ public class DefaultModuleLoader implements ModuleLoader {
       Method method = getInstanceLoaderMethod(moduleType, loader);
       Object providerInstance = null;
       if (method != null) {
-         providerInstance = getProvider(moduleType, loader);
+         providerInstance = getModuleProvider(moduleType, loader);
       } else {
          method = getStaticLoaderMethod(moduleType, loader);
       }
@@ -212,7 +205,7 @@ public class DefaultModuleLoader implements ModuleLoader {
       }
    }
 
-   private <T> T getProvider(Class<?> type, Class<T> provider) {
+   private <T> T getModuleProvider(Class<?> type, Class<T> provider) {
       // Given a type we need a provider
       // 1 - Try to find the provider under type's default config domain
       String domain = ModuleConstants.getDefaultConfigFor(type);
@@ -394,10 +387,53 @@ public class DefaultModuleLoader implements ModuleLoader {
 
       Object[] parameterValues = new Object[parameterTypes.length];
       for (int i = 0; i < parameterTypes.length; i++) {
-         parameterValues[i] = parameterProvider.getParameter(parameterTypes[i],
-               annotations[i], properties);
+         parameterValues[i] = getParameterProvider(parameterTypes[i],
+               properties).getParameter(parameterTypes[i], annotations[i],
+               properties);
       }
       return parameterValues;
+   }
+
+   /**
+    * Return a parameter provider to be used to resolve parameters of a given
+    * method.
+    * <p>
+    * 
+    * @param type
+    *           of parameter to load
+    * @param properties
+    * @return
+    */
+   protected ParameterProvider getParameterProvider(Class<?> type,
+         Map<String, Map<String, Object>> properties) {
+      // Check first under the default domain of the given class
+      // if there is any parameter provider available
+      String loaderProperty = ModuleConstants.PARAMETER_PROVIDER_PROPERTY;
+      String loaderDomain = ModuleConstants.getDefaultConfigFor(type);
+
+      ParameterProvider provider = DefaultParameterProvider
+            .getCompatibleProperty(loaderDomain, loaderProperty,
+                  ParameterProvider.class, properties, config);
+
+      // If a provider is not available then check under the default
+      // module's domain if it is available there
+      if (provider == null) {
+         loaderProperty = ModuleConstants.DEFAULT_PARAMETER_PROVIDER_PROPERTY;
+         loaderDomain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+         provider = DefaultParameterProvider.getCompatibleProperty(
+               loaderDomain, loaderProperty, ParameterProvider.class,
+               properties, config);
+      }
+
+      // If no loader was found then create a default module loader
+      // if it is not created
+      if (provider == null) {
+         if (this.parameterProvider == null) {
+            this.parameterProvider = new DefaultParameterProvider(config, this);
+         }
+         provider = this.parameterProvider;
+      }
+      return provider;
    }
 
    /**

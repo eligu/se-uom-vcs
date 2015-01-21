@@ -57,6 +57,13 @@ public class ModuleConstants {
    public static final String DEFAULT_PARAMETER_PROVIDER_PROPERTY = "defaultParameterProvider";
 
    /**
+    * The name of the property where a parameter provider for a given module is
+    * stored.
+    * <p>
+    */
+   public static final String PARAMETER_PROVIDER_PROPERTY = "parameterProvider";
+
+   /**
     * The name of the property where the default property injector will be
     * stored.
     * <p>
