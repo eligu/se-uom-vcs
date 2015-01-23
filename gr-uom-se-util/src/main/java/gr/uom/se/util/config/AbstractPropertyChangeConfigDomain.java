@@ -1,7 +1,7 @@
 /**
  * 
  */
-package gr.uom.se.util.manager;
+package gr.uom.se.util.config;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;

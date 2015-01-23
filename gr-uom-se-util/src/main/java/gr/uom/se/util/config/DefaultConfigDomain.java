@@ -1,7 +1,7 @@
 /**
  * 
  */
-package gr.uom.se.util.manager;
+package gr.uom.se.util.config;
 
 import gr.uom.se.util.module.annotations.Module;
 import gr.uom.se.util.module.annotations.Property;

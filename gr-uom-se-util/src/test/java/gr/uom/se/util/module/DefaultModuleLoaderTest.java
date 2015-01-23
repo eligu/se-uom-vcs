@@ -6,8 +6,8 @@ package gr.uom.se.util.module;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import gr.uom.se.util.manager.ConfigManager;
-import gr.uom.se.util.manager.DefaultConfigManager;
+import gr.uom.se.util.config.ConfigManager;
+import gr.uom.se.util.config.DefaultConfigManager;
 
 import org.junit.Before;
 import org.junit.BeforeClass;

@@ -3,7 +3,7 @@
  */
 package gr.uom.se.util.module;
 
-import gr.uom.se.util.manager.ConfigManager;
+import gr.uom.se.util.config.ConfigManager;
 import gr.uom.se.util.mapper.Mapper;
 import gr.uom.se.util.module.annotations.NULLVal;
 import gr.uom.se.util.module.annotations.Property;

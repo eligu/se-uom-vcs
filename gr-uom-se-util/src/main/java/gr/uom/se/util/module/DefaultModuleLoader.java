@@ -2,7 +2,7 @@ package gr.uom.se.util.module;
 
 import gr.uom.se.filter.Filter;
 import gr.uom.se.filter.FilterUtils;
-import gr.uom.se.util.manager.ConfigManager;
+import gr.uom.se.util.config.ConfigManager;
 import gr.uom.se.util.module.annotations.Module;
 import gr.uom.se.util.module.annotations.NULLVal;
 import gr.uom.se.util.module.annotations.Property;

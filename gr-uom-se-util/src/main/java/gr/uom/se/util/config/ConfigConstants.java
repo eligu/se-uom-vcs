@@ -1,7 +1,7 @@
 /**
  * 
  */
-package gr.uom.se.util.manager;
+package gr.uom.se.util.config;
 
 /**
  * Different constants used by the configuration manager.

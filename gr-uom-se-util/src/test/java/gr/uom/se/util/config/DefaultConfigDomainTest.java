@@ -5,11 +5,11 @@ package gr.uom.se.util.config;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import gr.uom.se.util.manager.ConfigConstants;
-import gr.uom.se.util.manager.ConfigDomain;
-import gr.uom.se.util.manager.ConfigManager;
-import gr.uom.se.util.manager.DefaultConfigDomain;
-import gr.uom.se.util.manager.DefaultConfigManager;
+import gr.uom.se.util.config.ConfigConstants;
+import gr.uom.se.util.config.ConfigDomain;
+import gr.uom.se.util.config.ConfigManager;
+import gr.uom.se.util.config.DefaultConfigDomain;
+import gr.uom.se.util.config.DefaultConfigManager;
 import gr.uom.se.util.module.ModuleLoader;
 
 import org.junit.Before;

@@ -3,7 +3,7 @@
  */
 package gr.uom.se.util.module;
 
-import gr.uom.se.util.manager.ConfigManager;
+import gr.uom.se.util.config.ConfigManager;
 import gr.uom.se.util.module.annotations.Property;
 import gr.uom.se.util.validation.ArgsCheck;
 

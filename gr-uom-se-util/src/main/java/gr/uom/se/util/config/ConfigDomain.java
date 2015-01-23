@@ -1,7 +1,7 @@
 /**
  * 
  */
-package gr.uom.se.util.manager;
+package gr.uom.se.util.config;
 
 /**
  * A set of <key value> properties for a specified domain.

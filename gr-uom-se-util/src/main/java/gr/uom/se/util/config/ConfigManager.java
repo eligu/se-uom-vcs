@@ -1,4 +1,4 @@
-package gr.uom.se.util.manager;
+package gr.uom.se.util.config;
 
 /**
  * A manager that deal with different configuration domains.

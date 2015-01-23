@@ -3,8 +3,8 @@
  */
 package gr.uom.se.util.config;
 
-import gr.uom.se.util.manager.ConfigDomain;
-import gr.uom.se.util.manager.ConfigManager;
+import gr.uom.se.util.config.ConfigDomain;
+import gr.uom.se.util.config.ConfigManager;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,7 +22,7 @@ public class ConfigManagerMock implements ConfigManager {
    /**
     * {@inheritDoc)
     * 
-    * @see gr.uom.se.util.manager.ConfigManager#getProperty(java.lang.String)
+    * @see gr.uom.se.util.config.ConfigManager#getProperty(java.lang.String)
     */
    @Override
    public <T> T getProperty(String name) {
@@ -33,7 +33,7 @@ public class ConfigManagerMock implements ConfigManager {
    /**
     * {@inheritDoc)
     * 
-    * @see gr.uom.se.util.manager.ConfigManager#setProperty(java.lang.String,
+    * @see gr.uom.se.util.config.ConfigManager#setProperty(java.lang.String,
     * java.lang.Object)
     */
    @Override
@@ -44,7 +44,7 @@ public class ConfigManagerMock implements ConfigManager {
    /**
     * {@inheritDoc)
     * 
-    * @see gr.uom.se.util.manager.ConfigManager#getProperty(java.lang.String,
+    * @see gr.uom.se.util.config.ConfigManager#getProperty(java.lang.String,
     * java.lang.String)
     */
    @SuppressWarnings("unchecked")
@@ -60,7 +60,7 @@ public class ConfigManagerMock implements ConfigManager {
    /**
     * {@inheritDoc)
     * 
-    * @see gr.uom.se.util.manager.ConfigManager#setProperty(java.lang.String,
+    * @see gr.uom.se.util.config.ConfigManager#setProperty(java.lang.String,
     * java.lang.String, java.lang.Object)
     */
    @Override
@@ -76,7 +76,7 @@ public class ConfigManagerMock implements ConfigManager {
    /**
     * {@inheritDoc)
     * 
-    * @see gr.uom.se.util.manager.ConfigManager#loadDomain(java.lang.String)
+    * @see gr.uom.se.util.config.ConfigManager#loadDomain(java.lang.String)
     */
    @Override
    public void loadDomain(String domain) {
@@ -87,7 +87,7 @@ public class ConfigManagerMock implements ConfigManager {
    /**
     * {@inheritDoc)
     * 
-    * @see gr.uom.se.util.manager.ConfigManager#loadDomain(java.lang.Class)
+    * @see gr.uom.se.util.config.ConfigManager#loadDomain(java.lang.Class)
     */
    @Override
    public <T extends ConfigDomain> T loadDomain(Class<T> domain) {
