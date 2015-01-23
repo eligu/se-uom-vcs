@@ -2,7 +2,7 @@ package gr.uom.se.util.reflect;
 
 import java.lang.reflect.Member;
 
-import gr.uom.se.filter.Filter;
+import gr.uom.se.util.filter.Filter;
 import gr.uom.se.util.validation.ArgsCheck;
 
 /**

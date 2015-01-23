@@ -3,8 +3,8 @@
  */
 package gr.uom.se.util.reflect;
 
-import gr.uom.se.filter.Filter;
-import gr.uom.se.filter.FilterUtils;
+import gr.uom.se.util.filter.Filter;
+import gr.uom.se.util.filter.FilterUtils;
 import gr.uom.se.util.reflect.MemberModifierFilter;
 import gr.uom.se.util.reflect.MemberOfFilter;
 import gr.uom.se.util.reflect.ReflectionUtils;

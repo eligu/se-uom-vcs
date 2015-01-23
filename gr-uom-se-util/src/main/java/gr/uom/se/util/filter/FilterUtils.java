@@ -1,7 +1,7 @@
 /**
  * 
  */
-package gr.uom.se.filter;
+package gr.uom.se.util.filter;
 
 import java.util.Collection;
 

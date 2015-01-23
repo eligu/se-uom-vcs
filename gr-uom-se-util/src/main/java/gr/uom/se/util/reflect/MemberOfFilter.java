@@ -3,8 +3,8 @@
  */
 package gr.uom.se.util.reflect;
 
-import gr.uom.se.filter.Filter;
-import gr.uom.se.filter.NotFilter;
+import gr.uom.se.util.filter.Filter;
+import gr.uom.se.util.filter.NotFilter;
 import gr.uom.se.util.validation.ArgsCheck;
 import gr.uom.se.util.validation.ContainmentCheck;
 
