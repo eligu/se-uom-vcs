@@ -26,7 +26,7 @@ import java.util.Set;
  * @author Elvis Ligu
  */
 public class ReflectionUtils {
-
+   
    /**
     * Get the default (non parameter) constructor.
     * <p>
@@ -207,7 +207,7 @@ public class ReflectionUtils {
    }
 
    /**
-    * Cope the methods of second collection to methods of first collection.
+    * Copy the methods of second collection to methods of first collection.
     * <p>
     * All methods returned will have distinct signatures.
     * 

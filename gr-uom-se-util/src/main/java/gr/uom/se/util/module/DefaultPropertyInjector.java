@@ -28,7 +28,7 @@ import java.util.Map;
  * 
  * @author Elvis Ligu
  */
-@Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.DEFAUL_PROPERTY_INJECTOR_PROPERTY)
+@Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.DEFAULT_PROPERTY_INJECTOR_PROPERTY)
 public class DefaultPropertyInjector implements PropertyInjector {
 
    /**
@@ -52,7 +52,10 @@ public class DefaultPropertyInjector implements PropertyInjector {
     *           used by this injector to retrieve annotated values
     */
    public DefaultPropertyInjector(
-         @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.DEFAULT_PARAMETER_PROVIDER_PROPERTY) ParameterProvider provider) {
+         @Property(
+               domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
+               name = ModuleConstants.DEFAULT_PARAMETER_PROVIDER_PROPERTY) 
+         ParameterProvider provider) {
       ArgsCheck.notNull("provider", provider);
       this.provider = provider;
    }
@@ -97,7 +100,7 @@ public class DefaultPropertyInjector implements PropertyInjector {
     * Resolve a parameter provider for the given type.
     * <p>
     * The parameter will be searched at the default domains using
-    * {@link InternalModuleUtils#getParameterProvider(Class, Map, ConfigManager)}
+    * {@link ModuleUtils#getParameterProvider(Class, Map, ConfigManager)}
     * if it was not found there, it will be created using a default parameter
     * provider.
     * 
@@ -107,7 +110,7 @@ public class DefaultPropertyInjector implements PropertyInjector {
     */
    protected ParameterProvider resolveParameterProvider(Class<?> type,
          Map<String, Map<String, Object>> properties) {
-      ParameterProvider provider = InternalModuleUtils.getParameterProvider(
+      ParameterProvider provider = ModuleUtils.getParameterProvider(
             type, properties, config);
       // If no provider was found then create a default provider
       if (provider == null) {

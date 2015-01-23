@@ -4,15 +4,12 @@
 package gr.uom.se.util.module;
 
 import gr.uom.se.util.manager.ConfigManager;
+import gr.uom.se.util.mapper.Mapper;
 import gr.uom.se.util.module.annotations.NULLVal;
 import gr.uom.se.util.module.annotations.Property;
 
 import java.lang.annotation.Annotation;
-import java.util.HashMap;
 import java.util.Map;
-
-import net.minidev.json.JSONValue;
-import net.minidev.json.parser.ParseException;
 
 /**
  * An implementation of parameter provider which is based on a configuration
@@ -130,7 +127,8 @@ public class DefaultParameterProvider implements ParameterProvider {
 
    protected ModuleLoader resolveLoader(Class<?> type,
          Map<String, Map<String, Object>> properties) {
-      ModuleLoader loader = InternalModuleUtils.getLoader(type, properties, config);
+      ModuleLoader loader = ModuleUtils.getLoader(type, properties,
+            config);
       // If no loader was found then create a default module loader
       // if it is not created
       if (loader == null) {
@@ -188,12 +186,18 @@ public class DefaultParameterProvider implements ParameterProvider {
     * @param properties
     * @return
     */
-   @SuppressWarnings("unchecked")
    protected <T> T extractValue(Class<T> parameterType, Property annotation,
          Map<String, Map<String, Object>> properties) {
       String domain = annotation.domain();
       String name = annotation.name();
-      String strval = null;
+      String strval = annotation.stringVal();
+      return this.extractValue(parameterType, domain, name, strval, properties);
+   }
+
+   @SuppressWarnings("unchecked")
+   protected <T> T extractValue(Class<T> parameterType, String domain,
+         String name, String strval, Map<String, Map<String, Object>> properties) {
+
       T val = null;
 
       // Check first if there is a value defined in config manager
@@ -228,13 +232,6 @@ public class DefaultParameterProvider implements ParameterProvider {
          }
       }
 
-      // If the strval has not a value that means the default
-      // config didn't have one, so we check for the annotation.
-      // The strval should definitely get a value at this point
-      if (strval == null) {
-         strval = annotation.stringVal();
-      }
-
       // In this case the string val should have a value
       // If the value is same as NULL_STR that means we
       // should return a null value, if it is LOAD_STR then
@@ -249,63 +246,22 @@ public class DefaultParameterProvider implements ParameterProvider {
          }
       }
 
+      // Use a mapper to map the default string value to the given type
       if (strval != null && !strval.isEmpty()) {
-         return getPrimitiveValue(parameterType, strval);
+
+         Mapper mapper = ModuleUtils.getMapperOfType(parameterType,
+               String.class, parameterType, properties, config);
+         
+         if (mapper == null) {
+            throw new IllegalArgumentException(
+                  "Can not map a string value to a type: " + parameterType);
+         }
+         return mapper.map(strval, parameterType);
       }
 
       // The property could not be initialized so an exception is thrown
       throw new IllegalArgumentException("Can not extract a value of "
             + parameterType.getName() + " " + " at " + domain + ":" + name
             + " with value " + strval);
-   }
-
-   /**
-    * Use json-smart library to extract a primitive type from a string value.
-    * <p>
-    * 
-    * @param type
-    * @param strval
-    * @return
-    */
-   @SuppressWarnings("unchecked")
-   static <T> T getPrimitiveValue(Class<T> type, String strval) {
-      try {
-         return (T) JSONValue.parseWithException(strval, wrapType(type));
-      } catch (ParseException ex) {
-         throw new IllegalArgumentException(ex);
-      }
-   }
-
-   /**
-    * If the given type is a primitive type, wrap it to its corresponding Java
-    * type.
-    * <p>
-    * 
-    * @param type
-    *           the type to wrap
-    * @return the wrapped primitive
-    */
-   static Class<?> wrapType(Class<?> type) {
-      Class<?> wrapper = primitives.get(type);
-      if (wrapper != null) {
-         return wrapper;
-      }
-      return type;
-   }
-
-   /**
-    * Mapped primitives to their Java objects.
-    * <p>
-    */
-   private final static Map<Class<?>, Class<?>> primitives = new HashMap<>();
-   static {
-      primitives.put(int.class, Integer.class);
-      primitives.put(double.class, Double.class);
-      primitives.put(float.class, Float.class);
-      primitives.put(long.class, Long.class);
-      primitives.put(short.class, Short.class);
-      primitives.put(char.class, Character.class);
-      primitives.put(boolean.class, Boolean.class);
-      primitives.put(byte.class, Byte.class);
    }
 }

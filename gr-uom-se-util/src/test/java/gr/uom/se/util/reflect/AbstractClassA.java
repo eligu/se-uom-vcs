@@ -1,7 +1,7 @@
 /**
  * 
  */
-package gr.uom.se.util.reflet;
+package gr.uom.se.util.reflect;
 
 /**
  * @author Elvis

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package gr.uom.se.util.reflet.testclasses;
+package gr.uom.se.util.reflect.testclasses;
 
 /**
  * @author Elvis Ligu

@@ -9,7 +9,7 @@ public class ModuleProvider {
    }
    
    @ProvideModule
-   public IModule getModule(@Property(domain = "default", name = "var") int var) {
+   public Module getModule(@Property(domain = "default", name = "var") int var) {
       Module module = new Module();
       module.setVar(var);
       return module;

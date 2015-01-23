@@ -1,7 +1,7 @@
 /**
  * 
  */
-package gr.uom.se.util.reflet;
+package gr.uom.se.util.reflect;
 
 import gr.uom.se.filter.Filter;
 import gr.uom.se.filter.FilterUtils;

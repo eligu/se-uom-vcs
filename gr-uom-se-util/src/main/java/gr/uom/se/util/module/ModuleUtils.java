@@ -4,6 +4,8 @@
 package gr.uom.se.util.module;
 
 import gr.uom.se.util.manager.ConfigManager;
+import gr.uom.se.util.mapper.Mapper;
+import gr.uom.se.util.mapper.MapperFactory;
 import gr.uom.se.util.module.annotations.Module;
 import gr.uom.se.util.module.annotations.Property;
 
@@ -15,7 +17,7 @@ import java.util.Map;
  * @version 0.0.1
  * @since 0.0.1
  */
-public class InternalModuleUtils {
+public class ModuleUtils {
 
    /**
     * Will try to resolve first a property from the configuration manager, if
@@ -37,7 +39,7 @@ public class InternalModuleUtils {
     * @return a value of the given property or null if it was not found
     */
    @SuppressWarnings("unchecked")
-   static <T> T getCompatibleProperty(String domain, String name,
+   public static <T> T getCompatibleProperty(String domain, String name,
          Class<T> type, Map<String, Map<String, Object>> properties,
          ConfigManager config) {
 
@@ -79,7 +81,7 @@ public class InternalModuleUtils {
     *           the annotation with properties
     * @return a configuration based on module properties
     */
-   static Map<String, Map<String, Object>> getModuleConfig(Module module) {
+   public static Map<String, Map<String, Object>> getModuleConfig(Module module) {
       Map<String, Map<String, Object>> properties = new HashMap<>();
       if (module != null) {
          for (Property p : module.properties()) {
@@ -118,7 +120,7 @@ public class InternalModuleUtils {
     *           the configuration manager to look for the provider
     * @return a module provider for {@code type} or null if it was not found
     */
-   static <T> T getModuleProvider(Class<?> type, Class<T> provider,
+   public static <T> T getModuleProvider(Class<?> type, Class<T> provider,
          Map<String, Map<String, Object>> properties, ConfigManager config) {
       // Given a type we need a provider
       // 1 - Try to find the provider under type's default config domain
@@ -157,7 +159,7 @@ public class InternalModuleUtils {
     * @param properties
     * @return
     */
-   static ParameterProvider getParameterProvider(Class<?> type,
+   public static ParameterProvider getParameterProvider(Class<?> type,
          Map<String, Map<String, Object>> properties, ConfigManager config) {
       // Check first under the default domain of the given class
       // if there is any parameter provider available
@@ -179,7 +181,33 @@ public class InternalModuleUtils {
    }
 
    /**
-    * Return a loader for the given type by looking at the default places.
+    * Ensure that this method will return a provider, even if the
+    * {@link #getParameterProvider(Class, Map, ConfigManager)} doesn't return any provider.
+    * <p>
+    * The provider returned by this method is of type {@link DefaultParameterProvider}.
+    * 
+    * @param type
+    *           the type to get the loader for
+    * @param properties
+    *           to look for a loader as an alternative if no config is specified
+    * @param config
+    *           to look primarily for the loader
+    * @return a loader for the given type
+    */
+   public static ParameterProvider resolveParameterProvider(Class<?> type,
+         Map<String, Map<String, Object>> properties, ConfigManager config) {
+
+      ParameterProvider provider = getParameterProvider(type, properties,
+            config);
+
+      if (provider == null) {
+         return new DefaultParameterProvider(config, null);
+      }
+      return provider;
+   }
+
+   /**
+    * Return a cachedLoader for the given type by looking at the default places.
     * <p>
     * 
     * First will look for the domain calling at
@@ -190,28 +218,29 @@ public class InternalModuleUtils {
     * {@link #getCompatibleProperty(String, String, Class, Map, ConfigManager)}.
     * If the provider was not found at this domain then it will look under the
     * default module domain {@link ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN}
-    * . Because a loader is a general purpose instance it will be searched under
-    * the property with name
+    * . Because a cachedLoader is a general purpose instance it will be searched
+    * under the property with name
     * {@link ModuleConstants#DEFAULT_MODULE_LOADER_PROPERTY}.
     * 
     * @param type
     *           of parameter to load
     * @param properties
-    *           default config to look for if the manager has not the loader
-    * @return a loader for the given type
+    *           default config to look for if the manager has not the
+    *           cachedLoader
+    * @return a cachedLoader for the given type
     */
-   static ModuleLoader getLoader(Class<?> type,
+   public static ModuleLoader getLoader(Class<?> type,
          Map<String, Map<String, Object>> properties, ConfigManager config) {
       // Check first under the default domain of the given class
-      // if there is any loader available
+      // if there is any cachedLoader available
       String loaderProperty = ModuleConstants.LOADER_PROPERTY;
       String loaderDomain = ModuleConstants.getDefaultConfigFor(type);
 
       ModuleLoader loader = getCompatibleProperty(loaderDomain, loaderProperty,
             ModuleLoader.class, properties, config);
 
-      // If a loader is not available then check under the default
-      // module's domain if a loader is available
+      // If a cachedLoader is not available then check under the default
+      // module's domain if a cachedLoader is available
       if (loader == null) {
          loaderProperty = ModuleConstants.DEFAULT_MODULE_LOADER_PROPERTY;
          loaderDomain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
@@ -219,5 +248,77 @@ public class InternalModuleUtils {
                ModuleLoader.class, properties, config);
       }
       return loader;
+   }
+
+   /**
+    * Ensure that this method will return a loader, even if the
+    * {@link #getLoader(Class, Map, ConfigManager)} doesn't return any loader.
+    * <p>
+    * The loader returned by this method is of type {@link DefaultModuleLoader}.
+    * 
+    * @param type
+    *           the type to get the loader for
+    * @param properties
+    *           to look for a loader as an alternative if no config is specified
+    * @param config
+    *           to look primarily for the loader
+    * @return a loader for the given type
+    */
+   public static ModuleLoader resolveLoader(Class<?> type,
+         Map<String, Map<String, Object>> properties, ConfigManager config) {
+      ModuleLoader loader = ModuleUtils.getLoader(type, properties, config);
+      // If no cachedLoader was found then create a default module cachedLoader
+      // if it is not created
+      if (loader == null) {
+         return new DefaultModuleLoader(config, null);
+      }
+      return loader;
+   }
+
+   /**
+    * Get a mapper to map value from type {@code from} to type {@code to}.
+    * <p>
+    * 
+    * First will look for the domain calling at
+    * {@link ModuleConstants#getDefaultConfigFor(Class)} where the Class is the
+    * {@code type} parameter. And the property name will be retrieved by calling
+    * {@link ModuleConstants#getMapperNameFor(Class, Class)}. The property will
+    * be retrieved using
+    * {@link #getCompatibleProperty(String, String, Class, Map, ConfigManager)}.
+    * If the mapper was not found at this domain then it will look under the
+    * default module domain {@link ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN}
+    * a property called {@link ModuleConstants#DEFAULT_MAPPER_FACTORY_PROPERTY}
+    * to get the default mapper factory. If the factory was not found then it
+    * will get the singleton factory using {@link MapperFactory#getInstance()},
+    * and load the mapper from there.
+    * 
+    * @param type
+    * @param from
+    * @param to
+    * @param properties
+    * @param config
+    * @return
+    */
+   public static Mapper getMapperOfType(Class<?> type, Class<?> from,
+         Class<?> to, Map<String, Map<String, Object>> properties,
+         ConfigManager config) {
+
+      String property = ModuleConstants.getMapperNameFor(from, to);
+      String domain = ModuleConstants.getDefaultConfigFor(type);
+
+      Mapper mapper = getCompatibleProperty(domain, property, Mapper.class,
+            properties, config);
+
+      if (mapper == null) {
+         property = ModuleConstants.DEFAULT_MAPPER_FACTORY_PROPERTY;
+         domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+         MapperFactory factory = getCompatibleProperty(domain, property,
+               MapperFactory.class, properties, config);
+         if (factory == null) {
+            factory = MapperFactory.getInstance();
+         }
+         mapper = factory.getMapper(from, to);
+      }
+      return mapper;
    }
 }

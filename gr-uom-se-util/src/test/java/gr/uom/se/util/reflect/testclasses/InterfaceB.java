@@ -1,9 +1,9 @@
 /**
  * 
  */
-package gr.uom.se.util.reflet.testclasses;
+package gr.uom.se.util.reflect.testclasses;
 
-import gr.uom.se.util.reflet.InterfaceA;
+import gr.uom.se.util.reflect.InterfaceA;
 
 /**
  * @author Elvis

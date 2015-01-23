@@ -68,7 +68,19 @@ public class ModuleConstants {
     * stored.
     * <p>
     */
-   public static final String DEFAUL_PROPERTY_INJECTOR_PROPERTY = "defaultPropertyInjector";
+   public static final String DEFAULT_PROPERTY_INJECTOR_PROPERTY = "defaultPropertyInjector";
+
+   /**
+    * The name of the property where the default mapper factory will be stored.
+    * <p>
+    */
+   public static final String DEFAULT_MAPPER_FACTORY_PROPERTY = "defaultMapperFactory";
+
+   /**
+    * A prefix of the mapper property for a given class.
+    * <p>
+    */
+   public static final String MAPPER_PROPERTY = ".mapper.";
 
    /**
     * Get the default config domain for the given class.
@@ -94,5 +106,15 @@ public class ModuleConstants {
     */
    public static String getProviderNameFor(Class<?> clazz) {
       return clazz.getName() + "." + PROVIDER_PROPERTY;
+   }
+
+   /**
+    * Get the name of the property where system can find a mapper for the
+    * specified types.
+    * <p>
+    * 
+    */
+   public static String getMapperNameFor(Class<?> from, Class<?> to) {
+      return from.getName() + MAPPER_PROPERTY + to.getName();
    }
 }

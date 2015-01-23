@@ -16,7 +16,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 
@@ -109,7 +108,6 @@ public class DefaultModuleLoader implements ModuleLoader {
 
          @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.DEFAULT_PARAMETER_PROVIDER_PROPERTY) ParameterProvider provider) {
       this.config = config;
-      ArgsCheck.notNull("provider", provider);
       this.parameterProvider = provider;
    }
 
@@ -190,7 +188,7 @@ public class DefaultModuleLoader implements ModuleLoader {
       }
       // Try to execute the method with annotation
       // @ProvideModule
-      Map<String, Map<String, Object>> properties = InternalModuleUtils
+      Map<String, Map<String, Object>> properties = ModuleUtils
             .getModuleConfig(moduleType.getAnnotation(Module.class));
 
       Class<?>[] parameterTypes = method.getParameterTypes();
@@ -200,7 +198,6 @@ public class DefaultModuleLoader implements ModuleLoader {
          return (T) method.invoke(providerInstance, args);
       } catch (IllegalAccessException | IllegalArgumentException
             | InvocationTargetException ex) {
-         Arrays.toString(args);
          throw new IllegalArgumentException(ex);
       }
    }
@@ -210,7 +207,7 @@ public class DefaultModuleLoader implements ModuleLoader {
     * <p>
     * Will look first at the default configuration domains if there is provider
     * instance already there, using
-    * {@link InternalModuleUtils#getModuleProvider(Class, Class, Map, ConfigManager)}
+    * {@link ModuleUtils#getModuleProvider(Class, Class, Map, ConfigManager)}
     * . If the provider was not found it will retrieve it using a parameter
     * provider. If it was not found, then the provider will be considered a
     * module and will be loaded by this loader.
@@ -223,7 +220,7 @@ public class DefaultModuleLoader implements ModuleLoader {
    protected <T> T resolveModuleProvider(Class<?> type, Class<T> provider,
          Map<String, Map<String, Object>> properties) {
 
-      T pInstance = InternalModuleUtils.getModuleProvider(type, provider,
+      T pInstance = ModuleUtils.getModuleProvider(type, provider,
             properties, config);
       // If the provider was not found then we should create
       // the provider by using the parameter provider
@@ -255,12 +252,16 @@ public class DefaultModuleLoader implements ModuleLoader {
 
       Set<Method> methods = ReflectionUtils.getAccessibleMethods(loader,
             getClass(), staticMethodLoaderFilter);
+      Method method = null;
       for (Method m : methods) {
          if (m.getReturnType().equals(returnType)) {
             return m;
+         } else if (method == null
+               && returnType.isAssignableFrom(m.getReturnType())) {
+            method = m;
          }
       }
-      return null;
+      return method;
    }
 
    /**
@@ -277,12 +278,16 @@ public class DefaultModuleLoader implements ModuleLoader {
    private Method getInstanceLoaderMethod(Class<?> returnType, Class<?> loader) {
       Set<Method> methods = ReflectionUtils.getAccessibleMethods(loader,
             getClass(), instanceMethodLoaderFilter);
+      Method method = null;
       for (Method m : methods) {
          if (m.getReturnType().equals(returnType)) {
             return m;
+         } else if (method == null
+               && returnType.isAssignableFrom(m.getReturnType())) {
+            method = m;
          }
       }
-      return null;
+      return method;
    }
 
    private <T> T loadNoLoader(Class<T> moduleType) {
@@ -329,7 +334,7 @@ public class DefaultModuleLoader implements ModuleLoader {
 
       // Try to execute the constructor with annotation
       // @ProvideModule
-      Map<String, Map<String, Object>> properties = InternalModuleUtils
+      Map<String, Map<String, Object>> properties = ModuleUtils
             .getModuleConfig(module);
       Class<?>[] parameterTypes = constructor.getParameterTypes();
       Annotation[][] annotations = constructor.getParameterAnnotations();
@@ -377,7 +382,7 @@ public class DefaultModuleLoader implements ModuleLoader {
     * Resolve a parameter provider for the given type.
     * <p>
     * The parameter will be searched at the default domains using
-    * {@link InternalModuleUtils#getParameterProvider(Class, Map, ConfigManager)}
+    * {@link ModuleUtils#getParameterProvider(Class, Map, ConfigManager)}
     * if it was not found there, it will be created using a default parameter
     * provider.
     * 
@@ -387,7 +392,7 @@ public class DefaultModuleLoader implements ModuleLoader {
     */
    protected ParameterProvider resolveParameterProvider(Class<?> type,
          Map<String, Map<String, Object>> properties) {
-      ParameterProvider provider = InternalModuleUtils.getParameterProvider(
+      ParameterProvider provider = ModuleUtils.getParameterProvider(
             type, properties, config);
       // If no provider was found then create a default provider
       if (provider == null) {

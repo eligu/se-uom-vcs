@@ -1,8 +1,9 @@
 /**
  * 
  */
-package gr.uom.se.util.module;
+package gr.uom.se.util.config;
 
+import gr.uom.se.util.manager.ConfigDomain;
 import gr.uom.se.util.manager.ConfigManager;
 
 import java.util.HashMap;
@@ -75,17 +76,6 @@ public class ConfigManagerMock implements ConfigManager {
    /**
     * {@inheritDoc)
     * 
-    * @see gr.uom.se.util.manager.ConfigManager#saveDomain(java.lang.String)
-    */
-   @Override
-   public void saveDomain(String domain) {
-      // TODO Auto-generated method stub
-
-   }
-
-   /**
-    * {@inheritDoc)
-    * 
     * @see gr.uom.se.util.manager.ConfigManager#loadDomain(java.lang.String)
     */
    @Override
@@ -100,20 +90,14 @@ public class ConfigManagerMock implements ConfigManager {
     * @see gr.uom.se.util.manager.ConfigManager#loadDomain(java.lang.Class)
     */
    @Override
-   public void loadDomain(Class<?> domain) {
-      // TODO Auto-generated method stub
-
+   public <T extends ConfigDomain> T loadDomain(Class<T> domain) {
+      return null;
    }
 
-   /**
-    * {@inheritDoc)
-    * 
-    * @see gr.uom.se.util.manager.ConfigManager#createDomain(java.lang.String)
-    */
    @Override
-   public void createDomain(String domain) {
+   public ConfigDomain getDomain(String domain) {
       // TODO Auto-generated method stub
-
+      return null;
    }
 
 }
