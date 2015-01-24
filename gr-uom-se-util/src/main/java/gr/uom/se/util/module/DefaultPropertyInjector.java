@@ -54,7 +54,7 @@ public class DefaultPropertyInjector implements PropertyInjector {
    public DefaultPropertyInjector(
          @Property(
                domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
-               name = ModuleConstants.DEFAULT_PARAMETER_PROVIDER_PROPERTY) 
+               name = ModuleConstants.PARAMETER_PROVIDER_PROPERTY) 
          ParameterProvider provider) {
       ArgsCheck.notNull("provider", provider);
       this.provider = provider;
@@ -141,7 +141,7 @@ public class DefaultPropertyInjector implements PropertyInjector {
 
          boolean accept = !Modifier.isStatic(mod)
                && !Modifier.isFinal(mod)
-               && DefaultParameterProvider.getPropertyAnnotation(f
+               && ModuleUtils.getPropertyAnnotation(f
                      .getAnnotations()) != null;
 
          if (accept) {

@@ -32,7 +32,7 @@ public class DefaultModuleLoaderTest {
       moduleLoader = new DefaultModuleLoader(config, parameterProvider);
       beanInjector = new DefaultPropertyInjector(parameterProvider);
       config.setProperty(ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN,
-            ModuleConstants.DEFAULT_MODULE_LOADER_PROPERTY, moduleLoader);
+            ModuleConstants.LOADER_PROPERTY, moduleLoader);
    }
 
    @Before
@@ -126,7 +126,7 @@ public class DefaultModuleLoaderTest {
       // instance at this place first
       config.setProperty(
             ModuleConstants.getDefaultConfigFor(PersonMock1.class),
-            ModuleConstants.getProviderNameFor(PersonMock1.class),
+            ModuleConstants.PROVIDER_PROPERTY,
             personProvider);
 
       // Create a person. The loader will check for the provider at the default
@@ -270,7 +270,7 @@ public class DefaultModuleLoaderTest {
    private void setPersonProperties(String name, Integer age) {
       String property = "name";
       String domain = PersonDefaults.PERSON_DOMAIN;
-      
+
       config.setProperty(domain, property, name);
 
       property = "age";

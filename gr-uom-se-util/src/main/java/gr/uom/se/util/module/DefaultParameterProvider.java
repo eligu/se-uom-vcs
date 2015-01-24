@@ -67,7 +67,7 @@ import java.util.Map;
  * @version 0.0.1
  * @since 0.0.1
  */
-@Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.DEFAULT_PARAMETER_PROVIDER_PROPERTY)
+@Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.PARAMETER_PROVIDER_PROPERTY)
 public class DefaultParameterProvider implements ParameterProvider {
 
    /**
@@ -91,7 +91,7 @@ public class DefaultParameterProvider implements ParameterProvider {
     */
    public DefaultParameterProvider(
          @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.CONFIG_MANAGER_PROPERTY) ConfigManager config,
-         @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.DEFAULT_MODULE_LOADER_PROPERTY) ModuleLoader loader) {
+         @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.LOADER_PROPERTY) ModuleLoader loader) {
       this.config = config;
       this.loader = loader;
    }
@@ -112,7 +112,7 @@ public class DefaultParameterProvider implements ParameterProvider {
 
       // We should check the number of @Property annotations
       // and will be skipping other non related annotations
-      Property propertyAnnotation = getPropertyAnnotation(annotations);
+      Property propertyAnnotation = ModuleUtils.getPropertyAnnotation(annotations);
 
       // In case this parameter has other annotations
       // rather than known ones
@@ -138,39 +138,6 @@ public class DefaultParameterProvider implements ParameterProvider {
          loader = this.loader;
       }
       return loader;
-   }
-
-   /**
-    * Return a property annotation, or null if annotations is null or empty.
-    * <p>
-    * This method will throw an exception if there are more than one property
-    * annotations.
-    * 
-    * @param annotations
-    *           to check for the property annotation
-    * @return a property annotation or null if there is not any
-    */
-   static Property getPropertyAnnotation(Annotation... annotations) {
-      if (annotations == null || annotations.length == 0) {
-         return null;
-      }
-      // We should check the number of @Property annotations
-      // and will be skipping other non related annotations
-      Property propertyAnnotation = null;
-      int count = 0;
-      for (Annotation an : annotations) {
-         if (an.annotationType().equals(Property.class)) {
-            count++;
-            propertyAnnotation = (Property) an;
-         }
-      }
-
-      // Check for more than one property annotation
-      if (count > 1) {
-         throw new IllegalArgumentException(
-               "found more than 1 annotation @Property for parameter");
-      }
-      return propertyAnnotation;
    }
 
    /**
