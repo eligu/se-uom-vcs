@@ -12,6 +12,7 @@ package gr.uom.se.util.module;
  * The loading strategy is left to the implementation.
  * 
  * @author Elvis Ligu
+ * @see DefaultModuleLoader
  */
 public interface ModuleLoader {
 

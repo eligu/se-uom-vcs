@@ -30,7 +30,7 @@ public class DefaultModuleLoaderTest {
       config = new DefaultConfigManager();
       parameterProvider = new DefaultParameterProvider(config, null);
       moduleLoader = new DefaultModuleLoader(config, parameterProvider);
-      beanInjector = new DefaultPropertyInjector(parameterProvider);
+      beanInjector = new DefaultPropertyInjector(config, parameterProvider);
       config.setProperty(ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN,
             ModuleConstants.LOADER_PROPERTY, moduleLoader);
    }
@@ -126,8 +126,7 @@ public class DefaultModuleLoaderTest {
       // instance at this place first
       config.setProperty(
             ModuleConstants.getDefaultConfigFor(PersonMock1.class),
-            ModuleConstants.PROVIDER_PROPERTY,
-            personProvider);
+            ModuleConstants.PROVIDER_PROPERTY, personProvider);
 
       // Create a person. The loader will check for the provider at the default
       // person
@@ -193,6 +192,15 @@ public class DefaultModuleLoaderTest {
       // Ensure that provider instance is not created
       // but it is retrieved from default config domain
       assertEquals(2, PersonLoader.counter);
+      
+      // Clear the config for other tests
+      config.setProperty(
+            ModuleConstants.getDefaultConfigFor(PersonMock1.class),
+            ModuleConstants.PROVIDER_PROPERTY, null);
+      
+      config.setProperty(ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN,
+            ModuleConstants.getProviderNameFor(PersonMock2.class),
+            null);
    }
 
    /**
@@ -217,8 +225,8 @@ public class DefaultModuleLoaderTest {
 
       // Check the injection of default values
       beanInjector.injectProperties(person);
-      assertEquals(PersonDefaults.PERSON_NAME_INJECTED, person.getName());
-      assertEquals((int) Integer.valueOf(PersonDefaults.PERSON_AGE_INJECTED),
+      assertEquals(PersonDefaults.PERSON_NAME_MODULE, person.getName());
+      assertEquals((int) Integer.valueOf(PersonDefaults.PERSON_AGE_MODULE),
             person.getAge());
 
       // Check the injection of config values
@@ -238,8 +246,8 @@ public class DefaultModuleLoaderTest {
 
       // Check the injection of default values
       beanInjector.injectProperties(person);
-      assertEquals(PersonDefaults.PERSON_NAME_INJECTED, person.getName());
-      assertEquals((int) Integer.valueOf(PersonDefaults.PERSON_AGE_INJECTED),
+      assertEquals(PersonDefaults.PERSON_NAME_MODULE, person.getName());
+      assertEquals((int) Integer.valueOf(PersonDefaults.PERSON_AGE_MODULE),
             person.getAge());
       assertNotNull(person.getPartner());
       assertNull(person.getAddress());

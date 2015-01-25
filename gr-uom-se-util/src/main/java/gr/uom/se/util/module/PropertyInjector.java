@@ -12,6 +12,7 @@ package gr.uom.se.util.module;
  * @author Elvis Ligu
  * @version 0.0.1
  * @since 0.0.1
+ * @see DefaultPropertyInjector
  */
 public interface PropertyInjector {
 

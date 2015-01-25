@@ -66,6 +66,8 @@ import java.util.Map;
  * @author Elvis Ligu
  * @version 0.0.1
  * @since 0.0.1
+ * @see Property
+ * @see DefaultModuleLoader
  */
 @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.PARAMETER_PROVIDER_PROPERTY)
 public class DefaultParameterProvider implements ParameterProvider {
@@ -112,7 +114,8 @@ public class DefaultParameterProvider implements ParameterProvider {
 
       // We should check the number of @Property annotations
       // and will be skipping other non related annotations
-      Property propertyAnnotation = ModuleUtils.getPropertyAnnotation(annotations);
+      Property propertyAnnotation = ModuleUtils
+            .getPropertyAnnotation(annotations);
 
       // In case this parameter has other annotations
       // rather than known ones
@@ -127,8 +130,7 @@ public class DefaultParameterProvider implements ParameterProvider {
 
    protected ModuleLoader resolveLoader(Class<?> type,
          Map<String, Map<String, Object>> properties) {
-      ModuleLoader loader = ModuleUtils.getLoader(type, properties,
-            config);
+      ModuleLoader loader = ModuleUtils.getLoader(type, config, properties);
       // If no loader was found then create a default module loader
       // if it is not created
       if (loader == null) {
@@ -218,7 +220,7 @@ public class DefaultParameterProvider implements ParameterProvider {
 
          Mapper mapper = ModuleUtils.getMapperOfType(parameterType,
                String.class, parameterType, properties, config);
-         
+
          if (mapper == null) {
             throw new IllegalArgumentException(
                   "Can not map a string value to a type: " + parameterType);

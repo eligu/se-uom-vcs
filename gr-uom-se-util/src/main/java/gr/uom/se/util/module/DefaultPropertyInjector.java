@@ -28,7 +28,7 @@ import java.util.Map;
  * 
  * @author Elvis Ligu
  */
-@Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.DEFAULT_PROPERTY_INJECTOR_PROPERTY)
+@Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.PROPERTY_INJECTOR_PROPERTY)
 public class DefaultPropertyInjector implements PropertyInjector {
 
    /**
@@ -52,11 +52,9 @@ public class DefaultPropertyInjector implements PropertyInjector {
     *           used by this injector to retrieve annotated values
     */
    public DefaultPropertyInjector(
-         @Property(
-               domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, 
-               name = ModuleConstants.PARAMETER_PROVIDER_PROPERTY) 
-         ParameterProvider provider) {
-      ArgsCheck.notNull("provider", provider);
+         ConfigManager config,
+         @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.PARAMETER_PROVIDER_PROPERTY) ParameterProvider provider) {
+      this.config = config;
       this.provider = provider;
    }
 
@@ -72,7 +70,20 @@ public class DefaultPropertyInjector implements PropertyInjector {
    public void injectProperties(Object bean) {
       ArgsCheck.notNull("bean", bean);
 
-      Collection<Field> fields = getInstanceFields(bean.getClass());
+      Class<?> beanClass = bean.getClass();
+      // Get the injectable fields
+      Collection<Field> fields = getInstanceFields(beanClass);
+      // If there is no injectable field
+      // return
+      if (fields.isEmpty()) {
+         return;
+      }
+      // Create the default properties from bean
+      Map<String, Map<String, Object>> properties = ModuleUtils
+            .getModuleConfig(beanClass);
+      // Get a parameter provider for the given bean
+      ParameterProvider provider = resolveParameterProvider(beanClass,
+            properties);
       for (Field f : fields) {
 
          // Set up first the access to this field
@@ -84,8 +95,8 @@ public class DefaultPropertyInjector implements PropertyInjector {
          }
 
          // Use the provider to get the value
-         Object val = resolveParameterProvider(f.getType(), null).getParameter(
-               f.getType(), f.getAnnotations(), null);
+         Object val = provider.getParameter(f.getType(), f.getAnnotations(),
+               properties);
          try {
             f.set(bean, val);
          } catch (IllegalArgumentException | IllegalAccessException e) {
@@ -100,8 +111,8 @@ public class DefaultPropertyInjector implements PropertyInjector {
     * Resolve a parameter provider for the given type.
     * <p>
     * The parameter will be searched at the default domains using
-    * {@link ModuleUtils#getParameterProvider(Class, Map, ConfigManager)}
-    * if it was not found there, it will be created using a default parameter
+    * {@link ModuleUtils#getParameterProvider(Class, ConfigManager, Map)} if it
+    * was not found there, it will be created using a default parameter
     * provider.
     * 
     * @param type
@@ -110,8 +121,8 @@ public class DefaultPropertyInjector implements PropertyInjector {
     */
    protected ParameterProvider resolveParameterProvider(Class<?> type,
          Map<String, Map<String, Object>> properties) {
-      ParameterProvider provider = ModuleUtils.getParameterProvider(
-            type, properties, config);
+      ParameterProvider provider = ModuleUtils.getParameterProvider(type,
+            config, properties);
       // If no provider was found then create a default provider
       if (provider == null) {
          if (this.provider == null) {
@@ -139,10 +150,8 @@ public class DefaultPropertyInjector implements PropertyInjector {
 
          int mod = f.getModifiers();
 
-         boolean accept = !Modifier.isStatic(mod)
-               && !Modifier.isFinal(mod)
-               && ModuleUtils.getPropertyAnnotation(f
-                     .getAnnotations()) != null;
+         boolean accept = !Modifier.isStatic(mod) && !Modifier.isFinal(mod)
+               && ModuleUtils.getPropertyAnnotation(f.getAnnotations()) != null;
 
          if (accept) {
             fields.add(f);

@@ -7,6 +7,7 @@ import gr.uom.se.util.config.ConfigManager;
 import gr.uom.se.util.mapper.Mapper;
 import gr.uom.se.util.mapper.MapperFactory;
 import gr.uom.se.util.module.annotations.Module;
+import gr.uom.se.util.module.annotations.NULLVal;
 import gr.uom.se.util.module.annotations.Property;
 import gr.uom.se.util.validation.ArgsCheck;
 
@@ -15,6 +16,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * A class of utilities for the module API.
+ * <p>
+ * Most of the implementation of the functionality required by module API is
+ * provided by the static methods of this class. In general only the algorithms
+ * of loading and providing parameters are left to their respective
+ * implementations.
+ * 
  * @author Elvis Ligu
  * @version 0.0.1
  * @since 0.0.1
@@ -137,16 +145,16 @@ public class ModuleUtils {
     *           the type to find its domain for the instance
     * @param objectType
     *           the type of the instance we are looking
+    * @param config
+    *           to look first for the instance
     * @param properties
     *           if a property can not be found in the config manager it will
     *           look under this map
-    * @param config
-    *           to look first for the instance
     * @return an instance of type {@code objectType}
     */
    static <T> T getConfigPropertyObject(String name, Class<?> type,
-         Class<T> objectType, Map<String, Map<String, Object>> properties,
-         ConfigManager config) {
+         Class<T> objectType, ConfigManager config,
+         Map<String, Map<String, Object>> properties) {
 
       // Check first under the default domain of the given class
       // if there is any parameter provider available
@@ -179,7 +187,7 @@ public class ModuleUtils {
     * default module domain {@link ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN}.
     * <p>
     * This method works the same as
-    * {@link #getConfigPropertyObject(String, Class, Class, Map, ConfigManager)}
+    * {@link #getConfigPropertyObject(String, Class, Class, ConfigManager, Map)}
     * with the difference that when looking at default config domain the
     * property name is different from the name when looking at module domain.
     * 
@@ -187,14 +195,14 @@ public class ModuleUtils {
     *           to look for its provider
     * @param provider
     *           the type of the provider to look for
-    * @param properties
-    *           look under this config if not found at configuration manager
     * @param config
     *           the configuration manager to look for the provider
+    * @param properties
+    *           look under this config if not found at configuration manager
     * @return a module provider for {@code type} or null if it was not found
     */
    public static <T> T getModuleProvider(Class<?> type, Class<T> provider,
-         Map<String, Map<String, Object>> properties, ConfigManager config) {
+         ConfigManager config, Map<String, Map<String, Object>> properties) {
       // Given a type we need a provider
       // 1 - Try to find the provider under type's default config domain
       String domain = ModuleConstants.getDefaultConfigFor(type);
@@ -211,6 +219,69 @@ public class ModuleUtils {
                properties);
       }
       return pInstance;
+   }
+
+   /**
+    * Get the provider class for the given type.
+    * <p>
+    * Check only the {@code clazz} domain if there is a property with the given
+    * {@link ModuleConstants#PROVIDER_PROPERTY}, if so then return its type, if
+    * not then check for the class of this property calling
+    * {@link ModuleUtils#getConfigPropertyClassForDomain(String, String, Class, ConfigManager, Map)}
+    * . If a class was not found then look under the default domain calling
+    * {@link #getDefaultProviderClass(ConfigManager, Map)}.
+    * 
+    * @param clazz
+    *           of which the provider will provide
+    * @param config
+    *           to look for it first
+    * @param properties
+    *           to look for it if it was not found under config
+    * @return a provider class
+    */
+   public static Class<?> getProviderClassFor(Class<?> clazz,
+         ConfigManager config, Map<String, Map<String, Object>> properties) {
+
+      // Check first for the loader class within the module domain
+      String domain = ModuleConstants.getDefaultConfigFor(clazz);
+
+      Class<?> pClass = getConfigPropertyClassForDomain(domain,
+            ModuleConstants.PROVIDER_PROPERTY, Object.class, config, properties);
+
+      if (pClass == null) {
+         return getDefaultProviderClass(clazz, config, properties);
+      } else {
+         return pClass;
+      }
+   }
+
+   /**
+    * Check at the default config domain for a provider class.
+    * <p>
+    * If no property class was found it will return null.
+    * 
+    * @param config
+    *           to look for the property first
+    * @param properties
+    *           to look for the property if it was not found within config
+    * @return a provider class
+    */
+   public static Class<?> getDefaultProviderClass(Class<?> clazz,
+         ConfigManager config, Map<String, Map<String, Object>> properties) {
+
+      String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+      String name = ModuleConstants.getProviderNameFor(clazz);
+
+      Class<?> pClass = getConfigPropertyClassForDomain(domain, name,
+            Object.class, config, properties);
+
+      if (pClass == null) {
+         Module module = clazz.getAnnotation(Module.class);
+         if (module != null && !module.provider().equals(NULLVal.class)) {
+            pClass = module.provider();
+         }
+      }
+      return pClass;
    }
 
    /**
@@ -235,16 +306,16 @@ public class ModuleUtils {
     * @return
     */
    public static ParameterProvider getParameterProvider(Class<?> type,
-         Map<String, Map<String, Object>> properties, ConfigManager config) {
+         ConfigManager config, Map<String, Map<String, Object>> properties) {
 
       return getConfigPropertyObject(
             ModuleConstants.PARAMETER_PROVIDER_PROPERTY, type,
-            ParameterProvider.class, properties, config);
+            ParameterProvider.class, config, properties);
    }
 
    /**
     * Ensure that this method will return a provider, even if the
-    * {@link #getParameterProvider(Class, Map, ConfigManager)} doesn't return
+    * {@link #getParameterProvider(Class, ConfigManager, Map)} doesn't return
     * any provider.
     * <p>
     * The provider returned by this method is of type
@@ -252,17 +323,17 @@ public class ModuleUtils {
     * 
     * @param type
     *           the type to get the loader for
-    * @param properties
-    *           to look for a loader as an alternative if no config is specified
     * @param config
     *           to look primarily for the loader
+    * @param properties
+    *           to look for a loader as an alternative if no config is specified
     * @return a loader for the given type
     */
    public static ParameterProvider resolveParameterProvider(Class<?> type,
-         Map<String, Map<String, Object>> properties, ConfigManager config) {
+         ConfigManager config, Map<String, Map<String, Object>> properties) {
 
-      ParameterProvider provider = getParameterProvider(type, properties,
-            config);
+      ParameterProvider provider = getParameterProvider(type, config,
+            properties);
 
       // If no provider was found then try to find a provider class
       // for the given type
@@ -278,7 +349,7 @@ public class ModuleUtils {
             // not the default provider so we must load
             // this custom provider by resolving a loader for
             // it
-            provider = resolveLoader(providerClass, properties, config).load(
+            provider = resolveLoader(providerClass, config, properties).load(
                   providerClass);
          }
       }
@@ -294,7 +365,7 @@ public class ModuleUtils {
     * for the class of this property calling
     * {@link ModuleUtils#getConfigPropertyClassForDomain(String, String, Class, ConfigManager, Map)}
     * . If a class was not found then look under the default domain calling
-    * {@link #getDefaulParametertProviderClass(ConfigManager, Map)}.
+    * {@link #getDefaultParameterProviderClass(ConfigManager, Map)}.
     * 
     * @param clazz
     *           of which the parameter provider will provide
@@ -316,7 +387,7 @@ public class ModuleUtils {
             ParameterProvider.class, config, properties);
 
       if (pClass == null) {
-         return getDefaulParametertProviderClass(config, properties);
+         return getDefaultParameterProviderClass(config, properties);
       } else {
          return pClass;
       }
@@ -331,10 +402,10 @@ public class ModuleUtils {
     * @param config
     *           to look for the property first
     * @param properties
-    *           to look for the property if it waqs not found within config
+    *           to look for the property if it was not found within config
     * @return a parameter provider class
     */
-   public static Class<? extends ParameterProvider> getDefaulParametertProviderClass(
+   public static Class<? extends ParameterProvider> getDefaultParameterProviderClass(
          ConfigManager config, Map<String, Map<String, Object>> properties) {
       String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
 
@@ -390,32 +461,46 @@ public class ModuleUtils {
       if (tObject == null) {
          // We must check for a classType
          name = ModuleConstants.getPropertyNameForConfigClass(name);
-         String className = getCompatibleProperty(domain, name, String.class,
-               config, properties);
+         Object propertyObject = getCompatibleProperty(domain, name,
+               Object.class, config, properties);
 
-         // We found the class name
-         // now load the class and check if it is a module loader
-         if (className != null) {
-            try {
-               Class<?> pc = Class.forName(className);
-               // Class is not a module loader
-               if (!classType.isAssignableFrom(pc)) {
-                  throw new RuntimeException("class " + pc
-                        + " should be a sub type of " + classType);
+         // We found the class object (be it a String name or a class)
+         if (propertyObject != null) {
+            Class<?> clazz = null;
+            // In case the object we found is a string
+            // we assume this string is the class name
+            if (String.class.isAssignableFrom(propertyObject.getClass())) {
+               String className = (String) propertyObject;
+               // now load the class and check if it is the same as the given
+               // type
+               try {
+                  clazz = Class.forName(className);
+                  // Class is not the same type
+                  if (!classType.isAssignableFrom(clazz)) {
+                     throw new RuntimeException("class " + clazz
+                           + " should be a sub type of " + classType);
+                  }
+                  tClass = (Class<? extends T>) clazz;
+               } catch (ClassNotFoundException e) {
+                  throw new RuntimeException(e);
                }
-               tClass = (Class<? extends T>) pc;
-            } catch (ClassNotFoundException e) {
-               throw new RuntimeException(e);
+               // Case when the property object is a class
+            } else if (propertyObject instanceof Class) {
+               clazz = (Class<?>) propertyObject;
+               if (classType.isAssignableFrom(clazz)) {
+                  tClass = (Class<? extends T>) clazz;
+               }
             }
          }
       } else {
-         return (Class<? extends T>) tObject.getClass();
+         tClass = (Class<? extends T>) tObject.getClass();
       }
       return tClass;
    }
 
    /**
-    * Return a cachedLoader for the given type by looking at the default places.
+    * Return a cached loader for the given type by looking at the default
+    * places.
     * <p>
     * 
     * First will look for the domain calling at
@@ -436,29 +521,29 @@ public class ModuleUtils {
     *           cachedLoader
     * @return a cachedLoader for the given type
     */
-   public static ModuleLoader getLoader(Class<?> type,
-         Map<String, Map<String, Object>> properties, ConfigManager config) {
+   public static ModuleLoader getLoader(Class<?> type, ConfigManager config,
+         Map<String, Map<String, Object>> properties) {
       return getConfigPropertyObject(ModuleConstants.LOADER_PROPERTY, type,
-            ModuleLoader.class, properties, config);
+            ModuleLoader.class, config, properties);
    }
 
    /**
     * Ensure that this method will return a loader, even if the
-    * {@link #getLoader(Class, Map, ConfigManager)} doesn't return any loader.
+    * {@link #getLoader(Class, ConfigManager, Map)} doesn't return any loader.
     * <p>
     * The loader returned by this method is of type {@link DefaultModuleLoader}.
     * 
     * @param type
     *           the type to get the loader for
-    * @param properties
-    *           to look for a loader as an alternative if no config is specified
     * @param config
     *           to look primarily for the loader
+    * @param properties
+    *           to look for a loader as an alternative if no config is specified
     * @return a loader for the given type
     */
    public static ModuleLoader resolveLoader(Class<?> type,
-         Map<String, Map<String, Object>> properties, ConfigManager config) {
-      ModuleLoader loader = ModuleUtils.getLoader(type, properties, config);
+         ConfigManager config, Map<String, Map<String, Object>> properties) {
+      ModuleLoader loader = ModuleUtils.getLoader(type, config, properties);
       // If no loader was found then try to find a loader class
       // for the given type
       if (loader == null) {
@@ -473,7 +558,7 @@ public class ModuleUtils {
             // not the default loader so we must load
             // this custom loader by resolving a loader for
             // it
-            loader = resolveLoader(loaderClass, properties, config).load(
+            loader = resolveLoader(loaderClass, config, properties).load(
                   loaderClass);
          }
       }
@@ -492,12 +577,12 @@ public class ModuleUtils {
     * {@link #getDefaulLoaderClass(ConfigManager, Map)}.
     * 
     * @param clazz
-    *           of which the parameter provider will provide
+    *           of which the loader will load
     * @param config
-    *           to look for it first
+    *           to look at it first
     * @param properties
-    *           to look for it if it was not found under config
-    * @return a parameter provider class
+    *           to look at it if it was not found under config
+    * @return a loader class
     */
    public static Class<? extends ModuleLoader> getLoaderClassFor(
          Class<?> clazz, ConfigManager config,
@@ -521,13 +606,13 @@ public class ModuleUtils {
     * Check at the default config domain for a loader class.
     * <p>
     * If no property class was found it will return a
-    * {@link DefaultParameterProvider} class.
+    * {@link DefaultModuleLoader} class.
     * 
     * @param config
     *           to look for the property first
     * @param properties
     *           to look for the property if it was not found within config
-    * @return a parameter provider class
+    * @return a loader class
     */
    public static Class<? extends ModuleLoader> getDefaultLoaderClass(
          ConfigManager config, Map<String, Map<String, Object>> properties) {
@@ -543,6 +628,143 @@ public class ModuleUtils {
       } else {
          return loaderClass;
       }
+   }
+
+   /**
+    * Return a cached injector for the given type by looking at the default
+    * places.
+    * <p>
+    * 
+    * First will look for the domain calling at
+    * {@link ModuleConstants#getDefaultConfigFor(Class)} where the Class is the
+    * {@code type} parameter. And the property name will be retrieved by calling
+    * {@link ModuleConstants#PROPERTY_INJECTOR_PROPERTY}. The property will be
+    * retrieved using
+    * {@link #getCompatibleProperty(String, String, Class, ConfigManager, Map)}.
+    * If the injector was not found at this domain then it will look under the
+    * default module domain {@link ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN}
+    * . Because a cached injector is a general purpose instance it will be
+    * searched under the property with name
+    * {@link ModuleConstants#PROPERTY_INJECTOR_PROPERTY}.
+    * 
+    * @param type
+    *           of parameter to load
+    * @param properties
+    *           default config to look for if the manager has not the
+    *           cachedLoader
+    * @return a cachedLoader for the given type
+    */
+   public static PropertyInjector getPropertyInjector(Class<?> type,
+         ConfigManager config, Map<String, Map<String, Object>> properties) {
+      return getConfigPropertyObject(
+            ModuleConstants.PROPERTY_INJECTOR_PROPERTY, type,
+            PropertyInjector.class, config, properties);
+   }
+
+   /**
+    * Check at the default config domain for an injector class.
+    * <p>
+    * If no property class was found it will return a
+    * {@link DefaultPropertyInjector} class.
+    * 
+    * @param config
+    *           to look for the property first
+    * @param properties
+    *           to look for the property if it was not found within config
+    * @return a parameter provider class
+    */
+   public static Class<? extends PropertyInjector> getDefaultPropertyInjectorClass(
+         ConfigManager config, Map<String, Map<String, Object>> properties) {
+
+      String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+
+      Class<? extends PropertyInjector> injectorClass = getConfigPropertyClassForDomain(
+            domain, ModuleConstants.PROPERTY_INJECTOR_PROPERTY,
+            PropertyInjector.class, config, properties);
+
+      if (injectorClass == null) {
+         return DefaultPropertyInjector.class;
+      } else {
+         return injectorClass;
+      }
+   }
+
+   /**
+    * Get the property injector class for the given type.
+    * <p>
+    * Check only the {@code clazz} domain if there is a property with the given
+    * {@link ModuleConstants#PROPERTY_INJECTOR_PROPERTY} and the type
+    * {@link PropertyInjector} if so then return its type, if not then check for
+    * the class of this property calling
+    * {@link ModuleUtils#getConfigPropertyClassForDomain(String, String, Class, ConfigManager, Map)}
+    * . If a class was not found then look under the default domain calling
+    * {@link #getDefaultPropertyInjectorClass(ConfigManager, Map)}.
+    * 
+    * @param clazz
+    *           of which the property injector will inject properties
+    * @param config
+    *           to look for it first
+    * @param properties
+    *           to look for it if it was not found under config
+    * @return a property injector class
+    */
+   public static Class<? extends PropertyInjector> getPropertyInjectorClassFor(
+         Class<?> clazz, ConfigManager config,
+         Map<String, Map<String, Object>> properties) {
+
+      // Check first for the loader class within the module domain
+      String domain = ModuleConstants.getDefaultConfigFor(clazz);
+
+      Class<? extends PropertyInjector> injectorClass = getConfigPropertyClassForDomain(
+            domain, ModuleConstants.PROPERTY_INJECTOR_PROPERTY,
+            PropertyInjector.class, config, properties);
+
+      if (injectorClass == null) {
+         return getDefaultPropertyInjectorClass(config, properties);
+      } else {
+         return injectorClass;
+      }
+   }
+
+   /**
+    * Ensure that this method will return a property injector, even if the
+    * {@link #getPropertyInjector(Class, ConfigManager, Map)} doesn't return any
+    * injector.
+    * <p>
+    * The injector returned by this method is of type
+    * {@link DefaultPropertyInjector}.
+    * 
+    * @param type
+    *           the type to get the loader for
+    * @param config
+    *           to look primarily for the loader
+    * @param properties
+    *           to look for a loader as an alternative if no config is specified
+    * @return a loader for the given type
+    */
+   public static PropertyInjector resolvePropertyInjector(Class<?> type,
+         ConfigManager config, Map<String, Map<String, Object>> properties) {
+      PropertyInjector injector = ModuleUtils.getPropertyInjector(type, config,
+            properties);
+      // If no injector was found then try to find a injector class
+      // for the given type
+      if (injector == null) {
+         Class<? extends PropertyInjector> injectorClass = getPropertyInjectorClassFor(
+               type, config, properties);
+         // No injector class was found for this type
+         // we should provide the default injector
+         if (injectorClass.equals(DefaultPropertyInjector.class)) {
+            injector = new DefaultPropertyInjector(config, null);
+         } else {
+            // The injector class for the given type is
+            // not the default injector so we must load
+            // this custom injector by resolving a loader for
+            // it
+            injector = resolveLoader(injectorClass, config, properties).load(
+                  injectorClass);
+         }
+      }
+      return injector;
    }
 
    /**

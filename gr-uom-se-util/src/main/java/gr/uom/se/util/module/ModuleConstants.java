@@ -4,7 +4,7 @@
 package gr.uom.se.util.module;
 
 /**
- * A class containing different constant values used by module system.
+ * A class containing different constant values used by module API.
  * <p>
  * 
  * @author Elvis Ligu
@@ -69,7 +69,14 @@ public class ModuleConstants {
     * stored.
     * <p>
     */
-   public static final String DEFAULT_PROPERTY_INJECTOR_PROPERTY = "defaultPropertyInjector";
+   public static final String PROPERTY_INJECTOR_PROPERTY = "propertyInjector";
+
+   /**
+    * The name of the property where a property injector for a given module is
+    * stored.
+    * <p>
+    */
+   public static final String PROPERTY_PROVIDER_CLASS_PROPERTY = "propertyInjectorClass";
 
    /**
     * The name of the property where the default mapper factory will be stored.

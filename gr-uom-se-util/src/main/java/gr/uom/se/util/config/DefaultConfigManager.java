@@ -144,7 +144,7 @@ public class DefaultConfigManager implements ConfigManager {
       // Get a module loader, even if there is not a default
       // loader for the given type, get the default loader
       // implementation
-      ModuleLoader loader = ModuleUtils.resolveLoader(domain, null, this);
+      ModuleLoader loader = ModuleUtils.resolveLoader(domain, this, null);
       T instanceDomain = loader.load(domain);
       if (instanceDomain == null) {
          throw new IllegalArgumentException("Domain instance " + domain
