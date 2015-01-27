@@ -43,4 +43,23 @@ public class ConfigConstants {
     * <p>
     */
    public static final String DEFAULT_CONFIG_FILE_PROPERTY = "configFileName";
+
+   /**
+    * Property name of the default mapper factory.
+    * <p>
+    */
+   public static final String DEFAULT_MAPPER_FACTORY_PROPERTY = "mapperFactory";
+   
+   /**
+    * Given a property name return a new property name appended {@code Class} at
+    * the end of the name.
+    * <p>
+    * 
+    * @param name
+    *           the property name
+    * @return the property name of the class of the given property name
+    */
+   public static String getPropertyNameForConfigClass(String name) {
+      return name + "Class";
+   }
 }

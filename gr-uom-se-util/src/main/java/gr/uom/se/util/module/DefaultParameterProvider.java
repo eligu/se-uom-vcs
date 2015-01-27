@@ -171,7 +171,7 @@ public class DefaultParameterProvider implements ParameterProvider {
 
       // Check first if there is a value defined in config manager
       if (config != null) {
-         val = config.getProperty(domain, name);
+         val = config.getProperty(domain, name, parameterType);
          if (val != null) {
             return val;
          }

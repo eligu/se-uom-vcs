@@ -52,11 +52,10 @@ public abstract class AbstractConfigDomain implements ConfigDomain {
    /**
     * {@inheritDoc)
     */
-   @SuppressWarnings("unchecked")
    @Override
-   public <T> T getProperty(String name) {
+   public Object getProperty(String name) {
       ArgsCheck.notEmpty("name", name);
-      return (T) properties.get(name);
+      return properties.get(name);
    }
 
    /**

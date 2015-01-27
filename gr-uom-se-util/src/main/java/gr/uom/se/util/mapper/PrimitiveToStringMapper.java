@@ -50,8 +50,7 @@ public class PrimitiveToStringMapper implements Mapper {
       if (String.class.isAssignableFrom(from)) {
          // Check if the required type is primitive or
          // a corresponding Java type.
-         boolean contains = primitivesToWrappers.containsKey(type)
-               || primitivesToWrappers.containsValue(type);
+         boolean contains = isPrimitive(type);
          // If it is primitive (or an array of primitives)
          // then convert the string to required type
          if (contains) {
@@ -61,14 +60,19 @@ public class PrimitiveToStringMapper implements Mapper {
          // Case when required type is string and
          // the source type is a primitive (a wrapper or an array of)
          type = getComponent(from);
-         boolean contains = primitivesToWrappers.containsKey(type)
-               || primitivesToWrappers.containsValue(type);
+         boolean contains = isPrimitive(type);
          // Convert the source to string
          if (contains) {
             return (T) getStringValue(source);
          }
       }
-      throw new IllegalArgumentException("can not convert " + from + " " + to);
+
+      return (T) source;
+   }
+
+   private boolean isPrimitive(Class<?> type) {
+      return primitivesToWrappers.containsKey(type)
+            || primitivesToWrappers.containsValue(type);
    }
 
    /**
@@ -132,6 +136,7 @@ public class PrimitiveToStringMapper implements Mapper {
       primitivesToWrappers.put(char.class, Character.class);
       primitivesToWrappers.put(boolean.class, Boolean.class);
       primitivesToWrappers.put(byte.class, Byte.class);
+      primitivesToWrappers.put(String.class, String.class);
    }
 
    /**

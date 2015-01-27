@@ -35,7 +35,7 @@ public interface ConfigDomain {
     * @param name
     * @return
     */
-   <T> T getProperty(String name);
+   Object getProperty(String name);
 
    /**
     * Set the specified value for the given property.

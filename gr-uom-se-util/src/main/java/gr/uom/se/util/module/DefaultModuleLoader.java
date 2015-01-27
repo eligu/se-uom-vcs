@@ -156,17 +156,17 @@ public class DefaultModuleLoader implements ModuleLoader {
 
    /**
     * Load an instance of the {@code moduleType} using an instance of
-    * {@code loader}.
+    * {@code provider}.
     * <p>
     * 
     * @param moduleType
     *           the type of the new instance to be loaded
-    * @param loader
-    *           the type of the loader
+    * @param provider
+    *           the type of the provider
     * @return a new instance of T
     */
    @SuppressWarnings("unchecked")
-   private <T> T loadModule(Class<T> moduleType, Class<?> loader) {
+   private <T> T loadModule(Class<T> moduleType, Class<?> provider) {
       // To load a module with @Module annotation
       // 1- There is a specified loader, so this loader should be used to
       // load the module
@@ -174,31 +174,29 @@ public class DefaultModuleLoader implements ModuleLoader {
       // a) The class has a constructor with the @ProvideModule instance
       // b) The class has a default constructor which will be used to load it
 
-      Method method = getInstanceLoaderMethod(moduleType, loader);
-
+      Method method = getInstanceLoaderMethod(moduleType, provider);
       Object providerInstance = null;
       if (method != null) {
-         providerInstance = resolveModuleProvider(moduleType, loader,
-               ModuleUtils.getModuleConfig(loader));
+         providerInstance = resolveModuleProvider(moduleType, provider, null);
       } else {
-         method = getStaticLoaderMethod(moduleType, loader);
+         method = getStaticLoaderMethod(moduleType, provider);
       }
 
       if (method == null) {
          throw new IllegalArgumentException(
                "the specified provider: "
-                     + loader
+                     + provider
                      + " doesn't have a method annotated with @ProvideModule with a return type of: "
                      + moduleType);
       }
       // Try to execute the method with annotation
       // @ProvideModule
       Map<String, Map<String, Object>> properties = ModuleUtils
-            .getModuleConfig(moduleType);
+            .getModuleConfig(moduleType.getAnnotation(Module.class));
 
       Class<?>[] parameterTypes = method.getParameterTypes();
       Annotation[][] annotations = method.getParameterAnnotations();
-      Object[] args = getParameters(loader, parameterTypes, annotations,
+      Object[] args = getParameters(provider, parameterTypes, annotations,
             properties);
       try {
          return (T) method.invoke(providerInstance, args);

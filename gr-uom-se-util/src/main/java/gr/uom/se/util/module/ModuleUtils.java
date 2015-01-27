@@ -57,7 +57,7 @@ public class ModuleUtils {
       T val = null;
       // The first check is at configuration manager
       if (config != null) {
-         val = config.getProperty(domain, name);
+         val = config.getProperty(domain, name, type);
       }
 
       // If not found at config manager then look at provided properties

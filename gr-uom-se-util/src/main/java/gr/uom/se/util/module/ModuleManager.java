@@ -454,4 +454,57 @@ public interface ModuleManager {
     * @see #registerAsProperty(Object)
     */
    void registerAsProperty(Class<?> clazz);
+
+   /**
+    * Get the provider for the given class.
+    * <p>
+    * This method should return the provider, if any, for the given class. If
+    * there is not a registered provider it will return null. To load this
+    * provider the caller must obtain a loader for this provider, however it is
+    * generally not required to load the provider of a class as it will be
+    * resolved by the loader of the class. Though, there are circumstances when
+    * it is preferable to load a provider eagerly.
+    * <p>
+    * Note that a provider is an abstract instance for the system and it is only
+    * required by the module loader. Thus it depends on the module loader
+    * implementation how to use the provider to get instances of a class.
+    * Although, the system may have more than one provider for a given class,
+    * using this method we can require a specific provider.
+    * 
+    * @param forClass
+    *           the class to get the provider.
+    * @param providerType
+    *           the type of the provider to be returned
+    * @return a provider for the given class
+    * @see #registerProvider(Object, Class)
+    */
+   <T> T getProvider(Class<?> forClass, Class<T> providerType);
+
+   /**
+    * Get a property from the properties pool of this manager.
+    * <p>
+    * In order for loaders, providers, and injectors to work they should be
+    * supplied values of properties for different types of operations. The
+    * distinct for properties of the same name should be their domain.
+    * <p>
+    * This manager should maintain a pool of properties and should provide
+    * access to these properties to loaders, providers and injectors.
+    * <p>
+    * The {@code propertyType} is indicative to that of it should return a
+    * property of the specified type. The manager may perform on the fly
+    * conversions when a property for a given type is requested. For example if
+    * a property of int type is requested and the value in the pool of
+    * properties is of type String it may be converted to an int by this
+    * manager. Keep in mind though that if a property can not be converted it
+    * will throw an exception.
+    * 
+    * @param domain
+    *           of the property with the given name
+    * @param name
+    *           of the property to return
+    * @param propertyType
+    *           the type of the property to return, must not be null
+    * @return a property within the given domain with the given name
+    */
+   <T> T getProperty(String domain, String name, Class<T> propertyType);
 }

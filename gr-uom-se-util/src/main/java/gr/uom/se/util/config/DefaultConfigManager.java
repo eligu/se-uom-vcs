@@ -3,6 +3,8 @@
  */
 package gr.uom.se.util.config;
 
+import gr.uom.se.util.mapper.Mapper;
+import gr.uom.se.util.mapper.MapperFactory;
 import gr.uom.se.util.module.ModuleLoader;
 import gr.uom.se.util.module.ModuleUtils;
 import gr.uom.se.util.validation.ArgsCheck;
@@ -42,7 +44,7 @@ public class DefaultConfigManager implements ConfigManager {
     * is obtained by {@link ConfigConstants#DEFAULT_CONFIG_DOMAIN}.
     */
    @Override
-   public <T> T getProperty(String name) {
+   public Object getProperty(String name) {
       return getProperty(ConfigConstants.DEFAULT_CONFIG_DOMAIN, name);
    }
 
@@ -61,9 +63,9 @@ public class DefaultConfigManager implements ConfigManager {
     * {@inheritDoc}
     */
    @Override
-   public <T> T getProperty(String domain, String name) {
+   public Object getProperty(String domain, String name) {
       ConfigDomain cfgDomain = getDomain(domain);
-      T val = null;
+      Object val = null;
       if (cfgDomain != null) {
          val = cfgDomain.getProperty(name);
       }
@@ -100,8 +102,8 @@ public class DefaultConfigManager implements ConfigManager {
 
       ArgsCheck.notNull("domain", domain);
 
-      String configFolder = this
-            .getProperty(ConfigConstants.DEFAULT_CONFIG_FOLDER_PROPERTY);
+      String configFolder = this.getProperty(
+            ConfigConstants.DEFAULT_CONFIG_FOLDER_PROPERTY, String.class);
       if (configFolder == null) {
          configFolder = ConfigConstants.DEFAULT_CONFIG_FOLDER;
       }
@@ -195,5 +197,83 @@ public class DefaultConfigManager implements ConfigManager {
    public ConfigDomain getDomain(String domain) {
       ArgsCheck.notEmpty("domain", domain);
       return domains.get(domain);
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public <T> T getProperty(String name, Class<T> propertyType) {
+      return getProperty(ConfigConstants.DEFAULT_CONFIG_DOMAIN, name, propertyType);
+   }
+
+   /**
+    * Return a mapper factory.
+    * <p>
+    * The factory will be looked up at at default config domain. If a factory
+    * the default factory instance will be returned.
+    * 
+    * @return
+    */
+   private MapperFactory getMapperFactory() {
+
+      // Look for the default mapper factory under the default
+      // domain
+      String name = ConfigConstants.DEFAULT_MAPPER_FACTORY_PROPERTY;
+      MapperFactory factory = getProperty(name, MapperFactory.class);
+
+      if (factory != null) {
+         return factory;
+      }
+      // If factory is null then look for the class
+      // of mapper factory
+      Class<?> fClass = getProperty(
+            ConfigConstants.getPropertyNameForConfigClass(name), Class.class);
+
+      // If class was found then load the mapper factory
+      if (fClass != null) {
+         // Check the class of mapper factory
+         if (!MapperFactory.class.isAssignableFrom(fClass)) {
+            throw new RuntimeException(
+                  "Wrong class specified for mapper factory: " + fClass);
+         }
+         // Load the factory
+         factory = ModuleUtils.resolveLoader(fClass, this, null).load(
+               MapperFactory.class);
+      }
+
+      // If a class was not found
+      // then get the default mapper factory
+      // and register it
+      if (factory == null) {
+         factory = MapperFactory.getInstance();
+         setProperty(name, factory);
+      }
+      return factory;
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @SuppressWarnings("unchecked")
+   @Override
+   public <T> T getProperty(String domain, String name, Class<T> propertyType) {
+      ArgsCheck.notNull("propertyType", propertyType);
+      Object val = getProperty(domain, name);
+      if (val == null) {
+         return null;
+      } else if (propertyType.isAssignableFrom(val.getClass())) {
+         return (T) val;
+      }
+      // If the value is not of the same type we need
+      // to make a conversion if it is possible
+      MapperFactory factory = getMapperFactory();
+      Mapper mapper = factory.getMapper(val.getClass(), propertyType);
+      if (mapper == null) {
+         throw new IllegalArgumentException("The property at domain " + domain
+               + " named " + name + " with a type of " + val.getClass()
+               + " can not be converted to " + propertyType);
+      }
+      return mapper.map(val, propertyType);
    }
 }

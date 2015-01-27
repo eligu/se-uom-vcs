@@ -22,7 +22,28 @@ public interface ConfigManager {
     *           the name of the property
     * @return the value of the property
     */
-   public <T> T getProperty(String name);
+   public Object getProperty(String name);
+
+   /**
+    * Get the value of the property in the default domain.
+    * <p>
+    * The type of the returned property should be of that of the given
+    * {@code propertyType}. The manager may make conversion of properties on the
+    * fly, if it is possible. For example if the requested type is int and the
+    * property type within this manager is String it may try to convert the the
+    * value to int. Keep in mind, though, that if a property is available and
+    * can not be converted then it this method may throw an exception.
+    * <p>
+    * The default config domain is resolvable getting the property at
+    * {@link ConfigConstants#DEFAULT_CONFIG_DOMAIN_PROPERTY}.
+    * 
+    * @param name
+    *           the name of the property
+    * @param propertyType
+    *           the type of the requested property
+    * @return the value of the property
+    */
+   public <T> T getProperty(String name, Class<T> propertyType);
 
    /**
     * Set a property with the given name and the given value.
@@ -47,7 +68,27 @@ public interface ConfigManager {
     *           the name of the property
     * @return the value of the property
     */
-   public <T> T getProperty(String domain, String name);
+   public Object getProperty(String domain, String name);
+
+   /**
+    * Get the value of the property in the specified domain.
+    * <p>
+    * The type of the returned property should be of that of the given
+    * {@code propertyType}. The manager may make conversion of properties on the
+    * fly, if it is possible. For example if the requested type is int and the
+    * property type within this manager is String it may try to convert the the
+    * value to int. Keep in mind, though, that if a property is available and
+    * can not be converted then it this method may throw an exception.
+    * 
+    * @param domain
+    *           from where the property comes from
+    * @param name
+    *           the name of the property
+    * @param propertyType
+    *           the type of the requested property
+    * @return the value of the property
+    */
+   public <T> T getProperty(String doman, String name, Class<T> propertyType);
 
    /**
     * Set the property in the specified domain, with the given value.
