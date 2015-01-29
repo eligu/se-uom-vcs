@@ -348,7 +348,7 @@ public class DefaultModuleLoader implements ModuleLoader {
 
       if (constructor == null) {
          throw new IllegalArgumentException(
-               "no annotated (@ProvideModule) or default constructor found");
+               "no annotated (@ProvideModule) or default constructor found for type " + moduleType);
       }
 
       // Execute the default constructor if this is the default

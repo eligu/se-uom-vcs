@@ -91,6 +91,16 @@ public interface ModuleManager {
    void registerAsProperty(Object property);
 
    /**
+    * Remove the given object as a property.
+    * <p>
+    * The place from where this property can be retrieved is implementation
+    * specific.
+    * @param property
+    *           to be registered. Must not be null.
+    */
+   void removeAsProperty(Object property);
+
+   /**
     * Register the given provider object for the given class.
     * <p>
     * Registering a provider for the class, instructs the loader of this class
@@ -542,14 +552,14 @@ public interface ModuleManager {
    void registerDefaultParameterProvider(ParameterProvider parameterProvider);
 
    /**
-   * Register the default parameter provider class for all modules.
-   * <p>
-   * If the provided class is null it will remove this default provider class
-   * from the manager.
-   * 
-   * @param providerClass
-   *           the default parameter provider class for all modules.
-   */
+    * Register the default parameter provider class for all modules.
+    * <p>
+    * If the provided class is null it will remove this default provider class
+    * from the manager.
+    * 
+    * @param providerClass
+    *           the default parameter provider class for all modules.
+    */
    void registerDefaultParameterProviderClass(
          Class<? extends ParameterProvider> providerClass);
 
@@ -575,4 +585,14 @@ public interface ModuleManager {
     */
    void registerDefaultPropertyInjectorClass(
          Class<? extends PropertyInjector> injectorClass);
+
+   /**
+    * Remove the given class as a property.
+    * <p>
+    * The place from where this property can be retrieved is implementation
+    * specific.
+    * @param property
+    *           to be registered. Must not be null.
+    */
+   void removeAsProperty(Class<?> property);
 }

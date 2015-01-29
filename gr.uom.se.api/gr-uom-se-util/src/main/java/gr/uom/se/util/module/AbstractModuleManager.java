@@ -225,7 +225,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
          Class<? extends ParameterProvider> providerClass, Class<?> forClass) {
       registerParameterProviderClass0(providerClass, forClass);
    }
-   
+
    /**
     * {@inheritDoc}
     * <p>
@@ -303,14 +303,13 @@ public abstract class AbstractModuleManager implements ModuleManager {
     * {@link ModuleConstants#PROPERTY_INJECTOR_PROPERTY}.
     */
    @Override
-   public void registerDefaultPropertyInjector(
-         PropertyInjector propertyInjector) {
+   public void registerDefaultPropertyInjector(PropertyInjector propertyInjector) {
 
       String property = ModuleConstants.PROPERTY_INJECTOR_PROPERTY;
       String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
       setConfig(domain, property, propertyInjector);
    }
-   
+
    /**
     * {@inheritDoc}
     * <p>
@@ -342,7 +341,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
       String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
       setConfig(domain, property, injectorClass);
    }
-   
+
    /**
     * Register a property injector class for the given class at its domain.
     * <p>
@@ -381,13 +380,57 @@ public abstract class AbstractModuleManager implements ModuleManager {
     * <p>
     * This method will look if the class of the provided property has an
     * annotation {@link Property}. If so it will register this property at the
-    * domain with the name of this annotation. Ie the annotation is not present
+    * domain with the name of this annotation. If the annotation is not present
     * this will throw an exception.
     */
    @Override
    public void registerAsProperty(Object property) {
       ArgsCheck.notNull("property", property);
-      registerAsProperty(property.getClass());
+
+      Property annotation = ModuleUtils.getPropertyAnnotation(property
+            .getClass().getAnnotations());
+      ArgsCheck.notNull("@Property annotation", annotation);
+
+      String domain = annotation.domain();
+      String name = annotation.name();
+      setConfig(domain, name, property);
+   }
+
+   /**
+    * {@inheritDoc} This method will look if the class of the provided property
+    * has an annotation {@link Property}. If so it will remove this property at
+    * the domain with the name of this annotation. If the annotation is not
+    * present this will throw an exception.
+    */
+   @Override
+   public void removeAsProperty(Object property) {
+      ArgsCheck.notNull("property", property);
+      Property annotation = ModuleUtils.getPropertyAnnotation(property
+            .getClass().getAnnotations());
+      ArgsCheck.notNull("@Property annotation", annotation);
+
+      String domain = annotation.domain();
+      String name = annotation.name();
+      setConfig(domain, name, null);
+   }
+
+   /**
+    * {@inheritDoc} This method will look if the class of the provided property
+    * has an annotation {@link Property}. If so it will remove this property at
+    * the domain with the name of this annotation. If the annotation is not
+    * present this will throw an exception.
+    */
+   @Override
+   public void removeAsProperty(Class<?> property) {
+      ArgsCheck.notNull("property", property);
+      Property annotation = ModuleUtils.getPropertyAnnotation(property
+            .getAnnotations());
+      ArgsCheck.notNull("@Property annotation", annotation);
+
+      String domain = annotation.domain();
+      String name = ModuleConstants.getPropertyNameForConfigClass(annotation
+            .name());
+      setConfig(domain, name, null);
    }
 
    /**
@@ -479,7 +522,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
     */
    @Override
    public PropertyInjector getPropertyInjector(Class<?> forClass) {
-      return ModuleUtils.getPropertyInjector(forClass, resolveConfig(),
+      return ModuleUtils.resolvePropertyInjector(forClass, resolveConfig(),
             ModuleUtils.resolveModuleConfig(forClass));
    }
 
