@@ -507,4 +507,72 @@ public interface ModuleManager {
     * @return a property within the given domain with the given name
     */
    <T> T getProperty(String domain, String name, Class<T> propertyType);
+
+   /**
+    * Register the default loader for all modules.
+    * <p>
+    * If the provided loader is null it will remove this default loader from the
+    * manager.
+    * 
+    * @param loader
+    *           the default loader for all modules.
+    */
+   void registerDefaultLoader(ModuleLoader loader);
+
+   /**
+    * Register the default loader class for all modules.
+    * <p>
+    * If the provided class is null it will remove this default loader class
+    * from the manager.
+    * 
+    * @param loaderClass
+    *           the default loader class for all modules.
+    */
+   void registerDefaultLoaderClass(Class<? extends ModuleLoader> loaderClass);
+
+   /**
+    * Register the default parameter provider for all modules.
+    * <p>
+    * If the provider provider is null it will remove this default provider from
+    * the manager.
+    * 
+    * @param parameterProvider
+    *           the default parameter provider for all modules.
+    */
+   void registerDefaultParameterProvider(ParameterProvider parameterProvider);
+
+   /**
+   * Register the default parameter provider class for all modules.
+   * <p>
+   * If the provided class is null it will remove this default provider class
+   * from the manager.
+   * 
+   * @param providerClass
+   *           the default parameter provider class for all modules.
+   */
+   void registerDefaultParameterProviderClass(
+         Class<? extends ParameterProvider> providerClass);
+
+   /**
+    * Register the default property injector for all modules.
+    * <p>
+    * If the property injector is null it will remove this default injector from
+    * the manager.
+    * 
+    * @param propertyInjector
+    *           the default property injector for all modules.
+    */
+   void registerDefaultPropertyInjector(PropertyInjector propertyInjector);
+
+   /**
+    * Register the default property injector class for all modules.
+    * <p>
+    * If the provided class is null it will remove this default injector class
+    * from the manager.
+    * 
+    * @param injectorClass
+    *           the default property injector class for all modules.
+    */
+   void registerDefaultPropertyInjectorClass(
+         Class<? extends PropertyInjector> injectorClass);
 }

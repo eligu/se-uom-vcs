@@ -81,6 +81,35 @@ public class ModuleUtils {
    }
 
    /**
+    * The cache for module configurations that are stored in annotations.
+    * <p>
+    * There is no need for thread safety here because even if two threads change
+    * the same class at the same time, the result they put in cache will be the
+    * same. Also cache is limitless, because in every system the number of
+    * annotated classes that may be used will be very limited.
+    */
+   private static final Map<Class<?>, Map<String, Map<String, Object>>> moduleConfigCache = new HashMap<>();
+
+   /**
+    * Get the module config base on {@link Module} annotation.
+    * <p>
+    * It will check for it if it is available in a cache within this class
+    * first.
+    * 
+    * @param module
+    * @return
+    */
+   public static Map<String, Map<String, Object>> resolveModuleConfig(
+         Class<?> module) {
+      Map<String, Map<String, Object>> config = moduleConfigCache.get(module);
+      if (config == null) {
+         config = ModuleUtils.getModuleConfig(module);
+         moduleConfigCache.put(module, config);
+      }
+      return config;
+   }
+
+   /**
     * Create a configuration from a {@link Module} annotation.
     * <p>
     * The key of the map is the domain, and the value is a map with key value

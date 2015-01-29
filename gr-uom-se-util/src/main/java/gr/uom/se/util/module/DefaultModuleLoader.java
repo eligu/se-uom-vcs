@@ -136,14 +136,11 @@ public class DefaultModuleLoader implements ModuleLoader {
       // 1 - Case where there is not a default loader
       // 2 - Case where there is a default loader
 
-      // Check for annotations
-      Module moduleAnnotation = clazz.getAnnotation(Module.class);
-
       // 1 - Case when there is no @Module annotation
       // or a loader specified
       // The defaults will be used to load the module
       loader = ModuleUtils.getProviderClassFor(clazz, config,
-            ModuleUtils.getModuleConfig(moduleAnnotation));
+            ModuleUtils.resolveModuleConfig(clazz));
 
       if (loader == null) {
          return loadNoLoader(clazz);
@@ -165,7 +162,6 @@ public class DefaultModuleLoader implements ModuleLoader {
     *           the type of the provider
     * @return a new instance of T
     */
-   @SuppressWarnings("unchecked")
    private <T> T loadModule(Class<T> moduleType, Class<?> provider) {
       // To load a module with @Module annotation
       // 1- There is a specified loader, so this loader should be used to
@@ -176,8 +172,11 @@ public class DefaultModuleLoader implements ModuleLoader {
 
       Method method = getInstanceLoaderMethod(moduleType, provider);
       Object providerInstance = null;
+      Map<String, Map<String, Object>> properties = null;
+
       if (method != null) {
-         providerInstance = resolveModuleProvider(moduleType, provider, null);
+         properties = ModuleUtils.resolveModuleConfig(moduleType);
+         providerInstance = resolveModuleProvider(moduleType, provider, properties);
       } else {
          method = getStaticLoaderMethod(moduleType, provider);
       }
@@ -191,19 +190,11 @@ public class DefaultModuleLoader implements ModuleLoader {
       }
       // Try to execute the method with annotation
       // @ProvideModule
-      Map<String, Map<String, Object>> properties = ModuleUtils
-            .getModuleConfig(moduleType.getAnnotation(Module.class));
-
-      Class<?>[] parameterTypes = method.getParameterTypes();
-      Annotation[][] annotations = method.getParameterAnnotations();
-      Object[] args = getParameters(provider, parameterTypes, annotations,
-            properties);
-      try {
-         return (T) method.invoke(providerInstance, args);
-      } catch (IllegalAccessException | IllegalArgumentException
-            | InvocationTargetException ex) {
-         throw new IllegalArgumentException(ex);
+      if (properties == null) {
+         properties = ModuleUtils.resolveModuleConfig(moduleType);
       }
+
+      return executor.execute(providerInstance, provider, method, properties);
    }
 
    /**
@@ -270,7 +261,9 @@ public class DefaultModuleLoader implements ModuleLoader {
             // not the default loader so we must load
             // this custom loader by resolving a loader for
             // it
-            loader = resolveLoader(loaderClass, properties).load(loaderClass);
+            loader = resolveLoader(loaderClass,
+                  ModuleUtils.resolveModuleConfig(loaderClass)).load(
+                  loaderClass);
          }
       }
       return loader;
@@ -335,9 +328,6 @@ public class DefaultModuleLoader implements ModuleLoader {
       // 2) There is no constructor with such annotation but there is
       // a default constructor
 
-      // Check for annotations
-      Module module = moduleType.getAnnotation(Module.class);
-
       // Create filters to look up the constructors
       // A constructor must be accessible by this loader
       Filter<Constructor<?>> accessFilter = new AccessibleMemberFilter<Constructor<?>>(
@@ -374,49 +364,9 @@ public class DefaultModuleLoader implements ModuleLoader {
       // Try to execute the constructor with annotation
       // @ProvideModule
       Map<String, Map<String, Object>> properties = ModuleUtils
-            .getModuleConfig(module);
-      // Get the parameter types and its values in order to execute
-      Class<?>[] parameterTypes = constructor.getParameterTypes();
-      Annotation[][] annotations = constructor.getParameterAnnotations();
-      // Get the values for each parameter
-      Object[] args = getParameters(moduleType, parameterTypes, annotations,
-            properties);
-      try {
-         return constructor.newInstance(args);
-      } catch (InstantiationException | IllegalAccessException
-            | IllegalArgumentException | InvocationTargetException ex) {
-         throw new IllegalArgumentException(ex);
-      }
-   }
+            .resolveModuleConfig(moduleType);
 
-   /**
-    * Given parameter types, their annotations and a configuration from a module
-    * annotation get the values of parameters of the loader method.
-    * <p>
-    * If a parameter is annotated with a {@link Property} annotation, then its
-    * value will be first looked at configuration manager, if it was not found
-    * there then it will be looked at module configuration, if it is not found
-    * there, it will load it from its stringval property. If the parameter is
-    * not annotated it will be considered a module and will try to load it with
-    * {@link #load(Class)} method.
-    * 
-    * @param parameterTypes
-    *           the types of method parameters
-    * @param annotations
-    *           annotations of parameters
-    * @param properties
-    *           the default config created from @Module annotation
-    * @return parameter values
-    */
-   protected Object[] getParameters(Class<?> type, Class<?>[] parameterTypes,
-         Annotation[][] annotations, Map<String, Map<String, Object>> properties) {
-
-      Object[] parameterValues = new Object[parameterTypes.length];
-      for (int i = 0; i < parameterTypes.length; i++) {
-         parameterValues[i] = resolveParameterProvider(type, properties)
-               .getParameter(parameterTypes[i], annotations[i], properties);
-      }
-      return parameterValues;
+      return executor.execute(moduleType, constructor, properties);
    }
 
    /**
@@ -437,10 +387,25 @@ public class DefaultModuleLoader implements ModuleLoader {
             config, properties);
       // If no provider was found then create a default provider
       if (provider == null) {
-         if (this.parameterProvider == null) {
-            this.parameterProvider = new DefaultParameterProvider(config, this);
+         Class<? extends ParameterProvider> pClass = ModuleUtils
+               .getParameterProviderClassFor(type, config, properties);
+         // If there is the default parameter privder, but it is not
+         // resolved then try to resolve it
+         if (pClass.equals(DefaultParameterProvider.class)) {
+            // Try to load the cached default parameter provider instance
+            if (this.parameterProvider == null) {
+               this.parameterProvider = new DefaultParameterProvider(config,
+                     this);
+            }
+            provider = this.parameterProvider;
+         } else {
+            // The provider class for the given type is
+            // not the default provider so we must load
+            // this custom provider by resolving a loader for
+            // it
+            provider = resolveLoader(pClass,
+                  ModuleUtils.resolveModuleConfig(pClass)).load(pClass);
          }
-         provider = this.parameterProvider;
       }
       return provider;
    }
@@ -494,4 +459,28 @@ public class DefaultModuleLoader implements ModuleLoader {
    }
 
    static final ConstructorLoaderFilter constructorLoaderFilter = new ConstructorLoaderFilter();
+
+   /**
+    * A class to execute method providers and constructors.
+    * <p>
+    * 
+    * @author Elvis Ligu
+    * @version 0.0.1
+    * @since 0.0.1
+    */
+   private class Executor extends AbstractMethodConstructorExecutor {
+
+      @Override
+      protected ParameterProvider resolveParameterProvider(Class<?> type,
+            Map<String, Map<String, Object>> properties) {
+         return DefaultModuleLoader.this.resolveParameterProvider(type,
+               properties);
+      }
+   }
+
+   /**
+    * A method and constructor executor.
+    * <p>
+    */
+   private Executor executor = new Executor();
 }

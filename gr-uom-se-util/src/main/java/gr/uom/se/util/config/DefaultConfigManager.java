@@ -36,7 +36,11 @@ public class DefaultConfigManager implements ConfigManager {
     * <p>
     */
    private ConcurrentHashMap<String, ConfigDomain> domains = new ConcurrentHashMap<>();
-
+   
+   public DefaultConfigManager() {
+      // TODO Auto-generated constructor stub
+   }
+   
    /**
     * {@inheritDoc}
     * <p>

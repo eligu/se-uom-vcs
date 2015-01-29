@@ -4,12 +4,8 @@
 package gr.uom.se.util.module;
 
 import gr.uom.se.util.config.ConfigManager;
-import gr.uom.se.util.module.annotations.Module;
 import gr.uom.se.util.module.annotations.Property;
 import gr.uom.se.util.validation.ArgsCheck;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * The default abstract implementation of the module manager.
@@ -47,6 +43,21 @@ public abstract class AbstractModuleManager implements ModuleManager {
    /**
     * {@inheritDoc}
     * <p>
+    * Register this loader at domain
+    * {@link ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN}, with property name
+    * {@link ModuleConstants#LOADER_PROPERTY}.
+    */
+   @Override
+   public void registerDefaultLoader(ModuleLoader loader) {
+
+      String property = ModuleConstants.LOADER_PROPERTY;
+      String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+      setConfig(domain, property, loader);
+   }
+
+   /**
+    * {@inheritDoc}
+    * <p>
     * The default strategy for looking for a loader class of a module is to look
     * under the domain with the same name of the fully qualified name of the
     * module a property {@link ModuleConstants#LOADER_PROPERTY} appended
@@ -57,6 +68,23 @@ public abstract class AbstractModuleManager implements ModuleManager {
    public void registerLoaderClass(Class<? extends ModuleLoader> loaderClass,
          Class<?> forClass) {
       registerLoaderClass0(loaderClass, forClass);
+   }
+
+   /**
+    * {@inheritDoc}
+    * <p>
+    * Register this loader class at domain
+    * {@link ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN}, with property name
+    * {@link ModuleConstants#LOADER_CLASS_PROPERTY}.
+    */
+   @Override
+   public void registerDefaultLoaderClass(
+         Class<? extends ModuleLoader> loaderClass) {
+
+      String property = ModuleConstants
+            .getPropertyNameForConfigClass(ModuleConstants.LOADER_PROPERTY);
+      String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+      setConfig(domain, property, loaderClass);
    }
 
    /**
@@ -170,6 +198,22 @@ public abstract class AbstractModuleManager implements ModuleManager {
    /**
     * {@inheritDoc}
     * <p>
+    * Register this provider at domain
+    * {@link ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN}, with property name
+    * {@link ModuleConstants#PARAMETER_PROVIDER_PROPERTY}.
+    */
+   @Override
+   public void registerDefaultParameterProvider(
+         ParameterProvider parameterProvider) {
+
+      String property = ModuleConstants.PARAMETER_PROVIDER_PROPERTY;
+      String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+      setConfig(domain, property, parameterProvider);
+   }
+
+   /**
+    * {@inheritDoc}
+    * <p>
     * The default strategy for looking for a parameter provider class of a
     * module is to look under the domain with the same name of the fully
     * qualified name of the module a property
@@ -180,6 +224,23 @@ public abstract class AbstractModuleManager implements ModuleManager {
    public void registerParameterProviderClass(
          Class<? extends ParameterProvider> providerClass, Class<?> forClass) {
       registerParameterProviderClass0(providerClass, forClass);
+   }
+   
+   /**
+    * {@inheritDoc}
+    * <p>
+    * Register this parameter provider class at domain
+    * {@link ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN}, with property name
+    * {@link ModuleConstants#PARAMETER_PROVIDER_CLASS_PROPERTY}.
+    */
+   @Override
+   public void registerDefaultParameterProviderClass(
+         Class<? extends ParameterProvider> providerClass) {
+
+      String property = ModuleConstants
+            .getPropertyNameForConfigClass(ModuleConstants.PARAMETER_PROVIDER_PROPERTY);
+      String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+      setConfig(domain, property, providerClass);
    }
 
    /**
@@ -237,6 +298,22 @@ public abstract class AbstractModuleManager implements ModuleManager {
    /**
     * {@inheritDoc}
     * <p>
+    * Register this property injector at domain
+    * {@link ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN}, with property name
+    * {@link ModuleConstants#PROPERTY_INJECTOR_PROPERTY}.
+    */
+   @Override
+   public void registerDefaultPropertyInjector(
+         PropertyInjector propertyInjector) {
+
+      String property = ModuleConstants.PROPERTY_INJECTOR_PROPERTY;
+      String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+      setConfig(domain, property, propertyInjector);
+   }
+   
+   /**
+    * {@inheritDoc}
+    * <p>
     * The default strategy for looking for a property injector class of a module
     * is to look under the domain with the same name of the fully qualified name
     * of the module a property
@@ -249,6 +326,23 @@ public abstract class AbstractModuleManager implements ModuleManager {
       registerPropertyInjectorClass0(injectorClass, forClass);
    }
 
+   /**
+    * {@inheritDoc}
+    * <p>
+    * Register this property injector class at domain
+    * {@link ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN}, with property name
+    * {@link ModuleConstants#PROPERTY_INJECTOR_CLASS_PROPERTY}.
+    */
+   @Override
+   public void registerDefaultPropertyInjectorClass(
+         Class<? extends PropertyInjector> injectorClass) {
+
+      String property = ModuleConstants
+            .getPropertyNameForConfigClass(ModuleConstants.PROPERTY_INJECTOR_PROPERTY);
+      String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+      setConfig(domain, property, injectorClass);
+   }
+   
    /**
     * Register a property injector class for the given class at its domain.
     * <p>
@@ -323,7 +417,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
    @Override
    public ModuleLoader getLoader(Class<?> forClass) {
       return ModuleUtils.resolveLoader(forClass, resolveConfig(),
-            resolveModuleConfig(forClass));
+            ModuleUtils.resolveModuleConfig(forClass));
    }
 
    /**
@@ -332,7 +426,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
    @Override
    public Class<? extends ModuleLoader> getLoaderClass(Class<?> forClass) {
       return ModuleUtils.getLoaderClassFor(forClass, resolveConfig(),
-            resolveModuleConfig(forClass));
+            ModuleUtils.resolveModuleConfig(forClass));
    }
 
    /**
@@ -349,7 +443,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
    @Override
    public <T> T getProvider(Class<?> forClass, Class<T> providerType) {
       return ModuleUtils.getModuleProvider(forClass, providerType,
-            resolveConfig(), resolveModuleConfig(forClass));
+            resolveConfig(), ModuleUtils.resolveModuleConfig(forClass));
    }
 
    /**
@@ -358,7 +452,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
    @Override
    public Class<?> getProviderClass(Class<?> forClass) {
       return ModuleUtils.getProviderClassFor(forClass, resolveConfig(),
-            resolveModuleConfig(forClass));
+            ModuleUtils.resolveModuleConfig(forClass));
    }
 
    /**
@@ -366,8 +460,8 @@ public abstract class AbstractModuleManager implements ModuleManager {
     */
    @Override
    public ParameterProvider getParameterProvider(Class<?> forClass) {
-      return ModuleUtils.getParameterProvider(forClass, resolveConfig(),
-            resolveModuleConfig(forClass));
+      return ModuleUtils.resolveParameterProvider(forClass, resolveConfig(),
+            ModuleUtils.resolveModuleConfig(forClass));
    }
 
    /**
@@ -377,7 +471,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
    public Class<? extends ParameterProvider> getParameterProviderClass(
          Class<?> forClass) {
       return ModuleUtils.getParameterProviderClassFor(forClass,
-            resolveConfig(), resolveModuleConfig(forClass));
+            resolveConfig(), ModuleUtils.resolveModuleConfig(forClass));
    }
 
    /**
@@ -386,7 +480,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
    @Override
    public PropertyInjector getPropertyInjector(Class<?> forClass) {
       return ModuleUtils.getPropertyInjector(forClass, resolveConfig(),
-            resolveModuleConfig(forClass));
+            ModuleUtils.resolveModuleConfig(forClass));
    }
 
    /**
@@ -396,7 +490,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
    public Class<? extends PropertyInjector> getPropertyInjectorClass(
          Class<?> forClass) {
       return ModuleUtils.getPropertyInjectorClassFor(forClass, resolveConfig(),
-            resolveModuleConfig(forClass));
+            ModuleUtils.resolveModuleConfig(forClass));
    }
 
    /**
@@ -423,35 +517,6 @@ public abstract class AbstractModuleManager implements ModuleManager {
       ConfigManager config = getConfig();
       if (config == null) {
          throw new RuntimeException("Config manager is not available");
-      }
-      return config;
-   }
-
-   /**
-    * The cache for module configurations that are stored in annotations.
-    * <p>
-    * There is no need for thread safety here because even if two threads change
-    * the same class at the same time, the result they put in cache will be the
-    * same. Also cache is limitless, because in every system the number of
-    * annotated classes that may be use will be very limited.
-    */
-   private static final Map<Class<?>, Map<String, Map<String, Object>>> moduleConfigCache = new HashMap<>();
-
-   /**
-    * Get the module config base on {@link Module} annotation.
-    * <p>
-    * It will check for it if it is available in a cache within this manager
-    * first.
-    * 
-    * @param module
-    * @return
-    */
-   private static Map<String, Map<String, Object>> resolveModuleConfig(
-         Class<?> module) {
-      Map<String, Map<String, Object>> config = moduleConfigCache.get(module);
-      if (config == null) {
-         config = ModuleUtils.getModuleConfig(module);
-         moduleConfigCache.put(module, config);
       }
       return config;
    }
