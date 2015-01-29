@@ -1,11 +1,11 @@
 /**
  * 
  */
-package gr.uom.se.eli.manager;
+package gr.uom.se.util.manager;
 
-import gr.uom.se.elit.manager.annotations.Init;
-import gr.uom.se.elit.manager.annotations.Stop;
 import gr.uom.se.util.config.ConfigManager;
+import gr.uom.se.util.manager.annotations.Init;
+import gr.uom.se.util.manager.annotations.Stop;
 import gr.uom.se.util.module.ModuleLoader;
 import gr.uom.se.util.module.ModuleManager;
 import gr.uom.se.util.reflect.ReflectionUtils;

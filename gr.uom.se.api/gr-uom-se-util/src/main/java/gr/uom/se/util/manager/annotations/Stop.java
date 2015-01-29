@@ -1,7 +1,7 @@
 /**
  * 
  */
-package gr.uom.se.elit.manager.annotations;
+package gr.uom.se.util.manager.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

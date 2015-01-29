@@ -1,7 +1,7 @@
 /**
  * 
  */
-package gr.uom.se.eli.manager;
+package gr.uom.se.util.manager;
 
 import java.lang.annotation.Annotation;
 import java.util.Map;

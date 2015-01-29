@@ -1,7 +1,7 @@
 /**
  * 
  */
-package gr.uom.se.eli.manager;
+package gr.uom.se.util.manager;
 
 /**
  * @author Elvis Ligu
