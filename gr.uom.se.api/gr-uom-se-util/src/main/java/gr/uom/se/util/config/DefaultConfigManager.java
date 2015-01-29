@@ -19,6 +19,6 @@ import gr.uom.se.util.module.annotations.Property;
  * @version 0.0.1
  * @since 0.0.1
  */
-@Property(domain = ManagerConstants.DEFAULT_DOMAIN, name = "configManager")
+@Property(domain = ManagerConstants.DEFAULT_DOMAIN, name = ConfigConstants.DEFAULT_CONFIG_MANAGER_PROPERTY)
 public class DefaultConfigManager extends AbstractConfigManager {
 }

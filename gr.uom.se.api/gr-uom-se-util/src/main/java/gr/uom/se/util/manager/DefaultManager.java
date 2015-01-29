@@ -14,7 +14,7 @@ import gr.uom.se.util.module.annotations.Property;
  * @version 0.0.1
  * @since 0.0.1
  */
-@Property(domain = ManagerConstants.DEFAULT_DOMAIN, name = "mainManager")
+@Property(domain = ManagerConstants.DEFAULT_DOMAIN, name = ManagerConstants.DEFAULT_MANAGER_PROPERTY)
 public class DefaultManager extends AbstractManager {
 
    private ModuleManager moduleManager;

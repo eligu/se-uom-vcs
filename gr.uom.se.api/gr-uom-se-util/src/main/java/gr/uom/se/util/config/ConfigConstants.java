@@ -18,6 +18,13 @@ public class ConfigConstants {
     * <p>
     */
    public static final String DEFAULT_CONFIG_DOMAIN = "default";
+
+   /**
+    * The name of the property where the config manager should be saved.
+    * <p>
+    */
+   public static final String DEFAULT_CONFIG_MANAGER_PROPERTY = "configManager";
+   
    /**
     * Property name of the of the default config domain.
     * <p>
@@ -49,7 +56,7 @@ public class ConfigConstants {
     * <p>
     */
    public static final String DEFAULT_MAPPER_FACTORY_PROPERTY = "mapperFactory";
-   
+
    /**
     * Given a property name return a new property name appended {@code Class} at
     * the end of the name.

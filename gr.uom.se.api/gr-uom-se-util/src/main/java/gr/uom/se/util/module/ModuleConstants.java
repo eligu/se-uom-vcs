@@ -18,6 +18,12 @@ public class ModuleConstants {
     * <p>
     */
    public static final String DEFAULT_MODULE_CONFIG_DOMAIN = "gr.uom.se.util.module";
+   
+   /**
+    * The name of the property where the module manager should be saved.
+    * <p>
+    */
+   public static final String DEFAULT_MODULE_MANAGER_PROPERTY = "moduleManager";
 
    /**
     * The property name for the module loader.
