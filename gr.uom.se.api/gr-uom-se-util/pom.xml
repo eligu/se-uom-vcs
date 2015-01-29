@@ -2,11 +2,16 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>gr.uom.se</groupId>
 	<artifactId>gr-uom-se-util</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
-
+	
+	<parent>
+		<groupId>gr.uom.se</groupId>
+		<artifactId>gr.uom.se.api</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	
+	
 	<name>gr-uom-se-util</name>
 	<url>http://maven.apache.org</url>
 
@@ -16,14 +21,10 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.11</version>
-		</dependency>
-		<dependency>
 			<groupId>net.minidev</groupId>
 			<artifactId>json-smart</artifactId>
 			<version>2.1.1</version>
 		</dependency>
 	</dependencies>
+	
 </project>
