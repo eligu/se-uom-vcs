@@ -31,10 +31,19 @@ public abstract class AbstractPropertyChangeConfigDomain extends
    @Override
    public void setProperty(String name, Object val) {
       Object oldVal = super.getProperty(name);
+      if(equals(oldVal, val)) {
+         return;
+      }
       super.setProperty(name, val);
       changeSupport.firePropertyChange(name, oldVal, val);
    }
 
+   private static boolean equals(Object o1, Object o2) {
+      if(o1 != null && o2 != null) {
+         return o1.equals(o2);
+      }
+      return (o1 == null && o2 == null);
+   }
    /**
     * Add a change listener to listen for changes of properties.
     * 

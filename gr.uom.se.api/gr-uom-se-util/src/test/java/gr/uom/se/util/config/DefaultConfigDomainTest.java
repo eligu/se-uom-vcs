@@ -5,7 +5,6 @@ package gr.uom.se.util.config;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import gr.uom.se.util.module.ModuleLoader;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -18,7 +17,6 @@ import org.junit.Test;
  */
 public class DefaultConfigDomainTest {
 
-   static ModuleLoader moduleLoader = null;
    static ConfigManager config = null;
 
    @BeforeClass
@@ -46,6 +44,49 @@ public class DefaultConfigDomainTest {
             .getDomain(ConfigConstants.DEFAULT_CONFIG_DOMAIN);
       assertNotNull(domain);
       testDefaultConfigValues(domain);
+   }
+
+   @Test
+   public void testPropertyListener() {
+      config.loadDomain(ConfigConstants.DEFAULT_CONFIG_DOMAIN);
+      ConfigDomain domain = config
+            .getDomain(ConfigConstants.DEFAULT_CONFIG_DOMAIN);
+      assertNotNull(domain);
+
+      // Test global listener
+      ConfigDomainListener listener = new ConfigDomainListener();
+      DefaultConfigDomain ddomain = (DefaultConfigDomain) domain;
+      ddomain.addChangeListener(listener);
+      
+      String name = "newProperty";
+      String value = "neValue";
+      
+      domain.setProperty(name, value);
+      assertEquals(1, listener.changed.size());
+      
+      assertEquals(value, listener.changed.get(name));
+      
+      ddomain.removeChangeListener(listener);
+      name = "anotherProperty";
+      value = "anotherValue";
+      ddomain.setProperty(name, value);
+      // Ensure that no other change was received
+      assertEquals(1, listener.changed.size());
+      
+      // Test listener for specific property
+      ddomain.addChangeListener(name, listener);
+      // Clear listener
+      listener.changed.clear();
+      
+      value = "a value";
+      domain.setProperty(name, value);
+      
+      assertEquals(1, listener.changed.size());
+      assertEquals(value, listener.changed.get(name));
+      
+      domain.setProperty("property1", value);
+      assertEquals(1, listener.changed.size());
+      assertEquals(value, listener.changed.get(name));
    }
 
    private void testDefaultConfigValues(ConfigDomain domain) {
