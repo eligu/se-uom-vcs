@@ -111,7 +111,7 @@ public abstract class AbstractConfigManager implements ConfigManager {
       Path folder = Paths.get(configFolder);
       if (!Files.isDirectory(folder)) {
          throw new IllegalArgumentException("Can not load domain " + domain
-               + " directory " + folder + "doesn't exist");
+               + " directory " + folder + " doesn't exist");
       }
 
       Path file = Paths.get(configFolder, domain);

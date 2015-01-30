@@ -2,9 +2,11 @@ package gr.uom.se.util.manager;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import gr.uom.se.util.config.ConfigConstants;
 import gr.uom.se.util.config.ConfigManager;
 import gr.uom.se.util.config.DefaultConfigManager;
 import gr.uom.se.util.module.DefaultModuleManager;
+import gr.uom.se.util.module.ModuleLoader;
 import gr.uom.se.util.module.ModuleManager;
 import gr.uom.se.util.module.PropertyInjector;
 
@@ -22,7 +24,11 @@ public class DefaultManagerTest {
       configManager = new DefaultConfigManager();
       moduleManager = new DefaultModuleManager(configManager);
       mainManager = new DefaultManager(moduleManager, configManager);
-
+      
+      // Set the default config folder where the config files will be
+      // looked for
+      configManager.setProperty(ConfigConstants.DEFAULT_CONFIG_FOLDER_PROPERTY,
+            "src/test/resources/config");
    }
 
    @Test
@@ -77,5 +83,32 @@ public class DefaultManagerTest {
       assertEquals(configManager, bean.configManager);
       assertEquals(moduleManager, bean.moduleManager);
       assertEquals(mainManager, bean.mainManager);
+   }
+   
+   @Test
+   public void testBeanDependecies() {
+      
+      ModuleManager mm = mainManager.getManager(ModuleManager.class);
+      assertNotNull(mm);
+      
+      ConfigManager config = mainManager.getManager(ConfigManager.class);
+      assertNotNull(config);
+      
+      config.loadDomain("dbconfig");
+      
+      ModuleLoader loader = mm.getLoader(DBConnection.class);
+      assertNotNull(loader);
+      
+      DBConnection conn = loader.load(DBConnection.class);
+      assertNotNull(conn);
+      
+      assertEquals(mainManager, conn.getManager());
+      
+      ConnectionConfig cc = conn.getConfig();
+      assertNotNull(cc);
+      assertEquals(4444, cc.getPort());
+      assertEquals("elvis", cc.getUsername());
+      assertEquals("123456", cc.getPassword());
+      assertEquals("org.example.jdbc.JDriver", cc.getJdbcDriver());
    }
 }

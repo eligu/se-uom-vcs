@@ -17,7 +17,7 @@ public class Bean {
       
       @Property(domain = ManagerConstants.DEFAULT_DOMAIN, name = ConfigConstants.DEFAULT_CONFIG_MANAGER_PROPERTY)
       ConfigManager configManager;
-
+      
       @ProvideModule
       public Bean(ModuleManager moduleManager, AbstractManager mainManager,
             ConfigManager configManager) {
