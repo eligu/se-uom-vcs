@@ -35,7 +35,7 @@ public class ModuleConstants {
     * The property name for the default module loader's class.
     * <p>
     */
-   public static final String LOADER_CLASS_PROPERTY = "moduleLoaderClass";
+   public static final String LOADER_CLASS_PROPERTY = "moduleLoader.class";
 
    /**
     * The property name for the module provider.
@@ -47,7 +47,7 @@ public class ModuleConstants {
     * The property name for the module provider class.
     * <p>
     */
-   public static final String PROVIDER_CLASS_PROPERTY = "moduleProviderClass";
+   public static final String PROVIDER_CLASS_PROPERTY = "moduleProvider.class";
 
    /**
     * The name of the property where a parameter provider for a given module is
@@ -61,7 +61,7 @@ public class ModuleConstants {
     * stored.
     * <p>
     */
-   public static final String PARAMETER_PROVIDER_CLASS_PROPERTY = "parameterProviderClass";
+   public static final String PARAMETER_PROVIDER_CLASS_PROPERTY = "parameterProvider.class";
 
    /**
     * The name of the property that stores the configuration manager to be
@@ -82,7 +82,7 @@ public class ModuleConstants {
     * stored.
     * <p>
     */
-   public static final String PROPERTY_PROVIDER_CLASS_PROPERTY = "propertyInjectorClass";
+   public static final String PROPERTY_PROVIDER_CLASS_PROPERTY = "propertyInjector.class";
 
    /**
     * The name of the property where the default mapper factory will be stored.
@@ -146,6 +146,6 @@ public class ModuleConstants {
     * @return the property name of the class of the given property name
     */
    public static String getPropertyNameForConfigClass(String name) {
-      return name + "Class";
+      return name + ".class";
    }
 }
