@@ -3,12 +3,25 @@
  */
 package gr.uom.se.util.config;
 
+import gr.uom.se.util.validation.ArgsCheck;
+
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.util.Map;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * This is a configuration domain with support for property change/
+ * This is a configuration domain with support for property change.
  * <p>
+ * Subclasses of this class will be able to listen on property changes, if they
+ * register a change listener, for a given property or for all properties.
+ * <p>
+ * Note that, this implementation adds an overhead to the maps of the properties
+ * because each change ({@link #setProperty(String, Object)} will lock the
+ * entire map down as long as the change and the listener of the change are
+ * executing. Even more the reading will be suspended until the change is being
+ * performed. To avoid starvation and other racing condition issues the
+ * listeners must finish their job as soon as possible.
  * 
  * @author Elvis Ligu
  * @version 0.0.1
@@ -17,33 +30,106 @@ import java.beans.PropertyChangeSupport;
 public abstract class AbstractPropertyChangeConfigDomain extends
       AbstractConfigDomain {
 
+   /**
+    * Provider of property change support.
+    * <p>
+    */
    private final PropertyChangeSupport changeSupport = new PropertyChangeSupport(
          this);
+
+   /**
+    * To ensure that property writes doesn't overlap with reads.
+    * <p>
+    * Also property writes will be serialized.
+    */
+   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
    public AbstractPropertyChangeConfigDomain(String name) {
       super(name);
    }
 
    /**
+    * {@inheritDoc}
+    * <p>
     * Set a property to this domain and notify listeners for the change.
     * <p>
+    * This method will first check if the given property is already there and
+    * has the same value as the new value. If not then it will fire a property
+    * change event. This method is thread safe in that if a caller tries to
+    * change a mapping for a given key no other caller can do that until the
+    * listener is notified. However this will impose additional overhead because
+    * each change to the properties will be serialized and each read from
+    * properties will wait if a change is being performed. An other risk is that
+    * listeners must finish their jobs as soon as possible, otherwise it will
+    * lock the entire map to be locked down and readings will be impossible.
     */
    @Override
    public void setProperty(String name, Object val) {
-      Object oldVal = super.getProperty(name);
-      if(equals(oldVal, val)) {
+      lock.writeLock().lock();
+      try {
+         setThis(name, val);
+      } finally {
+         lock.writeLock().unlock();
+      }
+   }
+
+   private void setThis(String name, Object val) {
+      Object oldVal = set(name, val);
+      if (oldVal == null && val == null) {
          return;
       }
-      super.setProperty(name, val);
       changeSupport.firePropertyChange(name, oldVal, val);
    }
 
-   private static boolean equals(Object o1, Object o2) {
-      if(o1 != null && o2 != null) {
-         return o1.equals(o2);
+   /**
+    * Set the given properties to this domain and notify listeners for the
+    * changes.
+    * <p>
+    * This method works the same as calling in a for loop
+    * {@link #setProperty(String, Object)} except that all the property changes
+    * will be atomic. If clients needs to change a lot of properties at once but
+    * ensure that no other thread change one of their properties before their
+    * operation has completed, should use this method, as this will ensure that
+    * all listeners will be notified by the client's thread.
+    * <p>
+    * The properties parameter must not be null and must not be changed by
+    * others while this operation is executing.
+    * 
+    * @param properties
+    */
+   public void setProperties(Map<String, Object> properties) {
+      ArgsCheck.notNull("properties", properties);
+      if (properties.isEmpty()) {
+         return;
       }
-      return (o1 == null && o2 == null);
+      lock.writeLock().lock();
+      try {
+         for (String name : properties.keySet()) {
+            setThis(name, properties.get(name));
+         }
+      } finally {
+         lock.writeLock().unlock();
+      }
    }
+
+   /**
+    * {@inheritDoc}
+    * <p>
+    * This method will lock down the calling thread if there are other threads
+    * that makes changes to properties. Especially if the listener of the
+    * property that is being changed is busy it will cause the caller to wait
+    * for a long time.
+    */
+   @Override
+   public Object getProperty(String name) {
+      lock.readLock().lock();
+      try {
+         return super.getProperty(name);
+      } finally {
+         lock.readLock().unlock();
+      }
+   }
+
    /**
     * Add a change listener to listen for changes of properties.
     * 

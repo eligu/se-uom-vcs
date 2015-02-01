@@ -16,11 +16,13 @@ import java.util.Map;
 public class ConfigDomainListener implements PropertyChangeListener {
 
    Map<String, Object> changed = new HashMap<>();
+   boolean notified = false;
    
    @Override
    public void propertyChange(PropertyChangeEvent evt) {
       String name = evt.getPropertyName();
       Object value = evt.getNewValue();
       changed.put(name, value);
+      notified = true;
    }
 }
