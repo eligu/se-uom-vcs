@@ -162,6 +162,7 @@ public class DefaultModuleLoader implements ModuleLoader {
     *           the type of the provider
     * @return a new instance of T
     */
+   @SuppressWarnings("unchecked")
    private <T> T loadModule(Class<T> moduleType, Class<?> provider) {
       // To load a module with @Module annotation
       // 1- There is a specified loader, so this loader should be used to
@@ -180,8 +181,21 @@ public class DefaultModuleLoader implements ModuleLoader {
       } else {
          method = getStaticLoaderMethod(moduleType, provider);
       }
-
+      
+      // If the provider doesn't have a provider method but is a concrete subtype of the
+      // given moduleType then we should load the provider and return the provider instead.
+      // That should be the case when an interface is registering as a provider its implementation
+      
       if (method == null) {
+         // The case when the moduleType is a super type of the provider
+         // so we can safely create an instance of the provider itself
+         if(moduleType.isAssignableFrom(provider)) {
+            if (properties == null) {
+               properties = ModuleUtils.resolveModuleConfig(provider);
+            }
+            return (T) resolveLoader(provider, properties).load(provider);
+         }
+         
          throw new IllegalArgumentException(
                "the specified provider: "
                      + provider

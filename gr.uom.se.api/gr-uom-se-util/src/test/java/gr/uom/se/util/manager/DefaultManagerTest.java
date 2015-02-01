@@ -96,10 +96,10 @@ public class DefaultManagerTest {
       
       config.loadDomain("dbconfig");
       
-      ModuleLoader loader = mm.getLoader(DBConnection.class);
+      ModuleLoader loader = mm.getLoader(DBConnectionImp.class);
       assertNotNull(loader);
       
-      DBConnection conn = loader.load(DBConnection.class);
+      DBConnection conn = loader.load(DBConnectionImp.class);
       assertNotNull(conn);
       
       assertEquals(mainManager, conn.getManager());
