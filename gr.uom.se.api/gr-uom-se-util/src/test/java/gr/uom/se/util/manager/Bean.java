@@ -13,13 +13,13 @@ public class Bean {
       ModuleManager moduleManager;
       
       @Property(domain = ManagerConstants.DEFAULT_DOMAIN, name = ManagerConstants.DEFAULT_MANAGER_PROPERTY)
-      AbstractManager mainManager;
+      MainManager mainManager;
       
       @Property(domain = ManagerConstants.DEFAULT_DOMAIN, name = ConfigConstants.DEFAULT_CONFIG_MANAGER_PROPERTY)
       ConfigManager configManager;
       
       @ProvideModule
-      public Bean(ModuleManager moduleManager, AbstractManager mainManager,
+      public Bean(ModuleManager moduleManager, MainManager mainManager,
             ConfigManager configManager) {
          this.mainManager = mainManager;
          this.moduleManager = moduleManager;

@@ -11,5 +11,5 @@ package gr.uom.se.util.manager;
 public interface DummyManager {
 
    String getName();
-   public AbstractManager getManager();
+   public MainManager getManager();
 }

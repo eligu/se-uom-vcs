@@ -8,10 +8,10 @@ import gr.uom.se.util.module.annotations.ProvideModule;
 public class DefaultDummyManager implements DummyManager {
 
    private String name;
-   private AbstractManager manager;
+   private MainManager manager;
    
    @ProvideModule
-   public DefaultDummyManager(AbstractManager manager) {
+   public DefaultDummyManager(MainManager manager) {
       this.manager = manager;
    }
    
@@ -19,7 +19,7 @@ public class DefaultDummyManager implements DummyManager {
       return name;
    }
    
-   public AbstractManager getManager() {
+   public MainManager getManager() {
       return manager;
    }
    

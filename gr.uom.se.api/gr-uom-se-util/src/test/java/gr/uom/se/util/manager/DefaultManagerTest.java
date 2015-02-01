@@ -17,13 +17,13 @@ public class DefaultManagerTest {
 
    static ConfigManager configManager = null;
    static ModuleManager moduleManager = null;
-   static AbstractManager mainManager = null;
+   static AbstractMainManager mainManager = null;
 
    @BeforeClass
    public static void initTests() {
       configManager = new DefaultConfigManager();
       moduleManager = new DefaultModuleManager(configManager);
-      mainManager = new DefaultManager(moduleManager, configManager);
+      mainManager = new DefaultMainManager(moduleManager, configManager);
       
       // Set the default config folder where the config files will be
       // looked for
@@ -36,7 +36,7 @@ public class DefaultManagerTest {
 
       ConfigManager cm = mainManager.getManager(ConfigManager.class);
       ModuleManager mm = mainManager.getManager(ModuleManager.class);
-      AbstractManager ma = mainManager.getManager(AbstractManager.class);
+      MainManager ma = mainManager.getManager(AbstractMainManager.class);
 
       assertNotNull(cm);
       assertNotNull(mm);

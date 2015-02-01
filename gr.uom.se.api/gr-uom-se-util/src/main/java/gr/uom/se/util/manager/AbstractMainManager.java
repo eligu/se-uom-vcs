@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @version 0.0.1
  * @since 0.0.1
  */
-public abstract class AbstractManager {
+public abstract class AbstractMainManager implements MainManager {
 
    private ReentrantReadWriteLock managersLock = new ReentrantReadWriteLock();
    private Set<Key> managers = new HashSet<Key>();
@@ -36,10 +36,17 @@ public abstract class AbstractManager {
 
    private Executor executor = new Executor();
 
-   public AbstractManager() {}
+   public AbstractMainManager() {
+   }
 
    protected abstract ModuleManager getModuleManager();
-   
+
+   /*
+    * {@inheritDoc)
+    * 
+    * @see gr.uom.se.util.manager.MainManager#registerManager(java.lang.Class)
+    */
+   @Override
    public void registerManager(Class<?> managerClass) {
       ArgsCheck.notNull("managerClass", managerClass);
 
@@ -67,7 +74,13 @@ public abstract class AbstractManager {
          registeredManagersLock.writeLock().unlock();
       }
    }
-   
+
+   /*
+    * {@inheritDoc)
+    * 
+    * @see gr.uom.se.util.manager.MainManager#registerLoaded(java.lang.Object)
+    */
+   @Override
    public void registerLoaded(Object manager) {
       ArgsCheck.notNull("manager", manager);
       registeredManagersLock.writeLock().lock();
@@ -82,14 +95,21 @@ public abstract class AbstractManager {
          // Now add to the loaded managers
          // as a non started manager
          managers.add(new Key(manager, false));
-         
+
       } finally {
          managersLock.writeLock().unlock();
          registeredManagersLock.writeLock().unlock();
       }
    }
 
-   public void removeManager(Class<?> managerClass) {
+   /*
+    * {@inheritDoc)
+    * 
+    * @see gr.uom.se.util.manager.MainManager#removeManager(java.lang.Class)
+    */
+   @SuppressWarnings("unchecked")
+   @Override
+   public <T> T removeManager(Class<T> managerClass) {
       ArgsCheck.notNull("managerClass", managerClass);
       // Register into the cache of managers
       registeredManagersLock.writeLock().lock();
@@ -102,27 +122,39 @@ public abstract class AbstractManager {
          if (manager != null) {
             registeredManagers.remove(manager.getClass());
          }
-
+         return (T) manager;
       } finally {
          managersLock.writeLock().unlock();
          registeredManagersLock.writeLock().unlock();
       }
    }
 
+   /*
+    * {@inheritDoc)
+    * 
+    * @see gr.uom.se.util.manager.MainManager#getManager(java.lang.Class)
+    */
+   @Override
    @SuppressWarnings("unchecked")
    public <T> T getManager(Class<T> manager) {
       managersLock.readLock().lock();
       try {
-      Key key = getManager0(manager);
-      if(key != null && key.started) {
-         return (T) key.manager;
-      }
+         Key key = getManager0(manager);
+         if (key != null && key.started) {
+            return (T) key.manager;
+         }
       } finally {
          managersLock.readLock().unlock();
       }
       return startManager(manager);
    }
 
+   /*
+    * {@inheritDoc)
+    * 
+    * @see gr.uom.se.util.manager.MainManager#loadManager(java.lang.Class)
+    */
+   @Override
    @SuppressWarnings("unchecked")
    public <T> T loadManager(Class<T> manager) {
 
@@ -171,6 +203,12 @@ public abstract class AbstractManager {
       }
    }
 
+   /*
+    * {@inheritDoc)
+    * 
+    * @see gr.uom.se.util.manager.MainManager#unloadManager(java.lang.Class)
+    */
+   @Override
    @SuppressWarnings("unchecked")
    public <T> T unloadManager(Class<T> manager) {
       ArgsCheck.notNull("manager", manager);
@@ -193,6 +231,12 @@ public abstract class AbstractManager {
       }
    }
 
+   /*
+    * {@inheritDoc)
+    * 
+    * @see gr.uom.se.util.manager.MainManager#startManager(java.lang.Class)
+    */
+   @Override
    @SuppressWarnings("unchecked")
    public <T> T startManager(Class<T> manager) {
       ArgsCheck.notNull("manager", manager);
@@ -235,6 +279,12 @@ public abstract class AbstractManager {
       }
    }
 
+   /*
+    * {@inheritDoc)
+    * 
+    * @see gr.uom.se.util.manager.MainManager#stopManager(java.lang.Class)
+    */
+   @Override
    @SuppressWarnings("unchecked")
    public <T> T stopManager(Class<T> manager) {
       ArgsCheck.notNull("manager", manager);
@@ -246,7 +296,14 @@ public abstract class AbstractManager {
          if (managerKey == null) {
             return null;
          }
+
          Object managerInstance = managerKey.manager;
+         // If the manager is not started just
+         // leave this method
+         if (!managerKey.started) {
+            return (T) managerInstance;
+         }
+
          Method stopMethod = findStopMethod(managerInstance.getClass());
 
          // If stop annotation is not present that means we
@@ -294,14 +351,32 @@ public abstract class AbstractManager {
       return null;
    }
 
+   /*
+    * {@inheritDoc)
+    * 
+    * @see gr.uom.se.util.manager.MainManager#isLoaded(java.lang.Class)
+    */
+   @Override
    public boolean isLoaded(Class<?> manager) {
       return getManager0(manager) != null;
    }
 
+   /*
+    * {@inheritDoc)
+    * 
+    * @see gr.uom.se.util.manager.MainManager#isRegistered(java.lang.Class)
+    */
+   @Override
    public boolean isRegistered(Class<?> manager) {
       return getRegisteredManager0(manager) != null;
    }
 
+   /*
+    * {@inheritDoc)
+    * 
+    * @see gr.uom.se.util.manager.MainManager#isStarted(java.lang.Class)
+    */
+   @Override
    public boolean isStarted(Class<?> manager) {
       Key key = getManager0(manager);
       if (key != null) {

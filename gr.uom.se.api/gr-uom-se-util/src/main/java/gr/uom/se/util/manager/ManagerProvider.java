@@ -20,8 +20,8 @@ import java.util.Map;
 public class ManagerProvider implements ParameterProvider {
 
    private ParameterProvider defaultProvider;
-   private AbstractManager manager;
-   
+   private MainManager manager;
+
    @ProvideModule
    public ManagerProvider(
          @Property(
@@ -30,8 +30,8 @@ public class ManagerProvider implements ParameterProvider {
          ParameterProvider defaultProvider,
          @Property(
                domain = ManagerConstants.DEFAULT_DOMAIN, 
-               name = "mainManager") 
-         AbstractManager manager) {
+               name = ManagerConstants.DEFAULT_MANAGER_PROPERTY) 
+         MainManager manager) {
       ArgsCheck.notNull("defaultProvider", defaultProvider);
       ArgsCheck.notNull("manager", manager);
       this.defaultProvider = defaultProvider;
@@ -47,7 +47,7 @@ public class ManagerProvider implements ParameterProvider {
       if (manager.isRegistered(parameterType)) {
          return manager.getManager(parameterType);
       }
-      return defaultProvider.getParameter(
-            parameterType, annotations, properties);
+      return defaultProvider.getParameter(parameterType, annotations,
+            properties);
    }
 }
