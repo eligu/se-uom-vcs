@@ -14,6 +14,7 @@ import gr.uom.se.util.validation.ArgsCheck;
 import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A class of utilities for the module API.
@@ -88,7 +89,7 @@ public class ModuleUtils {
     * same. Also cache is limitless, because in every system the number of
     * annotated classes that may be used will be very limited.
     */
-   private static final Map<Class<?>, Map<String, Map<String, Object>>> moduleConfigCache = new HashMap<>();
+   private static final Map<Class<?>, Map<String, Map<String, Object>>> moduleConfigCache = new ConcurrentHashMap<>();
 
    /**
     * Get the module config base on {@link Module} annotation.
@@ -121,7 +122,7 @@ public class ModuleUtils {
     *           the annotation with properties
     * @return a configuration based on module properties
     */
-   public static Map<String, Map<String, Object>> getModuleConfig(Module module) {
+   private static Map<String, Map<String, Object>> getModuleConfig(Module module) {
       Map<String, Map<String, Object>> properties = new HashMap<>();
       if (module != null) {
          for (Property p : module.properties()) {
@@ -149,7 +150,7 @@ public class ModuleUtils {
     *           the annotation with properties
     * @return a configuration based on module properties
     */
-   public static Map<String, Map<String, Object>> getModuleConfig(
+   private static Map<String, Map<String, Object>> getModuleConfig(
          Class<?> module) {
       ArgsCheck.notNull("module", module);
       Module annotation = module.getAnnotation(Module.class);
@@ -271,7 +272,7 @@ public class ModuleUtils {
    public static Class<?> getProviderClassFor(Class<?> clazz,
          ConfigManager config, Map<String, Map<String, Object>> properties) {
 
-      // Check first for the loader class within the module domain
+      // Check first for the provider class within the module domain
       String domain = ModuleConstants.getDefaultConfigFor(clazz);
 
       Class<?> pClass = getConfigPropertyClassForDomain(domain,
@@ -337,9 +338,31 @@ public class ModuleUtils {
    public static ParameterProvider getParameterProvider(Class<?> type,
          ConfigManager config, Map<String, Map<String, Object>> properties) {
 
-      return getConfigPropertyObject(
-            ModuleConstants.PARAMETER_PROVIDER_PROPERTY, type,
+      // Check first under the domain of the given class
+      // if there is any parameter provider available
+      String domain = ModuleConstants.getDefaultConfigFor(type);
+      String name = ModuleConstants.PARAMETER_PROVIDER_PROPERTY;
+
+      ParameterProvider provider = getCompatibleProperty(domain, name,
             ParameterProvider.class, config, properties);
+
+      // If a provider is not available then check under the default
+      // module's domain if it is available there
+      if (provider == null) {
+         domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+         name = ModuleConstants.getParameterProviderNameFor(type);
+         provider = getCompatibleProperty(domain, name,
+               ParameterProvider.class, config, properties);
+      }
+
+      // Now check for the default parameter provider
+      if (provider == null) {
+         name = ModuleConstants.PARAMETER_PROVIDER_PROPERTY;
+         provider = getCompatibleProperty(domain, name,
+               ParameterProvider.class, config, properties);
+      }
+
+      return provider;
    }
 
    /**
@@ -408,13 +431,21 @@ public class ModuleUtils {
          Class<?> clazz, ConfigManager config,
          Map<String, Map<String, Object>> properties) {
 
-      // Check first for the loader class within the module domain
+      // Check first for the provider class within the module domain
       String domain = ModuleConstants.getDefaultConfigFor(clazz);
+      String name = ModuleConstants.PARAMETER_PROVIDER_PROPERTY;
 
       Class<? extends ParameterProvider> pClass = getConfigPropertyClassForDomain(
-            domain, ModuleConstants.PARAMETER_PROVIDER_PROPERTY,
-            ParameterProvider.class, config, properties);
+            domain, name, ParameterProvider.class, config, properties);
 
+      // Now check under the default domain
+      if (pClass == null) {
+         domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+         name = ModuleConstants.getParameterProviderNameFor(clazz);
+
+         pClass = getConfigPropertyClassForDomain(domain, name,
+               ParameterProvider.class, config, properties);
+      }
       if (pClass == null) {
          return getDefaultParameterProviderClass(config, properties);
       } else {
@@ -438,6 +469,7 @@ public class ModuleUtils {
          ConfigManager config, Map<String, Map<String, Object>> properties) {
       String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
 
+      // Check for the property under the default domain
       Class<? extends ParameterProvider> pClass = getConfigPropertyClassForDomain(
             domain, ModuleConstants.PARAMETER_PROVIDER_PROPERTY,
             ParameterProvider.class, config, properties);
@@ -552,8 +584,32 @@ public class ModuleUtils {
     */
    public static ModuleLoader getLoader(Class<?> type, ConfigManager config,
          Map<String, Map<String, Object>> properties) {
-      return getConfigPropertyObject(ModuleConstants.LOADER_PROPERTY, type,
+
+      // Check first under the domain of the given class
+      // if there is any loader available
+      String domain = ModuleConstants.getDefaultConfigFor(type);
+      String name = ModuleConstants.LOADER_PROPERTY;
+
+      ModuleLoader loader = getCompatibleProperty(domain, name,
             ModuleLoader.class, config, properties);
+
+      // If a loader is not available then check under the default
+      // module's domain if it is available there
+      if (loader == null) {
+         domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+         name = ModuleConstants.getLoaderNameFor(type);
+         loader = getCompatibleProperty(domain, name, ModuleLoader.class,
+               config, properties);
+      }
+
+      // Now check for the default loader
+      if (loader == null) {
+         name = ModuleConstants.LOADER_PROPERTY;
+         loader = getCompatibleProperty(domain, name, ModuleLoader.class,
+               config, properties);
+      }
+
+      return loader;
    }
 
    /**
@@ -617,17 +673,25 @@ public class ModuleUtils {
          Class<?> clazz, ConfigManager config,
          Map<String, Map<String, Object>> properties) {
 
-      // Check first for the loader class within the module domain
+      // Check first for the provider class within the module domain
       String domain = ModuleConstants.getDefaultConfigFor(clazz);
+      String name = ModuleConstants.LOADER_PROPERTY;
 
-      Class<? extends ModuleLoader> loaderClass = getConfigPropertyClassForDomain(
-            domain, ModuleConstants.LOADER_PROPERTY, ModuleLoader.class,
-            config, properties);
+      Class<? extends ModuleLoader> lClass = getConfigPropertyClassForDomain(
+            domain, name, ModuleLoader.class, config, properties);
 
-      if (loaderClass == null) {
+      // Now check under the default domain
+      if (lClass == null) {
+         domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+         name = ModuleConstants.getLoaderNameFor(clazz);
+
+         lClass = getConfigPropertyClassForDomain(domain, name,
+               ModuleLoader.class, config, properties);
+      }
+      if (lClass == null) {
          return getDefaultLoaderClass(config, properties);
       } else {
-         return loaderClass;
+         return lClass;
       }
    }
 
@@ -685,9 +749,32 @@ public class ModuleUtils {
     */
    public static PropertyInjector getPropertyInjector(Class<?> type,
          ConfigManager config, Map<String, Map<String, Object>> properties) {
-      return getConfigPropertyObject(
-            ModuleConstants.PROPERTY_INJECTOR_PROPERTY, type,
+
+      // Check first under the domain of the given class
+      // if there is any injector available
+      String domain = ModuleConstants.getDefaultConfigFor(type);
+      String name = ModuleConstants.PROPERTY_INJECTOR_PROPERTY;
+
+      PropertyInjector loader = getCompatibleProperty(domain, name,
             PropertyInjector.class, config, properties);
+
+      // If an injector is not available then check under the default
+      // module's domain if it is available there
+      if (loader == null) {
+         domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+         name = ModuleConstants.getPropertyInjectorNameFor(type);
+         loader = getCompatibleProperty(domain, name, PropertyInjector.class,
+               config, properties);
+      }
+
+      // Now check for the default injector
+      if (loader == null) {
+         name = ModuleConstants.PROPERTY_INJECTOR_PROPERTY;
+         loader = getCompatibleProperty(domain, name, PropertyInjector.class,
+               config, properties);
+      }
+
+      return loader;
    }
 
    /**
@@ -741,17 +828,25 @@ public class ModuleUtils {
          Class<?> clazz, ConfigManager config,
          Map<String, Map<String, Object>> properties) {
 
-      // Check first for the loader class within the module domain
+      // Check first for the injector class within the module domain
       String domain = ModuleConstants.getDefaultConfigFor(clazz);
+      String name = ModuleConstants.PROPERTY_INJECTOR_PROPERTY;
 
-      Class<? extends PropertyInjector> injectorClass = getConfigPropertyClassForDomain(
-            domain, ModuleConstants.PROPERTY_INJECTOR_PROPERTY,
-            PropertyInjector.class, config, properties);
+      Class<? extends PropertyInjector> lClass = getConfigPropertyClassForDomain(
+            domain, name, PropertyInjector.class, config, properties);
 
-      if (injectorClass == null) {
+      // Now check under the default domain
+      if (lClass == null) {
+         domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+         name = ModuleConstants.getPropertyInjectorNameFor(clazz);
+
+         lClass = getConfigPropertyClassForDomain(domain, name,
+               PropertyInjector.class, config, properties);
+      }
+      if (lClass == null) {
          return getDefaultPropertyInjectorClass(config, properties);
       } else {
-         return injectorClass;
+         return lClass;
       }
    }
 

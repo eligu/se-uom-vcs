@@ -3,6 +3,8 @@
  */
 package gr.uom.se.util.config;
 
+import java.util.Map;
+
 /**
  * A set of <key value> properties for a specified domain.
  * <p>
@@ -48,4 +50,36 @@ public interface ConfigDomain {
     *           the value of the property
     */
    void setProperty(String name, Object val);
+
+   /**
+    * Return a map of all properties within this domain.
+    * <p>
+    * Keep in mind that the map may be a copy of all properties contained within
+    * this domain, or an internal map of the domain. If this is the last case be
+    * careful when using this map as to not interfere with other threads.
+    * However it depends on the implementations of this interface.
+    * 
+    * @return a map of all properties.
+    */
+   Map<String, Object> getProperties();
+
+   /**
+    * Get a map of all properties that starts with the given string.
+    * <p>
+    * 
+    * @param prefix
+    *           of all properties that are returned, must not be null.
+    * @return a map of all properties with the given prefix.
+    */
+   Map<String, Object> getPropertiesWithPrefix(String prefix);
+
+   /**
+    * Get a map of all properties that ends with the given string.
+    * <p>
+    * 
+    * @param suffix
+    *           of all properties that are returned, must not be null.
+    * @return a map of all properties with the given suffix.
+    */
+   Map<String, Object> getPropertiesWithSuffix(String suffix);
 }

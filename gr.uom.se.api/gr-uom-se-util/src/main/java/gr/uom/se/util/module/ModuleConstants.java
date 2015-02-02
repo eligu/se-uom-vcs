@@ -14,10 +14,16 @@ package gr.uom.se.util.module;
 public class ModuleConstants {
 
    /**
-    * The property name for the default module config.
+    * The name for the default module config.
     * <p>
     */
    public static final String DEFAULT_MODULE_CONFIG_DOMAIN = "gr.uom.se.util.module";
+
+   /**
+    * The property name for the default module config.
+    * <p>
+    */
+   public static final String DEFAULT_MODULE_CONFIG_DOMAIN_PROPERTY = "gr.uom.se.util.module.defaultDomain";
    
    /**
     * The name of the property where the module manager should be saved.
@@ -82,7 +88,7 @@ public class ModuleConstants {
     * stored.
     * <p>
     */
-   public static final String PROPERTY_PROVIDER_CLASS_PROPERTY = "propertyInjector.class";
+   public static final String PROPERTY_INJECTOR_CLASS_PROPERTY = "propertyInjector.class";
 
    /**
     * The name of the property where the default mapper factory will be stored.
@@ -122,8 +128,106 @@ public class ModuleConstants {
       return clazz.getName() + "." + PROVIDER_PROPERTY;
    }
 
+   /**
+    * Get the name of the property where the system can find the provider class
+    * of the given type.
+    * <p>
+    * By default the provider class is stored at a property named same as the
+    * fully qualified name of the class it provides appended
+    * .moduleProvider.class.
+    * 
+    * @param clazz
+    * @return
+    */
    public static String getProviderClassNameFor(Class<?> clazz) {
       return clazz.getName() + "." + PROVIDER_CLASS_PROPERTY;
+   }
+
+   /**
+    * Get the name of the property where the system can find the parameter
+    * provider of the given class.
+    * <p>
+    * By default the provider is stored at a property named same as the fully
+    * qualified name of the class it provides appended .parameterProvider.
+    * 
+    * @param clazz
+    * @return
+    */
+   public static String getParameterProviderNameFor(Class<?> clazz) {
+      return clazz.getName() + "." + PARAMETER_PROVIDER_PROPERTY;
+   }
+
+   /**
+    * Get the name of the property where the system can find the parameter
+    * provider class of the given type.
+    * <p>
+    * By default the provider class is stored at a property named same as the
+    * fully qualified name of the class it provides appended
+    * .parameterProvider.class.
+    * 
+    * @param clazz
+    * @return
+    */
+   public static String getParameterProviderClassNameFor(Class<?> clazz) {
+      return clazz.getName() + "." + PARAMETER_PROVIDER_CLASS_PROPERTY;
+   }
+
+   /**
+    * Get the name of the property where the system can find the property
+    * injector of the given class.
+    * <p>
+    * By default the injector is stored at a property named same as the fully
+    * qualified name of the class it provides appended .propertyInjector.
+    * 
+    * @param clazz
+    * @return
+    */
+   public static String getPropertyInjectorNameFor(Class<?> clazz) {
+      return clazz.getName() + "." + PROPERTY_INJECTOR_PROPERTY;
+   }
+
+   /**
+    * Get the name of the property where the system can find the property
+    * injector class of the given class.
+    * <p>
+    * By default the injector clas is stored at a property named same as the
+    * fully qualified name of the class it injects appended
+    * .propertyInjector.class.
+    * 
+    * @param clazz
+    * @return
+    */
+   public static String getPropertyInjectorClassNameFor(Class<?> clazz) {
+      return clazz.getName() + "." + PROPERTY_INJECTOR_CLASS_PROPERTY;
+   }
+
+   /**
+    * Get the name of the property where the system can find the module loader
+    * of the given class.
+    * <p>
+    * By default the loader is stored at a property named same as the fully
+    * qualified name of the class it provides appended .moduleLoader.
+    * 
+    * @param clazz
+    * @return
+    */
+   public static String getLoaderNameFor(Class<?> clazz) {
+      return clazz.getName() + "." + LOADER_PROPERTY;
+   }
+
+   /**
+    * Get the name of the property where the system can find the module loader
+    * class of the given class.
+    * <p>
+    * By default the loader clas is stored at a property named same as the
+    * fully qualified name of the class it injects appended
+    * .moduleLoader.class.
+    * 
+    * @param clazz
+    * @return
+    */
+   public static String getLoaderClassNameFor(Class<?> clazz) {
+      return clazz.getName() + "." + LOADER_CLASS_PROPERTY;
    }
 
    /**
@@ -137,7 +241,7 @@ public class ModuleConstants {
    }
 
    /**
-    * Given a property name return a new property name appended {@code Class} at
+    * Given a property name return a new property name appended {@code .class} at
     * the end of the name.
     * <p>
     * 

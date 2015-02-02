@@ -48,7 +48,7 @@ public abstract class AbstractConfigManager implements ConfigManager {
     */
    @Override
    public Object getProperty(String name) {
-      return getProperty(ConfigConstants.DEFAULT_CONFIG_DOMAIN, name);
+      return getProperty(getDefaultConfigDomain(), name);
    }
 
    /**
@@ -59,7 +59,7 @@ public abstract class AbstractConfigManager implements ConfigManager {
     */
    @Override
    public void setProperty(String name, Object value) {
-      setProperty(ConfigConstants.DEFAULT_CONFIG_DOMAIN, name, value);
+      setProperty(getDefaultConfigDomain(), name, value);
    }
 
    /**
@@ -144,7 +144,7 @@ public abstract class AbstractConfigManager implements ConfigManager {
     * This method will check under property named,
     * {@link ConfigConstants#DEFAULT_CONFIG_FOLDER_PROPERTY} to retrieve the
     * default config folder location. If no property was specified there it will
-    * return {@link ConfigConstants#DEFAULT_CONFIG_FOLDER_PROPERTY}.
+    * return {@link ConfigConstants#DEFAULT_CONFIG_FOLDER}.
     * <p>
     * Subclasses may override this method in order to provide a default location
     * for default config folder.
@@ -158,6 +158,50 @@ public abstract class AbstractConfigManager implements ConfigManager {
          configFolder = ConfigConstants.DEFAULT_CONFIG_FOLDER;
       }
       return configFolder;
+   }
+
+   /**
+    * Get the default config file location.
+    * <p>
+    * This method will check under property named,
+    * {@link ConfigConstants#DEFAULT_CONFIG_FILE_PROPERTY} to retrieve the
+    * default config file location. If no property was specified there it will
+    * return {@link ConfigConstants#DEFAULT_CONFIG_FILE}.
+    * <p>
+    * Subclasses may override this method in order to provide a default location
+    * for default config file.
+    * 
+    * @return
+    */
+   protected String getDefaultConfigFile() {
+      String configFolder = this.getProperty(
+            ConfigConstants.DEFAULT_CONFIG_FILE_PROPERTY, String.class);
+      if (configFolder == null) {
+         configFolder = ConfigConstants.DEFAULT_CONFIG_FILE;
+      }
+      return configFolder;
+   }
+   
+   /**
+    * Get the default config domain name.
+    * <p>
+    * This method will check under property named,
+    * {@link ConfigConstants#DEFAULT_CONFIG_DOMAIN_PROPERTY} to retrieve the
+    * default config name. If no property was specified there it will return
+    * {@link ConfigConstants#DEFAULT_CONFIG_DOMAIN}.
+    * <p>
+    * Subclasses may override this method in order to provide a default config
+    * name. The default config will be loaded first.
+    * 
+    * @return
+    */
+   protected String getDefaultConfigDomain() {
+      String domain = this.getProperty(
+            ConfigConstants.DEFAULT_CONFIG_DOMAIN_PROPERTY, String.class);
+      if (domain == null) {
+         domain = ConfigConstants.DEFAULT_CONFIG_DOMAIN;
+      }
+      return domain;
    }
 
    /**
@@ -190,6 +234,18 @@ public abstract class AbstractConfigManager implements ConfigManager {
       if (name == null) {
          throw new IllegalArgumentException("The loaded domain "
                + instanceDomain.getClass() + " doesn't provide a name");
+      }
+      /**
+       * This will copy the default locations to the new domain
+       * because they can be changed to instruct this manager where
+       * to find the default locations before the initialization. 
+       */
+      if(name.equals(getDefaultConfigDomain())) {
+         String configFolder = getDefaultConfigFolder();
+         String configFile = getDefaultConfigFile();
+         
+         instanceDomain.setProperty(ConfigConstants.DEFAULT_CONFIG_FOLDER_PROPERTY, configFolder);
+         instanceDomain.setProperty(ConfigConstants.DEFAULT_CONFIG_FILE_PROPERTY, configFile);
       }
       this.domains.put(name, instanceDomain);
    }
@@ -263,7 +319,7 @@ public abstract class AbstractConfigManager implements ConfigManager {
          }
          // Load the factory
          factory = ModuleUtils.resolveLoader(fClass, this,
-               ModuleUtils.getModuleConfig(fClass)).load(MapperFactory.class);
+               ModuleUtils.resolveModuleConfig(fClass)).load(MapperFactory.class);
       }
 
       // If a class was not found

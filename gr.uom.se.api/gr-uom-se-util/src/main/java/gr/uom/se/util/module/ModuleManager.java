@@ -5,6 +5,8 @@ package gr.uom.se.util.module;
 
 import gr.uom.se.util.module.annotations.Property;
 
+import java.util.Map;
+
 /**
  * A module manager interface that defines methods and rules about module
  * composition, and module loading.
@@ -95,6 +97,7 @@ public interface ModuleManager {
     * <p>
     * The place from where this property can be retrieved is implementation
     * specific.
+    * 
     * @param property
     *           to be registered. Must not be null.
     */
@@ -591,8 +594,125 @@ public interface ModuleManager {
     * <p>
     * The place from where this property can be retrieved is implementation
     * specific.
+    * 
     * @param property
     *           to be registered. Must not be null.
     */
    void removeAsProperty(Class<?> property);
+
+   /**
+    * It will look for the default loader class if it is registered, if not it
+    * will return a default implementation class.
+    * <p>
+    * 
+    * @return a registered default loader class, or a default implementation
+    *         that can be registered.
+    */
+   Class<? extends ModuleLoader> getDefaultLoaderClass();
+
+   /**
+    * It will look for the default loader if it is registered.
+    * <p>
+    * 
+    * @return the default loader if it is registered
+    */
+   ModuleLoader getDefaultLoader();
+
+   /**
+    * It will look for the default property injector class if it is registered,
+    * if not it will return a default implementation class.
+    * <p>
+    * 
+    * @return a registered default property injector class, or a default
+    *         implementation that can be registered.
+    */
+   Class<? extends PropertyInjector> getDefaultPropertyInjectorClass();
+
+   /**
+    * It will look for the default property injector if it is registered.
+    * <p>
+    * 
+    * @return the default property injector if it is registered
+    */
+   PropertyInjector getDefaultPropertyInjector();
+
+   /**
+    * It will look for the default parameter provider class if it is registered,
+    * if not it will return a default implementation class.
+    * <p>
+    * 
+    * @return a registered default parameter provider class, or a default
+    *         implementation that can be registered.
+    */
+   Class<? extends ParameterProvider> getDefaultParameterProviderClass();
+
+   /**
+    * It will look for the default parameter provider if it is registered.
+    * <p>
+    * 
+    * @return the default parameter provider if it is registered
+    */
+   ParameterProvider getDefaultParameterProvider();
+
+   /**
+    * Try to register loader, provider, parameter provider and property injector
+    * if no one could be resolved.
+    * <p>
+    * This method will first check if there is a provider available for the
+    * given class, if not it will try to get the provider from the supplied
+    * properties. If a provider was found it will register it for this class. If
+    * not found then will try to find a registered provider class, if it was not
+    * found then it will look for the provider class from the supplied
+    * properties. If a class is found it will register it.
+    * <p>
+    * The work for registering loader, parameter provider and property injector
+    * is the same, with the exception that if the loader (or any of the three)
+    * which is supplied in properties is the same as the default loader than it
+    * will not register it. If the loader class provided in properties is the
+    * same as the default loader class it will not register it.
+    * <p>
+    * Keep in mind that this method will not override any previous configuration
+    * for the module but will try to register only the missing configuration. So
+    * an ideal use case of using this method is after this manager has been
+    * initialized, and the client want to register additional configuration for
+    * the given module without overriding the defaults.
+    * 
+    * @param moduleClass
+    *           the type of the module, must not be null.
+    * @param properties
+    *           a map of properties, must not be null.
+    */
+   void registerDefaultsForModule(Class<?> moduleClass,
+         Map<String, Object> properties);
+
+   /**
+    * Try to register loader, provider, parameter provider and property injector
+    * if no one could be resolved.
+    * <p>
+    * This method will first check if there is a provider available for the
+    * given class, if not it will try to get the provider from the supplied
+    * properties. If a provider was found it will register it for this class. If
+    * not found then will try to find a registered provider class, if it was not
+    * found then it will look for the provider class from the supplied
+    * properties. If a class is found it will register it.
+    * <p>
+    * The work for registering loader, parameter provider and property injector
+    * is the same, with the exception that if the loader (or any of the three)
+    * which is supplied in properties is the same as the default loader than it
+    * will not register it. If the loader class provided in properties is the
+    * same as the default loader class it will not register it.
+    * <p>
+    * Keep in mind that this method will not override any previous configuration
+    * for the module but will try to register only the missing configuration. So
+    * an ideal use case of using this method is after this manager has been
+    * initialized, and the client want to register additional configuration for
+    * the given module without overriding the defaults.
+    * 
+    * @param moduleClass
+    *           the type of the module, must not be null.
+    * @param properties
+    *           a map of properties, must not be null.
+    */
+   void registerDefaultsForModule(String moduleClassName,
+         Map<String, Object> properties);
 }

@@ -80,7 +80,7 @@ public class DefaultPropertyInjector implements PropertyInjector {
       }
       // Create the default properties from bean
       Map<String, Map<String, Object>> properties = ModuleUtils
-            .getModuleConfig(beanClass);
+            .resolveModuleConfig(beanClass);
       // Get a parameter provider for the given bean
       ParameterProvider provider = resolveParameterProvider(beanClass,
             properties);

@@ -24,11 +24,13 @@ public class DefaultManagerTest {
       configManager = new DefaultConfigManager();
       moduleManager = new DefaultModuleManager(configManager);
       mainManager = new DefaultMainManager(moduleManager, configManager);
-      
+
       // Set the default config folder where the config files will be
-      // looked for
+      // looked for, just to initialize the config manager
       configManager.setProperty(ConfigConstants.DEFAULT_CONFIG_FOLDER_PROPERTY,
             "src/test/resources/config");
+
+      mainManager.startManager(MainManager.class);
    }
 
    @Test
@@ -77,33 +79,68 @@ public class DefaultManagerTest {
 
       PropertyInjector injector = mm.getPropertyInjector(Bean.class);
       assertNotNull(injector);
-      
+
       injector.injectProperties(bean);
 
       assertEquals(configManager, bean.configManager);
       assertEquals(moduleManager, bean.moduleManager);
       assertEquals(mainManager, bean.mainManager);
    }
-   
+
    @Test
    public void testBeanDependecies() {
-      
+
       ModuleManager mm = mainManager.getManager(ModuleManager.class);
       assertNotNull(mm);
-      
+
       ConfigManager config = mainManager.getManager(ConfigManager.class);
       assertNotNull(config);
-      
+
       config.loadDomain("dbconfig");
-      
+
       ModuleLoader loader = mm.getLoader(DBConnectionImp.class);
       assertNotNull(loader);
-      
+
       DBConnection conn = loader.load(DBConnectionImp.class);
       assertNotNull(conn);
-      
+
       assertEquals(mainManager, conn.getManager());
-      
+
+      ConnectionConfig cc = conn.getConfig();
+      assertNotNull(cc);
+      assertEquals(4444, cc.getPort());
+      assertEquals("elvis", cc.getUsername());
+      assertEquals("123456", cc.getPassword());
+      assertEquals("org.example.jdbc.JDriver", cc.getJdbcDriver());
+   }
+
+   @Test
+   public void testManagerAndBeanWithConfig() {
+      // Using configurations we will be able to work only with
+      // interfaces avoiding the need for a creating instances
+      // by hand. We will also be able to register managers
+      // automatically. All the configurations are created
+      // on disk by setting up the config files for manager
+      // and for module dependencies
+      ConfigManager config = mainManager.getManager(ConfigManager.class);
+      assertNotNull(config);
+
+      // We should read the db config from here
+      config.loadDomain("dbconfig");
+
+      // Now the db manager should be resolved
+      DBManager dbManager = mainManager.getManager(DBManager.class);
+      assertNotNull(dbManager);
+
+      // The connection should have been loaded automatically
+      // from the loader
+      DBConnection conn = dbManager.getConnection();
+      assertNotNull(conn);
+
+      // Now check the defaults for the connection
+      MainManager mainM = conn.getManager();
+      assertEquals(mainManager, mainM);
+
       ConnectionConfig cc = conn.getConfig();
       assertNotNull(cc);
       assertEquals(4444, cc.getPort());

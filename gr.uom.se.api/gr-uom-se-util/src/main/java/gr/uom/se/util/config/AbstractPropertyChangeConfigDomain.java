@@ -7,6 +7,7 @@ import gr.uom.se.util.validation.ArgsCheck;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -99,14 +100,78 @@ public abstract class AbstractPropertyChangeConfigDomain extends
     */
    public void setProperties(Map<String, Object> properties) {
       ArgsCheck.notNull("properties", properties);
-      if (properties.isEmpty()) {
-         return;
-      }
       lock.writeLock().lock();
       try {
          for (String name : properties.keySet()) {
             setThis(name, properties.get(name));
          }
+      } finally {
+         lock.writeLock().unlock();
+      }
+   }
+
+   /**
+    * {@inheritDoc}
+    * <p>
+    * This will return a copy of all properties within this domain. The
+    * operation is atomic and ensures that no other thread can change the
+    * properties of this domain before this is ends.
+    */
+   @Override
+   public Map<String, Object> getProperties() {
+      lock.writeLock().lock();
+      try {
+         Map<String, Object> properties = new HashMap<>();
+         properties.putAll(this.properties);
+         return properties;
+      } finally {
+         lock.writeLock().unlock();
+      }
+   }
+
+   /**
+    * {@inheritDoc}
+    * <p>
+    * This will return a copy of all properties starting with the given prefix.
+    * The operation is atomic and ensures that no other thread can change the
+    * properties of this domain before this is ends.
+    */
+   @Override
+   public Map<String, Object> getPropertiesWithPrefix(String prefix) {
+      ArgsCheck.notNull("prefix", prefix);
+      lock.writeLock().lock();
+      try {
+         Map<String, Object> properties = new HashMap<>();
+         for (String name : this.properties.keySet()) {
+            if (name.startsWith(prefix)) {
+               properties.put(name, this.properties.get(name));
+            }
+         }
+         return properties;
+      } finally {
+         lock.writeLock().unlock();
+      }
+   }
+
+   /**
+    * {@inheritDoc}
+    * <p>
+    * This will return a copy of all properties ending with the given suffix.
+    * The operation is atomic and ensures that no other thread can change the
+    * properties of this domain before this is ends.
+    */
+   @Override
+   public Map<String, Object> getPropertiesWithSuffix(String suffix) {
+      ArgsCheck.notNull("suffix", suffix);
+      lock.writeLock().lock();
+      try {
+         Map<String, Object> properties = new HashMap<>();
+         for (String name : this.properties.keySet()) {
+            if (name.endsWith(suffix)) {
+               properties.put(name, this.properties.get(name));
+            }
+         }
+         return properties;
       } finally {
          lock.writeLock().unlock();
       }

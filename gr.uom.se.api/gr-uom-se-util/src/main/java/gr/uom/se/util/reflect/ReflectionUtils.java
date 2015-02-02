@@ -19,14 +19,31 @@ import java.util.Set;
 /**
  * A class of static utility methods used for reflection.
  * <p>
- * This class and its implementations is not a comprehended reflection
- * tool but a set of methods that are used throughout software packages
- * developed by University of Macedonia, Soft. Eng. team.
+ * This class and its implementations is not a comprehended reflection tool but
+ * a set of methods that are used throughout software packages developed by
+ * University of Macedonia, Soft. Eng. team.
  * 
  * @author Elvis Ligu
  */
 public class ReflectionUtils {
-   
+
+   /**
+    * Return true if the given type is not an interface, not an array not an
+    * abstract, not an enum and not a primitive.
+    * <p>
+    * 
+    * @param clazz
+    *           to check for
+    * @return true if the type is concrete implementation
+    */
+   public static boolean isConcrete(Class<?> clazz) {
+      ArgsCheck.notNull("clazz", clazz);
+      int mod = clazz.getModifiers();
+      return !(clazz.isInterface() || clazz.isArray()
+            || Modifier.isAbstract(mod) || clazz.isEnum() || clazz
+               .isPrimitive());
+   }
+
    /**
     * Get the default (non parameter) constructor.
     * <p>
@@ -68,8 +85,12 @@ public class ReflectionUtils {
          Filter<Constructor<?>> filter) {
 
       ArgsCheck.notNull("module", module);
-      ArgsCheck.isTrue("module not interface", !module.isInterface());
-      ArgsCheck.isTrue("module", !module.isAnnotation());
+      ArgsCheck.isTrue("module " + module.getClass()
+            + " must have implementation", !module.isInterface());
+      ArgsCheck.isTrue("module " + module.getClass()
+            + " not an annotation", !module.isAnnotation());
+      ArgsCheck.isTrue("module " + module.getClass()
+            + " not a primitive", !module.isPrimitive());
 
       // Use the null filter if no filter is provided
       if (filter == null) {

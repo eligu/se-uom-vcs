@@ -58,7 +58,7 @@ public class ConfigConstants {
    public static final String DEFAULT_MAPPER_FACTORY_PROPERTY = "mapperFactory";
 
    /**
-    * Given a property name return a new property name appended {@code Class} at
+    * Given a property name return a new property name appended {@code .class} at
     * the end of the name.
     * <p>
     * 
@@ -67,6 +67,6 @@ public class ConfigConstants {
     * @return the property name of the class of the given property name
     */
    public static String getPropertyNameForConfigClass(String name) {
-      return name + "Class";
+      return name + ".class";
    }
 }

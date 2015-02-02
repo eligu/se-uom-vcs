@@ -7,6 +7,9 @@ import gr.uom.se.util.config.ConfigManager;
 import gr.uom.se.util.module.annotations.Property;
 import gr.uom.se.util.validation.ArgsCheck;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * The default abstract implementation of the module manager.
  * <p>
@@ -22,6 +25,387 @@ import gr.uom.se.util.validation.ArgsCheck;
  * @see ModuleConstants
  */
 public abstract class AbstractModuleManager implements ModuleManager {
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public void registerDefaultsForModule(String moduleClassName,
+         Map<String, Object> properties) {
+      ArgsCheck.notNull("moduleClassName", moduleClassName);
+      ArgsCheck.notNull("properties", properties);
+      if (properties.isEmpty()) {
+         return;
+      }
+      try {
+         Class<?> moduleClass = Class.forName(moduleClassName);
+         registerDefaultsForModule(moduleClass, properties);
+      } catch (ClassNotFoundException e) {
+         throw new RuntimeException(e);
+      }
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public void registerDefaultsForModule(Class<?> moduleClass,
+         Map<String, Object> properties) {
+      ArgsCheck.notNull("moduleClass", moduleClass);
+      ArgsCheck.notNull("properties", properties);
+      if (properties.isEmpty()) {
+         return;
+      }
+      // Create a config for the given class based on the given properties
+      Map<String, Map<String, Object>> props = new HashMap<>();
+      String domain = ModuleConstants.getDefaultConfigFor(moduleClass);
+
+      // Correct the property names so the comply with the
+      // module manager implementation
+      properties = correctProperties(properties, moduleClass);
+      props.put(domain, properties);
+
+      // Register the module provider
+      this.registerDefaultProvider(moduleClass, props);
+
+      // Register the parameter provider
+      this.registerDefaultParameterProvider(moduleClass, props);
+
+      // Register the property injector
+      this.registerDefaultPropertyInjector(moduleClass, props);
+
+      // Register the module loader
+      this.registerDefaultLoader(moduleClass, props);
+   }
+
+   private Map<String, Object> correctProperties(Map<String, Object> props,
+         Class<?> forClass) {
+      Map<String, Object> copy = new HashMap<String, Object>();
+      for (String name : props.keySet()) {
+         copy.put(correctPropertyName(name, forClass), props.get(name));
+      }
+      return copy;
+   }
+
+   private String correctPropertyName(String name, Class<?> forClass) {
+      String aname = ModuleConstants.getProviderNameFor(forClass);
+      if (name.equals(aname)) {
+         return ModuleConstants.PROVIDER_PROPERTY;
+      }
+      aname = ModuleConstants.getProviderClassNameFor(forClass);
+      if (name.equals(aname)) {
+         return ModuleConstants.PROVIDER_CLASS_PROPERTY;
+      }
+
+      aname = ModuleConstants.getParameterProviderNameFor(forClass);
+      if (name.equals(aname)) {
+         return ModuleConstants.PARAMETER_PROVIDER_PROPERTY;
+      }
+      aname = ModuleConstants.getParameterProviderClassNameFor(forClass);
+      if (name.equals(aname)) {
+         return ModuleConstants.PARAMETER_PROVIDER_CLASS_PROPERTY;
+      }
+
+      aname = ModuleConstants.getPropertyInjectorNameFor(forClass);
+      if (name.equals(aname)) {
+         return ModuleConstants.PROPERTY_INJECTOR_PROPERTY;
+      }
+      aname = ModuleConstants.getPropertyInjectorClassNameFor(forClass);
+      if (name.equals(aname)) {
+         return ModuleConstants.PROPERTY_INJECTOR_CLASS_PROPERTY;
+      }
+
+      aname = ModuleConstants.getLoaderNameFor(forClass);
+      if (name.equals(aname)) {
+         return ModuleConstants.LOADER_PROPERTY;
+      }
+      aname = ModuleConstants.getLoaderClassNameFor(forClass);
+      if (name.equals(aname)) {
+         return ModuleConstants.LOADER_CLASS_PROPERTY;
+      }
+      return name;
+   }
+
+   /**
+    * Register the provider or its class for the given module if this manager
+    * doesn't have any registered.
+    * <p>
+    * 
+    * @param moduleClass
+    *           the type of the module, must not be null.
+    * @param properties
+    *           a map of properties, must not be null.
+    */
+   private void registerDefaultProvider(Class<?> moduleClass,
+         Map<String, Map<String, Object>> props) {
+      // /////////////////////////////////////////////////////////////////////
+      // 1 - Check if the class has any provider available
+      // Check first at this manager to find a provider
+      Object provider = ModuleUtils.getModuleProvider(moduleClass,
+            Object.class, resolveConfig(), null);
+
+      // If provider is null then check at the given properties
+      if (provider == null) {
+         provider = ModuleUtils.getModuleProvider(moduleClass, Object.class,
+               null, props);
+         // If provider is found at this place then register it
+         if (provider != null) {
+            this.registerProvider(provider, moduleClass);
+         }
+      }
+
+      // 2 - Check if the class has any provider class available
+      // There is not a provider available
+      // So we must register the provider class if any
+      if (provider == null) {
+         // Get first the provider class from this manager if any
+         Class<?> providerClass = ModuleUtils.getProviderClassFor(moduleClass,
+               resolveConfig(), null);
+         // If provider class was not defined in config then check at the given
+         // properties
+         if (providerClass == null) {
+            providerClass = ModuleUtils.getProviderClassFor(moduleClass, null,
+                  props);
+         } else {
+            // A provider class is found at this manager so no need to
+            // register it again
+            return;
+         }
+
+         // If provider class is found at given properties then register it
+         if (providerClass != null) {
+            this.registerProviderClass(providerClass, moduleClass);
+         }
+      }
+   }
+
+   /**
+    * Register the parameter provider or its class for the given module if this
+    * manager doesn't have any registered.
+    * <p>
+    * 
+    * @param moduleClass
+    *           the type of the module, must not be null.
+    * @param properties
+    *           a map of properties, must not be null.
+    */
+   private void registerDefaultParameterProvider(Class<?> moduleClass,
+         Map<String, Map<String, Object>> props) {
+
+      // 1 - Check if the class has any parameter provider available
+      // Check first at this manager to find a provider
+      ParameterProvider parameterProvider = ModuleUtils.getParameterProvider(
+            moduleClass, resolveConfig(), null);
+
+      // If provider is null then check at the given properties
+      if (parameterProvider == null) {
+         parameterProvider = ModuleUtils.getParameterProvider(moduleClass,
+               null, props);
+
+         // If provider is found at this place and it is not the default one
+         // then register it
+         if (parameterProvider != null
+               && !parameterProvider.equals(getDefaultParameterProvider())) {
+            this.registerParameterProvider(parameterProvider, moduleClass);
+         }
+      }
+
+      // 2 - Check if the class has any provider class available
+      // There is not a provider available
+      // So we must register the provider class if any
+      if (parameterProvider == null) {
+         // Get first the provider class from this manager if any
+         Class<? extends ParameterProvider> providerClass = ModuleUtils
+               .getParameterProviderClassFor(moduleClass, resolveConfig(), null);
+
+         // If provider class was not defined in config then check at the given
+         // properties
+         if (providerClass == null) {
+            providerClass = ModuleUtils.getParameterProviderClassFor(
+                  moduleClass, null, props);
+         } else {
+            // A provider class is found at this manager so no need to
+            // register it again
+            return;
+         }
+
+         // If provider class is found at given properties and it is not the
+         // default one then register it
+         if (providerClass != null
+               && !providerClass.equals(getDefaultParameterProviderClass())) {
+            this.registerParameterProviderClass(providerClass, moduleClass);
+         }
+      }
+   }
+
+   /**
+    * Register the property injector or its class for the given module if this
+    * manager doesn't have any registered.
+    * <p>
+    * 
+    * @param moduleClass
+    *           the type of the module, must not be null.
+    * @param properties
+    *           a map of properties, must not be null.
+    */
+   private void registerDefaultPropertyInjector(Class<?> moduleClass,
+         Map<String, Map<String, Object>> props) {
+
+      // 1 - Check if the class has any property injector available
+      // Check first at this manager to find a provider
+      PropertyInjector injector = ModuleUtils.getPropertyInjector(moduleClass,
+            resolveConfig(), null);
+
+      // If injector is null then check at the given properties
+      if (injector == null) {
+         injector = ModuleUtils.getPropertyInjector(moduleClass, null, props);
+
+         // If injector is found at this place and it is not the default one
+         // then register it
+         if (injector != null && !injector.equals(getDefaultPropertyInjector())) {
+            this.registerPropertyInjector(injector, moduleClass);
+         }
+      }
+
+      // 2 - Check if the class has any injector class available
+      // There is not an injector available
+      // So we must register the injector class if any
+      if (injector == null) {
+         // Get first the injector class from this manager if any
+         Class<? extends PropertyInjector> injectorClass = ModuleUtils
+               .getPropertyInjectorClassFor(moduleClass, resolveConfig(), null);
+
+         // If injector class was not defined in config then check at the given
+         // properties
+         if (injectorClass == null) {
+            injectorClass = ModuleUtils.getPropertyInjectorClassFor(
+                  moduleClass, null, props);
+         } else {
+            // A provider class is found at this manager so no need to
+            // register it again
+            return;
+         }
+
+         // If provider class is found at given properties and it is not the
+         // default one then register it
+         if (injectorClass != null
+               && !injectorClass.equals(getDefaultPropertyInjectorClass())) {
+            this.registerPropertyInjectorClass(injectorClass, moduleClass);
+         }
+      }
+   }
+
+   /**
+    * Register the loader or its class for the given module if this manager
+    * doesn't have any registered.
+    * <p>
+    * 
+    * @param moduleClass
+    *           the type of the module, must not be null.
+    * @param properties
+    *           a map of properties, must not be null.
+    */
+   private void registerDefaultLoader(Class<?> moduleClass,
+         Map<String, Map<String, Object>> props) {
+
+      // 1 - Check if the class has any loader available
+      // Check first at this manager to find a loader
+      ModuleLoader loader = ModuleUtils.getLoader(moduleClass, resolveConfig(),
+            null);
+
+      // If loader is null then check at the given properties
+      if (loader == null) {
+         loader = ModuleUtils.getLoader(moduleClass, null, props);
+
+         // If loader is found at this place and it is not the default one
+         // then register it
+         if (loader != null && !loader.equals(getDefaultLoader())) {
+            this.registerLoader(loader, moduleClass);
+         }
+      }
+
+      // 2 - Check if the class has any loader class available
+      // There is not a loader available
+      // So we must register the loader class if any
+      if (loader == null) {
+         // Get first the loader class from this manager if any
+         Class<? extends ModuleLoader> loaderClass = ModuleUtils
+               .getLoaderClassFor(moduleClass, resolveConfig(), null);
+
+         // If loader class was not defined in config then check at the given
+         // properties
+         if (loaderClass == null) {
+            loaderClass = ModuleUtils.getLoaderClassFor(moduleClass, null,
+                  props);
+         } else {
+            // A loader class is found at this manager so no need to
+            // register it again
+            return;
+         }
+
+         // If provider class is found at given properties and it is not the
+         // default one then register it
+         if (loaderClass != null
+               && !loaderClass.equals(getDefaultLoaderClass())) {
+            this.registerLoaderClass(loaderClass, moduleClass);
+         }
+      }
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public ParameterProvider getDefaultParameterProvider() {
+      String name = ModuleConstants.PARAMETER_PROVIDER_PROPERTY;
+      String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+      return this.getProperty(domain, name, ParameterProvider.class);
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public Class<? extends ParameterProvider> getDefaultParameterProviderClass() {
+      return ModuleUtils
+            .getDefaultParameterProviderClass(resolveConfig(), null);
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public PropertyInjector getDefaultPropertyInjector() {
+      String name = ModuleConstants.PROPERTY_INJECTOR_PROPERTY;
+      String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+      return this.getProperty(domain, name, PropertyInjector.class);
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public Class<? extends PropertyInjector> getDefaultPropertyInjectorClass() {
+      return ModuleUtils.getDefaultPropertyInjectorClass(resolveConfig(), null);
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public ModuleLoader getDefaultLoader() {
+      String name = ModuleConstants.LOADER_PROPERTY;
+      String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+      return this.getProperty(domain, name, ModuleLoader.class);
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public Class<? extends ModuleLoader> getDefaultLoaderClass() {
+      return ModuleUtils.getDefaultLoaderClass(resolveConfig(), null);
+   }
 
    /**
     * {@inheritDoc}
@@ -137,9 +521,9 @@ public abstract class AbstractModuleManager implements ModuleManager {
     * <p>
     * The default strategy for looking for a provider class of a module is to
     * look under the domain with the same name of the fully qualified name of
-    * the module a property {@link ModuleConstants#PROVIDER_PROPERTY} appended
-    * {@code Class}. Therefore this method will register the provider at that
-    * place.
+    * the module a property {@link ModuleConstants#PROVIDER_CLASS_PROPERTY}
+    * appended {@code Class}. Therefore this method will register the provider
+    * at that place.
     */
    @Override
    public void registerProviderClass(Class<?> providerClass, Class<?> forClass) {
@@ -158,7 +542,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
       ArgsCheck.notNull("forClass", forClass);
 
       String domain = ModuleConstants.getDefaultConfigFor(forClass);
-      String name = ModuleConstants.getProviderClassNameFor(forClass);
+      String name = ModuleConstants.PROVIDER_CLASS_PROPERTY;
       setConfig(domain, name, providerClass);
    }
 
@@ -389,11 +773,11 @@ public abstract class AbstractModuleManager implements ModuleManager {
 
       Property annotation = ModuleUtils.getPropertyAnnotation(property
             .getClass().getAnnotations());
-      ArgsCheck.notNull("@Property annotation", annotation);
-
-      String domain = annotation.domain();
-      String name = annotation.name();
-      setConfig(domain, name, property);
+      if (annotation != null) {
+         String domain = annotation.domain();
+         String name = annotation.name();
+         setConfig(domain, name, property);
+      }
    }
 
    /**
@@ -407,11 +791,12 @@ public abstract class AbstractModuleManager implements ModuleManager {
       ArgsCheck.notNull("property", property);
       Property annotation = ModuleUtils.getPropertyAnnotation(property
             .getClass().getAnnotations());
-      ArgsCheck.notNull("@Property annotation", annotation);
 
-      String domain = annotation.domain();
-      String name = annotation.name();
-      setConfig(domain, name, null);
+      if (annotation != null) {
+         String domain = annotation.domain();
+         String name = annotation.name();
+         setConfig(domain, name, null);
+      }
    }
 
    /**
@@ -425,12 +810,12 @@ public abstract class AbstractModuleManager implements ModuleManager {
       ArgsCheck.notNull("property", property);
       Property annotation = ModuleUtils.getPropertyAnnotation(property
             .getAnnotations());
-      ArgsCheck.notNull("@Property annotation", annotation);
-
-      String domain = annotation.domain();
-      String name = ModuleConstants.getPropertyNameForConfigClass(annotation
-            .name());
-      setConfig(domain, name, null);
+      if (annotation != null) {
+         String domain = annotation.domain();
+         String name = ModuleConstants.getPropertyNameForConfigClass(annotation
+               .name());
+         setConfig(domain, name, null);
+      }
    }
 
    /**
@@ -438,7 +823,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
     * <p>
     * This method will look if this class has an annotation {@link Property}. If
     * so it will register this property at the domain with the name of this
-    * annotation. Ie the annotation is not present this will throw an exception.
+    * annotation. If the annotation is not present it will do nothing.
     */
    @Override
    public void registerAsProperty(Class<?> clazz) {
@@ -446,12 +831,13 @@ public abstract class AbstractModuleManager implements ModuleManager {
 
       Property annotation = ModuleUtils.getPropertyAnnotation(clazz
             .getAnnotations());
-      ArgsCheck.notNull("@Property annotation", annotation);
 
-      String domain = annotation.domain();
-      String name = ModuleConstants.getPropertyNameForConfigClass(annotation
-            .name());
-      setConfig(domain, name, clazz);
+      if (annotation != null) {
+         String domain = annotation.domain();
+         String name = ModuleConstants.getPropertyNameForConfigClass(annotation
+               .name());
+         setConfig(domain, name, clazz);
+      }
    }
 
    /**
