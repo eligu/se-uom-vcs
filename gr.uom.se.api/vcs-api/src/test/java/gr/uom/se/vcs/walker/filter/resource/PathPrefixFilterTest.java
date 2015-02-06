@@ -81,7 +81,6 @@ public class PathPrefixFilterTest {
       assertTrue(filter.enter(rmock));
    }
 
-   @SuppressWarnings("unchecked")
    @Test
    public void testAllInclude() {
 
@@ -150,7 +149,6 @@ public class PathPrefixFilterTest {
       assertTrue(!filter.include(rmock));
    }
 
-   @SuppressWarnings("unchecked")
    @Test
    public void testAllAllow() {
 

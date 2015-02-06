@@ -318,7 +318,6 @@ public class MetricsUseCase {
       System.out.format("Releases: %1s\n", authorsPerVersion.size());
    }
 
-   @SuppressWarnings("unchecked")
    public static void test2() throws InterruptedException,
          VCSRepositoryException {
       // Get the versionProvider from repo, and create a map between tag's
@@ -626,14 +625,11 @@ public class MetricsUseCase {
    };
    // Here we construct a mixed filter for .java files under some /test/
    // directories
-   @SuppressWarnings("unchecked")
    final static VCSFilter<VCSFile> javaTestFilter = ResourceFilterUtility.and(
          javaFilter, testDirFilter);
    // Here we have a filter for .java files that are not under some /test/
    // directory. Because resource filter utility doesn't support NOT filter
    // we construct one on the fly
-   
-   @SuppressWarnings("unchecked")
    final static VCSFilter<VCSFile> javaNotTestFilter = new VCSAndFilter<VCSFile>(
          Arrays.asList(new VCSNotFilter<VCSFile>(testDirFilter), javaFilter));
 

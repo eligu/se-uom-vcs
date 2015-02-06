@@ -628,7 +628,6 @@ public class VCSCommitImpTest extends VCSTest {
                return true;
             }
 
-            @SuppressWarnings("unchecked")
             @Override
             public VCSResourceFilter<VCSResource> getResourceFilter() {
                return ResourceFilterUtility.and(ResourceFilterUtility.prefix(rMock.path()),

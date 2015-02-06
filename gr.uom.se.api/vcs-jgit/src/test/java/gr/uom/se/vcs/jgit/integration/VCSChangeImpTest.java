@@ -294,7 +294,6 @@ public class VCSChangeImpTest extends MainSuite {
       final List<VCSChange<?>> changes = new ArrayList<VCSChange<?>>();
 
       // We will create a very strange resource filter
-      @SuppressWarnings("unchecked")
       final VCSResourceFilter<VCSResource> filter = or(
             and(prefix("src/main/java"), suffix(".java")),
             path("some/strange/path"));
