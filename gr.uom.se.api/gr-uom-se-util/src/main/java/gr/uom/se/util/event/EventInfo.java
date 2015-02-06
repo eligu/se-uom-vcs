@@ -14,20 +14,20 @@ import java.util.Date;
  */
 public class EventInfo {
 
-   private Object source;
+   private Object description;
    private Date startDate;
    
    public EventInfo() {
    }
    
-   public EventInfo(Object source, Date date) {
-      ArgsCheck.notNull("source", source);
-      this.source = source;
+   public EventInfo(Object description, Date date) {
+      ArgsCheck.notNull("description", description);
+      this.description = description;
       this.startDate = date;
    }
    
-   public Object getSource() {
-      return source;
+   public Object getDescription() {
+      return description;
    }
    
    public Date getStartDate() {
