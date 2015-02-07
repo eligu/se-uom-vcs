@@ -3,12 +3,14 @@
  */
 package gr.uom.se.util.config;
 
+import gr.uom.se.util.module.DefaultModuleLoader;
 import gr.uom.se.util.module.annotations.Module;
 import gr.uom.se.util.module.annotations.Property;
 import gr.uom.se.util.module.annotations.ProvideModule;
 import gr.uom.se.util.validation.ArgsCheck;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -98,8 +100,34 @@ public class DefaultConfigDomain extends AbstractPropertyChangeConfigDomain {
       }
 
       // Load the properties
+      try (InputStream is = Files.newInputStream(path)) {
+         load(config, is);
+      }
+      return config;
+   }
+
+   /**
+    * Given an instance of config domain, load properties from the given input
+    * stream into the domain.
+    * <p>
+    * 
+    * @param config
+    *           the config domain into which the properties will be loaded
+    * @param inputStream
+    *           the stream containing the properties. The specified stream
+    *           remain open after this method returns
+    * @return the domain with properties
+    * @throws IOException
+    *            if a problem occurs while reading from stream
+    */
+   public static <T extends ConfigDomain> T load(T config,
+         InputStream inputStream) throws IOException {
+      ArgsCheck.notNull("config", config);
+      ArgsCheck.notNull("inputStream", inputStream);
+
+      // Load the properties
       Properties properties = new Properties();
-      properties.load(Files.newInputStream(path));
+      properties.load(inputStream);
       // Copy each property to domain
       for (Object key : properties.keySet()) {
          Object val = properties.get(key);
