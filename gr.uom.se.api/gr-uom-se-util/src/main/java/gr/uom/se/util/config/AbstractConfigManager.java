@@ -102,10 +102,16 @@ public abstract class AbstractConfigManager implements ConfigManager {
     * {@link ConfigConstants#DEFAULT_CONFIG_FOLDER}.
     */
    @Override
-   public void loadDomain(String domain) {
+   public ConfigDomain loadDomain(String domain) {
 
       ArgsCheck.notNull("domain", domain);
 
+      ConfigDomain cfg = loadDomain0(domain);
+      addDomain(cfg);
+      return cfg;
+   }
+
+   private ConfigDomain loadDomain0(String domain) {
       String configFolder = getDefaultConfigFolder();
 
       Path folder = Paths.get(configFolder);
@@ -130,12 +136,55 @@ public abstract class AbstractConfigManager implements ConfigManager {
                + " file " + file + " is not readable");
       }
       try {
-         DefaultConfigDomain cfgDomain = DefaultConfigDomain.load(domain,
+         ConfigDomain cfgDomain = DefaultConfigDomain.load(domain,
                configFolder, file.getFileName().toString());
-         addDomain(cfgDomain);
+         return cfgDomain;
       } catch (IOException e) {
          throw new IllegalArgumentException(e);
       }
+   }
+
+   @Override
+   public ConfigDomain loadAndMergeDomain(String domain) {
+      ConfigDomain oldD = getDomain(domain);
+      ConfigDomain newD = loadDomain0(domain);
+      if (oldD != null) {
+         oldD.merge(newD);
+         return oldD;
+      }
+      this.domains.put(domain, newD);
+      return newD;
+   }
+
+   @SuppressWarnings("unchecked")
+   @Override
+   public <T extends ConfigDomain> T loadAndMergeDomain(Class<T> domain) {
+      T newD = loadDomain0(domain);
+      ConfigDomain oldD = getDomain(newD.getName());
+      if (oldD != null) {
+         oldD.merge(newD);
+         if (newD.getClass().isAssignableFrom(oldD.getClass())) {
+            newD = (T) oldD;
+         } else {
+            newD.merge(oldD);
+         }
+      }
+      this.domains.put(newD.getName(), newD);
+      return newD;
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public void setDomain(ConfigDomain domain) {
+      ArgsCheck.notNull("domain", domain);
+      String name = domain.getName();
+      if (name == null) {
+         throw new IllegalArgumentException("The domain " + domain.getClass()
+               + " doesn't provide a name");
+      }
+      this.domains.put(name, domain);
    }
 
    /**
@@ -181,7 +230,7 @@ public abstract class AbstractConfigManager implements ConfigManager {
       }
       return configFolder;
    }
-   
+
    /**
     * Get the default config domain name.
     * <p>
@@ -209,6 +258,12 @@ public abstract class AbstractConfigManager implements ConfigManager {
     */
    @Override
    public <T extends ConfigDomain> T loadDomain(Class<T> domain) {
+      T cfg = loadDomain0(domain);
+      addDomain(cfg);
+      return cfg;
+   }
+
+   private <T extends ConfigDomain> T loadDomain0(Class<T> domain) {
       // Get a module loader, even if there is not a default
       // loader for the given type, get the default loader
       // implementation
@@ -219,7 +274,6 @@ public abstract class AbstractConfigManager implements ConfigManager {
          throw new IllegalArgumentException("Domain instance " + domain
                + " can not be loaded by " + loader);
       }
-      addDomain(instanceDomain);
       return instanceDomain;
    }
 
@@ -236,16 +290,18 @@ public abstract class AbstractConfigManager implements ConfigManager {
                + instanceDomain.getClass() + " doesn't provide a name");
       }
       /**
-       * This will copy the default locations to the new domain
-       * because they can be changed to instruct this manager where
-       * to find the default locations before the initialization. 
+       * This will copy the default locations to the new domain because they can
+       * be changed to instruct this manager where to find the default locations
+       * before the initialization.
        */
-      if(name.equals(getDefaultConfigDomain())) {
+      if (name.equals(getDefaultConfigDomain())) {
          String configFolder = getDefaultConfigFolder();
          String configFile = getDefaultConfigFile();
-         
-         instanceDomain.setProperty(ConfigConstants.DEFAULT_CONFIG_FOLDER_PROPERTY, configFolder);
-         instanceDomain.setProperty(ConfigConstants.DEFAULT_CONFIG_FILE_PROPERTY, configFile);
+
+         instanceDomain.setProperty(
+               ConfigConstants.DEFAULT_CONFIG_FOLDER_PROPERTY, configFolder);
+         instanceDomain.setProperty(
+               ConfigConstants.DEFAULT_CONFIG_FILE_PROPERTY, configFile);
       }
       this.domains.put(name, instanceDomain);
    }
@@ -319,7 +375,8 @@ public abstract class AbstractConfigManager implements ConfigManager {
          }
          // Load the factory
          factory = ModuleUtils.resolveLoader(fClass, this,
-               ModuleUtils.resolveModuleConfig(fClass)).load(MapperFactory.class);
+               ModuleUtils.resolveModuleConfig(fClass)).load(
+               MapperFactory.class);
       }
 
       // If a class was not found

@@ -112,7 +112,9 @@ public class DefaultMainManager extends AbstractMainManager {
    private void loadDefaultDomain() {
       String domain = getDefaultDomain();
       try {
-         config.loadDomain(domain);
+         // Check first if the default domain is available
+         // some other may have loaded it, otherwise load it
+         config.loadAndMergeDomain(domain);
       } catch (Exception e) {
          // TODO this line must be checked for consistency
          // Probably a logger would be a better idea

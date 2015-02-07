@@ -32,7 +32,7 @@ public class DefaultConfigManager extends AbstractConfigManager {
    public void init() {
       String domain = getDefaultConfigDomain();
       try {
-         this.loadDomain(domain);
+         this.loadAndMergeDomain(domain);
       } catch (Exception e) {
          // TODO this line must be checked for consistency
          // Probably a logger would be a better idea

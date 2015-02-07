@@ -82,4 +82,17 @@ public interface ConfigDomain {
     * @return a map of all properties with the given suffix.
     */
    Map<String, Object> getPropertiesWithSuffix(String suffix);
+
+   /**
+    * Given another domain, merge the properties of this domain with the
+    * properties of the other domain.
+    * <p>
+    * If this domain contains a property and the other domain contains the
+    * property then it will be replaced with the value of the other domain
+    * property.
+    * 
+    * @param domain
+    *           the domain to merge with this one, must not be null
+    */
+   void merge(ConfigDomain domain);
 }

@@ -128,7 +128,23 @@ public abstract class AbstractPropertyChangeConfigDomain extends
          lock.writeLock().unlock();
       }
    }
-
+   
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public void merge(ConfigDomain domain) {
+      ArgsCheck.notNull("domain", domain);
+      lock.writeLock().lock();
+      try {
+         Map<String, Object> newProperties = domain.getProperties();
+         for(String name : newProperties.keySet()) {
+            this.properties.put(name, newProperties.get(name));
+         }
+      } finally {
+         lock.writeLock().unlock();
+      }
+   }
    /**
     * {@inheritDoc}
     * <p>

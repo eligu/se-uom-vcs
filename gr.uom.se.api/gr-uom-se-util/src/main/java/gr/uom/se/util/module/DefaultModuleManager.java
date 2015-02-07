@@ -36,7 +36,7 @@ public class DefaultModuleManager extends AbstractModuleManager {
     * manager.
     */
    private boolean created = false;
-   
+
    /**
     * Create an instance of this manager without initializing it.
     * <p>
@@ -88,7 +88,7 @@ public class DefaultModuleManager extends AbstractModuleManager {
    private void initDefaultDomain() {
       String domain = getDefaultDomain();
       try {
-         this.manager.loadDomain(domain);
+         manager.loadAndMergeDomain(domain);
       } catch (Exception e) {
          // TODO this line must be checked for consistency
          // Probably a logger would be a better idea

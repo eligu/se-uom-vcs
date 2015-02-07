@@ -113,8 +113,9 @@ public interface ConfigManager {
     * 
     * @param domain
     *           the name of the domain to load
+    * @return
     */
-   public void loadDomain(String domain);
+   public ConfigDomain loadDomain(String domain);
 
    /**
     * Load the domain based on a given class.
@@ -137,4 +138,40 @@ public interface ConfigManager {
     * @return the instance of the domain
     */
    public ConfigDomain getDomain(String domain);
+
+   /**
+    * Set the given domain to this manager.
+    * <p>
+    * This will override any existing domain with the same name.
+    * 
+    * @param domain
+    *           to be added to this manager, must not be null.
+    */
+   void setDomain(ConfigDomain domain);
+
+   /**
+    * Load the given domain into this manager, and merge the new properties to
+    * an old domain with the same name, if any.
+    * <p>
+    * This will load the given domain. If there is an old domain with the same
+    * name it will merge the new domain to old one.
+    * 
+    * @param domain
+    *           the domain type to be loaded, must not be null.
+    * @return the new domain created
+    */
+   <T extends ConfigDomain> T loadAndMergeDomain(Class<T> domain);
+
+   /**
+    * Load the given domain into this manager, and merge the new properties to
+    * an old domain with the same name, if any.
+    * <p>
+    * This will load the given domain. If there is an old domain with the same
+    * name it will merge the new domain to old one.
+    * 
+    * @param domain
+    *           the domain type to be loaded, must not be null.
+    * @return the new domain created
+    */
+   ConfigDomain loadAndMergeDomain(String domain);
 }

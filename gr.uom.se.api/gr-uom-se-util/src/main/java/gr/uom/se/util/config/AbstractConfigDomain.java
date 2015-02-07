@@ -84,4 +84,7 @@ public abstract class AbstractConfigDomain implements ConfigDomain {
          return properties.put(name, val);
       }
    }
+
+   public void merge(ConfigDomain domain) {
+   }
 }
