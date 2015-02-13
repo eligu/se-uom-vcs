@@ -27,7 +27,7 @@
 		<dependency>
 			<groupId>gr.uom.se</groupId>
 			<artifactId>vcs-api</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>1.0.0</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-io</groupId>
@@ -42,7 +42,7 @@
 		<dependency>
 			<groupId>gr.uom.se</groupId>
 			<artifactId>gr-uom-se-util</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>1.0.0</version>
 		</dependency>
 	</dependencies>
 	
