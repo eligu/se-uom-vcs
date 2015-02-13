@@ -14,4 +14,5 @@ public class ManagerConstants {
    public static final String DEFAULT_MANAGER_PROPERTY = "mainManager";
    public static final String MANAGER_PREFIX = "manager.";
    public static final String DEFAULT_DOMAIN_PROPERTY = "mainManagerDefaultDomain";
+   public static final String ACTIVATOR_PREFIX = "activator.";
 }

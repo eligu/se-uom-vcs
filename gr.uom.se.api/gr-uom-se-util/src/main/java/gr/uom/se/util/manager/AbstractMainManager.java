@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public abstract class AbstractMainManager implements MainManager {
 
    /**
-    * A lock to for synchronizing writes to managers and for allowing reads
+    * A lock for synchronizing writes to managers and for allowing reads
     * where there are no writes.
     */
    private ReentrantReadWriteLock managersLock = new ReentrantReadWriteLock();
@@ -398,18 +398,7 @@ public abstract class AbstractMainManager implements MainManager {
     * @return
     */
    private Method findInitMethod(Class<?> manager) {
-      Set<Method> methods = ReflectionUtils.getAccessibleMethods(manager,
-            this.getClass());
-      for (Method m : methods) {
-         int mod = m.getModifiers();
-         if (!Modifier.isStatic(mod)) {
-            Init an = m.getAnnotation(Init.class);
-            if (an != null) {
-               return m;
-            }
-         }
-      }
-      return null;
+      return ManagerUtils.findInstanceInitMethod(manager, getClass());
    }
 
    /**
@@ -477,6 +466,10 @@ public abstract class AbstractMainManager implements MainManager {
       } finally {
          managersLock.readLock().unlock();
       }
+   }
+   
+   public void activate(Class<?> activator) {
+      
    }
 
    /**

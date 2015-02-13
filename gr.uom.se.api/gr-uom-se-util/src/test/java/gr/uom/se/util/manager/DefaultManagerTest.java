@@ -2,6 +2,7 @@ package gr.uom.se.util.manager;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import gr.uom.se.util.config.ConfigConstants;
 import gr.uom.se.util.config.ConfigManager;
 import gr.uom.se.util.config.DefaultConfigManager;
@@ -147,5 +148,25 @@ public class DefaultManagerTest {
       assertEquals("elvis", cc.getUsername());
       assertEquals("123456", cc.getPassword());
       assertEquals("org.example.jdbc.JDriver", cc.getJdbcDriver());
+   }
+
+   @Test
+   public void testActivator() {
+      ActivatorManager am = mainManager.getManager(DefaultActivatorManager.class);
+      assertNotNull(am);
+
+      am.activate(Activator1.class);
+      am.activate(Activator2.class);
+      am.activate(Activator3.class);
+      assertEquals(1, Activator2.count);
+
+      boolean thrown = false;
+      try {
+         am.activate(Activator4.class);
+      } catch (IllegalArgumentException ex) {
+         thrown = true;
+      }
+      assertTrue(thrown);
+
    }
 }

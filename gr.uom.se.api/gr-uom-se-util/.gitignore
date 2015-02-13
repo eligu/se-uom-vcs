@@ -1,3 +1,5 @@
-/.settings
+*.settings
 /target
 /nbactions.xml
+*.classpath
+*.project
