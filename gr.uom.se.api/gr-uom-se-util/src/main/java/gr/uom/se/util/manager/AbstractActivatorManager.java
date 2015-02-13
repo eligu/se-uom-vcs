@@ -58,6 +58,25 @@ public abstract class AbstractActivatorManager implements ActivatorManager {
       }
    }
 
+   /**
+    * Given a fully qualified name for a given activator class it will try to
+    * resolve it first and then to activate it.
+    * <p>
+    * 
+    * @param activatorClassName
+    *           the fully qualified name of the activator class, must not be
+    *           null
+    */
+   public void activate(String activatorClassName) {
+      ArgsCheck.notNull("activatorClassName", activatorClassName);
+      try {
+         Class<?> actClass = Class.forName(activatorClassName);
+         this.activate(actClass);
+      } catch (ClassNotFoundException cnfe) {
+         throw new RuntimeException(cnfe);
+      }
+   }
+
    private void activate0(Class<?> activator, Set<Class<?>> deps) {
       if (isActive0(activator)) {
          return;
@@ -73,8 +92,10 @@ public abstract class AbstractActivatorManager implements ActivatorManager {
       // Activate each dependency first
       Class<?>[] adeps = getDependencies(activator);
       for (Class<?> dep : adeps) {
-         if(dep.equals(activator)) {
-            throw new IllegalArgumentException("Can not set a dependency for its self, activator: " + activator);
+         if (dep.equals(activator)) {
+            throw new IllegalArgumentException(
+                  "Can not set a dependency for its self, activator: "
+                        + activator);
          }
          activate0(dep, deps);
       }

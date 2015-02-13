@@ -38,7 +38,6 @@
 	</dependencies>
 
 	<modules>
-		<module>gr-uom-se-util</module>
 		<module>vcs-analysis</module>
 		<module>vcs-api</module>
 		<module>vcs-jgit</module>

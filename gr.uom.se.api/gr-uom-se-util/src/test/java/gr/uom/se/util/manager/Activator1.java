@@ -26,9 +26,4 @@ public class Activator1 {
    public void init() {
       System.out.println("Activating:  " + this.getClass());
    }
-   
-   public static void main(String[] args) {
-      Activator an = Activator1.class.getAnnotation(Activator.class);
-      System.out.println(an);
-   }
 }

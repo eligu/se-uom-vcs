@@ -21,4 +21,13 @@ public class NULLVal {
     * <p>
     */
    public static final String LOAD_STR = "$LOAD$";
+   
+   /**
+    * When a property has this name it will not be lookup in config manager
+    * not or it will be loaded by the loader. Use this as a property name
+    * when annotating properties to ensure that a property must be provided
+    * by another point of execution.
+    * <p>
+    */
+   public static final String NO_PROP = "$NoPrOp$";
 }

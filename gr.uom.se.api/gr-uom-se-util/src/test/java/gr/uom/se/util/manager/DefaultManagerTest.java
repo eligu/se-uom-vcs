@@ -152,7 +152,10 @@ public class DefaultManagerTest {
 
    @Test
    public void testActivator() {
-      ActivatorManager am = mainManager.getManager(DefaultActivatorManager.class);
+      ActivatorManager am = mainManager.getManager(ModuleManager.class)
+            .getLoader(ActivatorManager.class).load(ActivatorManager.class);
+      mainManager.registerLoaded(am);
+      mainManager.startManager(ActivatorManager.class);
       assertNotNull(am);
 
       am.activate(Activator1.class);
