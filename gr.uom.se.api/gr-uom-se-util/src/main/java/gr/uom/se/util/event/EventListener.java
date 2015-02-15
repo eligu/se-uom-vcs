@@ -10,5 +10,5 @@ package gr.uom.se.util.event;
  */
 public interface EventListener {
 
-   public void newEvent(Event event);
+   void respondToEvent(Event event);
 }

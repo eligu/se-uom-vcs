@@ -40,7 +40,7 @@ public class DefaultEventQueue implements EventQueue {
          LinkedList<EventListener> listeners = eventTypeListeners.get(event.getType());
          if(listeners != null) {
             for(EventListener listener : listeners) {
-               listener.newEvent(event);
+               listener.respondToEvent(event);
             }
          }
       }
@@ -54,7 +54,7 @@ public class DefaultEventQueue implements EventQueue {
       listenersLock.readLock().lock();
       try{
          for(EventListener li : eventListeners) {
-            li.newEvent(event);
+            li.respondToEvent(event);
          }
       }
       finally{

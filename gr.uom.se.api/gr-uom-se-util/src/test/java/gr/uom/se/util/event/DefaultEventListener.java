@@ -7,7 +7,7 @@ public class DefaultEventListener implements EventListener {
    ArrayList<Event> recievedEvents = new ArrayList<>();
    
    @Override
-   public void newEvent(Event event) {
+   public void respondToEvent(Event event) {
       recievedEvents.add(event);
    }
 
