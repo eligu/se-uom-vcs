@@ -5,6 +5,7 @@ package gr.uom.se.vcs;
 
 import gr.uom.se.vcs.exceptions.VCSRepositoryException;
 import gr.uom.se.vcs.walker.CommitVisitor;
+import java.io.Closeable;
 
 import java.util.Collection;
 import java.util.Set;
@@ -52,7 +53,7 @@ import java.util.Set;
  * @since 0.0.1
  * @version 0.0.1
  */
-public interface VCSRepository {
+public interface VCSRepository extends Closeable {
 
    /**
     * Get the local path where this repository is stored.

@@ -5,6 +5,7 @@ package gr.uom.se.vcs;
 
 import gr.uom.se.vcs.exceptions.VCSRepositoryException;
 import gr.uom.se.vcs.walker.CommitVisitor;
+import java.io.Closeable;
 
 import java.util.Collection;
 
@@ -33,7 +34,7 @@ import java.util.Collection;
  * @version 0.0.1
  * @since 0.0.1
  */
-public interface VCSBranch {
+public interface VCSBranch extends Closeable {
 
    /**
     * Get the ID of this branch.

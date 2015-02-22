@@ -4,7 +4,9 @@
 package gr.uom.se.vcs;
 
 import gr.uom.se.vcs.exceptions.VCSRepositoryException;
+import gr.uom.se.vcs.walker.CommitVisitor;
 import gr.uom.se.vcs.walker.Visitor;
+import java.io.Closeable;
 
 import java.util.Collection;
 
@@ -25,7 +27,7 @@ import java.util.Collection;
  * @see {@link VCSFile}
  * @see {@link VCSDirectory}
  */
-public interface VCSResource {
+public interface VCSResource extends Closeable {
 
    /**
     * Resource type.

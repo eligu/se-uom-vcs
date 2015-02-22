@@ -246,37 +246,6 @@ public class VCSDirectoryImp extends VCSResourceImp implements VCSDirectory {
             } else {
                this.commit.walkTreeWithFilter(visitor, walk);
             }
-            // TODO: must remove old implementation after check for consistency
-            /*
-             * while (walk.next()) {
-             * 
-             * // This is probably a directory if (walk.isSubtree()) {
-             * 
-             * // Check to be sure if this is a directory type // This will
-             * ensure that we do not follow symlinks and // other submodules if
-             * (VCSCommitImp.isDirMode(walk.getFileMode(0))) {
-             * 
-             * // if directories will be included then add this // entry
-             * VCSResource resource = new VCSDirectoryImp(this.commit,
-             * walk.getPathString()); if (dirs) { if (filter != null) { if
-             * (filter.include(resource)) { if (!visitor.visit(resource)) {
-             * return; } } } else { // Visitor is not willing to continue the //
-             * tree // walk if (!visitor.visit(resource)) { return; } } }
-             * 
-             * // Enter the subtree if all resources under the // given
-             * directory are required if (filter != null) { if
-             * (filter.enter(resource)) walk.enterSubtree(); } else {
-             * walk.enterSubtree(); } } // This is not a subtree so it must be a
-             * file // Check to be sure this is a regular file and // if visitor
-             * wants files then pass a file to visitor } else if
-             * (VCSCommitImp.isFileMode(walk.getFileMode(0)) && files) {
-             * 
-             * VCSResource resource = new VCSFileImp(this.commit,
-             * walk.getPathString()); if (filter != null) { if
-             * (filter.include(resource)) { if (!visitor.visit(resource)) {
-             * return; } } } else if (!visitor.visit(resource)) { return; } } }
-             */
-            // the walking ends here so just return
             return;
          }
 

@@ -17,9 +17,9 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 /**
  * Implementation of {@link VCSFileDiff} based on JGit library.
  * <p>
- * 
+ *
  * This is an immutable object and is considered thread safe.
- * 
+ *
  * @author Elvis Ligu
  * @since 0.0.1
  * @version 0.0.1
@@ -30,13 +30,10 @@ public class VCSFileImp extends VCSResourceImp implements VCSFile {
    /**
     * Creates a new instance based on the given arguments.
     * <p>
-    * 
-    * @param commit
-    *           where this file is at
-    * @param path
-    *           the path of this file
-    * @param repo
-    *           from where this path comes from
+    *
+    * @param commit where this file is at
+    * @param path the path of this file
+    * @param repo from where this path comes from
     */
    public VCSFileImp(final VCSCommitImp commit, final String path) {
       super(commit, path, VCSResource.Type.FILE);
@@ -76,19 +73,21 @@ public class VCSFileImp extends VCSResourceImp implements VCSFile {
    static ObjectLoader getObjectLoader(VCSFileImp file) throws IOException {
       // create a tree walker and set path filter to this path only
       final TreeWalk treeWalk = TreeUtils.createTreeWalkForPathAndCheckIfExist(
-            file.commit.commit, file.commit.repo, true, file.path);
+              file.commit.commit, file.commit.repo, true, file.path);
+      try {
+         // get the first object of this walker within tree
+         final ObjectId objectId = treeWalk.getObjectId(0);
 
-      // get the first object of this walker within tree
-      final ObjectId objectId = treeWalk.getObjectId(0);
+         // In case object id is zero id that means, it is missing
+         if (objectId.equals(ObjectId.zeroId())) {
+            throw new IllegalStateException("problem loading file contents");
+         }
 
-      // In case object id is zero id that means, it is missing
-      if (objectId.equals(ObjectId.zeroId())) {
-         throw new IllegalStateException("problem loading file contents");
+         // Open an object loader to read file contents
+         final ObjectLoader loader = file.commit.repo.open(objectId);
+         return loader;
+      } finally {
+         treeWalk.release();
       }
-
-      // Open an object loader to read file contents
-      final ObjectLoader loader = file.commit.repo.open(objectId);
-
-      return loader;
    }
 }

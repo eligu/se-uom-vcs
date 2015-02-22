@@ -159,7 +159,7 @@ public class DiffCollector<T extends DiffEntry> implements Collector<T> {
          // then the porcelain diff-command returns a list of diff entries
          final List<DiffEntry> diff = this.command.setOldTree(oldTreeParser)
                .setNewTree(newTreeParser).call();
-
+         
          return (Collection<T>) diff;
 
       } catch (final MissingObjectException e) {

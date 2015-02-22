@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package gr.uom.se.vcs.jgit;
 
@@ -61,9 +61,9 @@ import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 /**
  * Implementation of {@link VCSCommit} based on JGit library.
  * <p>
- * 
+ *
  * This is an immutable object and is considered thread safe.
- * 
+ *
  * @author Elvis
  * @since 0.0.1
  * @version 0.0.1
@@ -77,18 +77,26 @@ public class VCSCommitImp implements VCSCommit {
     */
    protected RevCommit commit;
 
+   @Override
+   public void close() throws IOException {
+      if (repo != null) {
+         repo.close();
+      }
+   }
+
    /**
     * A class to hold a person ident in case we need synchronization on cached
     * fields (author and committer).
     */
    private class CachedObjectHolder<T> {
+
       protected T cache;
    }
 
    /**
     * The author that originated the commit.
     * <p>
-    * 
+    *
     * This field is for caching purposes
     */
    protected CachedObjectHolder<PersonIdent> author = new CachedObjectHolder<PersonIdent>();
@@ -109,7 +117,7 @@ public class VCSCommitImp implements VCSCommit {
    /**
     * Keep cached the next commits of this one.
     * <p>
-    * 
+    *
     * In order to find next commits (children) we have to parse all heads that
     * this commit is merged into, and walk all of them until we reach this
     * commit. So it is a better idea to keep the children cached. If children
@@ -121,11 +129,9 @@ public class VCSCommitImp implements VCSCommit {
    /**
     * Creates a commit that is linked to a JGit commit and repository.
     * <p>
-    * 
-    * @param commit
-    *           must not be null
-    * @param repository
-    *           must not be null
+    *
+    * @param commit must not be null
+    * @param repository must not be null
     */
    public VCSCommitImp(final RevCommit commit, final Repository repository) {
 
@@ -140,7 +146,7 @@ public class VCSCommitImp implements VCSCommit {
          this.commit = walk.parseCommit(commit);
       } catch (final IOException e) {
          throw new IllegalStateException("revision " + commit.getName()
-               + " can not be parsed");
+                 + " can not be parsed");
       } finally {
          if (walk != null) {
             walk.release();
@@ -153,7 +159,7 @@ public class VCSCommitImp implements VCSCommit {
     * {@inheritDoc}
     * <p>
     * {@link RevCommit#getName()} is used as the id of this resource.
-    * 
+    *
     * @return SHA-1 of this commit id as specified by Git
     */
    @Override
@@ -175,7 +181,7 @@ public class VCSCommitImp implements VCSCommit {
    /**
     * Synchronized method to init properly the cached field {@link #author}.
     * <p>
-    * 
+    *
     * @return author ident
     */
    private PersonIdent getAuthorIdent() {
@@ -215,7 +221,7 @@ public class VCSCommitImp implements VCSCommit {
    /**
     * Synchronized method to init properly the cached field {@link #committer}.
     * <p>
-    * 
+    *
     * @return author ident
     */
    private PersonIdent getCommiterIdent() {
@@ -250,24 +256,21 @@ public class VCSCommitImp implements VCSCommit {
     * Given a JGit DiffEntry and the corresponding commits it was produced, it
     * will create a VCSChange.
     * <p>
-    * 
+    *
     * This method will return null if entry doesn't correspond to a normal file
     * or a directory.
-    * 
-    * @param entry
-    *           the diff
-    * @param oldC
-    *           the old commit
-    * @param newC
-    *           the new commit
+    *
+    * @param entry the diff
+    * @param oldC the old commit
+    * @param newC the new commit
     * @return a {@link VCSChange} if entry refers to a directory or a
-    *         normal/executable file, null if not
+    * normal/executable file, null if not
     * @see DiffEntry#ChangeType
     * @see #createDirChange(DiffEntry, VCSCommitImp, VCSCommitImp)
     * @see #createFileChange(DiffEntry, VCSCommitImp, VCSCommitImp)
     */
    static VCSChange<?> createChange(final DiffEntry entry,
-         final VCSCommitImp oldC, final VCSCommitImp newC) {
+           final VCSCommitImp oldC, final VCSCommitImp newC) {
 
       VCSChange<?> change = null;
 
@@ -285,9 +288,8 @@ public class VCSCommitImp implements VCSCommit {
    /**
     * If entry's mode is {@link FileMode#TREE} then this will return true.
     * <p>
-    * 
-    * @param entry
-    *           to check if it is a directory
+    *
+    * @param entry to check if it is a directory
     * @return true if entry is referred to a directory
     */
    static boolean isDirDiff(final DiffEntry entry) {
@@ -308,16 +310,15 @@ public class VCSCommitImp implements VCSCommit {
       // if there is modified/renamed/copied we must check both old and new
       // modes
       return RevUtils.isDirMode(entry.getNewMode())
-            || RevUtils.isDirMode(entry.getOldMode());
+              || RevUtils.isDirMode(entry.getOldMode());
    }
 
    /**
     * If entry's mode is {@link FileMode#EXECUTABLE_FILE} or
     * {@link FileMode#REGULAR_FILE} then this will return true.
     * <p>
-    * 
-    * @param entry
-    *           to check if it is a file
+    *
+    * @param entry to check if it is a file
     * @return true if entry is referred to a file
     */
    static boolean isFileDiff(final DiffEntry entry) {
@@ -338,27 +339,24 @@ public class VCSCommitImp implements VCSCommit {
       // if there is modified/renamed/copied we must check both old and new
       // modes
       return RevUtils.isFileMode(entry.getNewMode())
-            || RevUtils.isFileMode(entry.getOldMode());
+              || RevUtils.isFileMode(entry.getOldMode());
    }
 
    /**
     * Given a {@link DiffEntry} and the commits this diff was produced for,
     * return a {@link VCSFileDiffImp}.
     * <p>
-    * 
+    *
     * <b>WARNING:</b> this method may fail if
     * {@link RevUtils#isFileMode(FileMode)} returns false.
-    * 
-    * @param entry
-    *           the diff entry
-    * @param oldC
-    *           old commit
-    * @param newC
-    *           new commit
+    *
+    * @param entry the diff entry
+    * @param oldC old commit
+    * @param newC new commit
     * @return the corresponding {@link VCSFileDiff} of this entry
     */
    static VCSFileDiffImp<VCSFileImp> createFileChange(final DiffEntry entry,
-         final VCSCommitImp oldC, final VCSCommitImp newC) {
+           final VCSCommitImp oldC, final VCSCommitImp newC) {
 
       VCSResource oldR = null;
       VCSResource newR = null;
@@ -378,27 +376,24 @@ public class VCSCommitImp implements VCSCommit {
       }
 
       return new VCSFileDiffImp<VCSFileImp>((VCSFileImp) newR,
-            (VCSFileImp) oldR, chType);
+              (VCSFileImp) oldR, chType);
    }
 
    /**
     * Given a {@link DiffEntry} and the commits this diff was produced for,
     * return a {@link VCSDirectoryImp}.
     * <p>
-    * 
+    *
     * <b>WARNING:</b> this method may fail if
     * {@link RevUtils#isDirMode(FileMode)} returns false.
-    * 
-    * @param entry
-    *           the dif entry
-    * @param oldC
-    *           old commit
-    * @param newC
-    *           new commit
+    *
+    * @param entry the dif entry
+    * @param oldC old commit
+    * @param newC new commit
     * @return the corresponding {@link VCSDirectory} of this entry
     */
    static VCSChange<?> createDirChange(final DiffEntry entry,
-         final VCSCommitImp oldC, final VCSCommitImp newC) {
+           final VCSCommitImp oldC, final VCSCommitImp newC) {
 
       VCSResource oldR = null;
       VCSResource newR = null;
@@ -416,7 +411,7 @@ public class VCSCommitImp implements VCSCommit {
       }
 
       return new VCSChangeImp<VCSResourceImp>((VCSResourceImp) newR,
-            (VCSResourceImp) oldR, chType);
+              (VCSResourceImp) oldR, chType);
    }
 
    /**
@@ -424,8 +419,8 @@ public class VCSCommitImp implements VCSCommit {
     */
    @Override
    public void walkChanges(final VCSCommit commit,
-         final ChangeVisitor<VCSChange<?>> visitor)
-         throws VCSRepositoryException {
+           final ChangeVisitor<VCSChange<?>> visitor)
+           throws VCSRepositoryException {
 
       // The new commit is at position 0 and the old one at position 1
       // if commits is null that means the old and the new are equal so no
@@ -440,16 +435,16 @@ public class VCSCommitImp implements VCSCommit {
       }
 
       VCSResourceFilter<VCSResource> resourceFilter = visitor
-            .getResourceFilter();
+              .getResourceFilter();
 
       // Use Diff collector to collect diffs
       // Limit the diff only to the specified paths if any
       final DiffCollector<DiffEntry> diffs = new DiffCollector<DiffEntry>(
-            this.repo, c1.commit, c2.commit);
+              this.repo, c1.commit, c2.commit);
 
       if (resourceFilter != null) {
          OptimizedResourceFilter<VCSResource> of = ResourceFilter.parse(
-               resourceFilter, null);
+                 resourceFilter, null);
          if (of != null) {
             diffs.setPathFilters(of.getCurrent());
             resourceFilter = null;
@@ -462,7 +457,6 @@ public class VCSCommitImp implements VCSCommit {
       // directory)
       // or REGULAR_FILE/EXECUTABLE_FILE, skip all others such as symlink and
       // other repository
-
       // Run this code if filters are null (it is applied directly to tree
       // walker)
       VCSFilter<VCSChange<?>> changeFilter = visitor.getFilter();
@@ -507,9 +501,9 @@ public class VCSCommitImp implements VCSCommit {
                      // get 'wrong' results. Actually we allow this because if
                      // a filter allows the old but not the new, that means that
                      // the visitor may need info for the old resource (even
-                     // in cases it is coppied/renamed.
+                     // in cases it is coppied/renamed).
                      include = resourceFilter.include(change.getNewResource())
-                           || resourceFilter.include(change.getOldResource());
+                             || resourceFilter.include(change.getOldResource());
                   }
                }
 
@@ -534,7 +528,7 @@ public class VCSCommitImp implements VCSCommit {
     */
    @Override
    public List<VCSChange<?>> getChanges(final VCSCommit commit)
-         throws VCSRepositoryException {
+           throws VCSRepositoryException {
       return this.getChanges(commit, true, (String[]) null);
    }
 
@@ -547,8 +541,8 @@ public class VCSCommitImp implements VCSCommit {
     */
    @Override
    public List<VCSChange<?>> getChanges(final VCSCommit commit,
-         final boolean recursive, final String... paths)
-         throws VCSRepositoryException {
+           final boolean recursive, final String... paths)
+           throws VCSRepositoryException {
 
       ArgsCheck.notNull("commit", commit);
 
@@ -558,7 +552,6 @@ public class VCSCommitImp implements VCSCommit {
        * change) however this is preferable because we don't want to repeat code
        * here
        */
-
       // The list where we collect all changes
       final List<VCSChange<?>> changes = new ArrayList<VCSChange<?>>();
 
@@ -567,7 +560,7 @@ public class VCSCommitImp implements VCSCommit {
 
          /**
           * Get each change and add it to changes list
-          * 
+          *
           * @param entity
           * @return
           */
@@ -589,7 +582,7 @@ public class VCSCommitImp implements VCSCommit {
             }
             ArgsCheck.containsNoNull("paths", (Object[]) paths);
             return new OptimizedResourceFilter<R>(
-                  PathFilterGroup.createFromStrings(paths));
+                    PathFilterGroup.createFromStrings(paths));
          }
       };
 
@@ -601,7 +594,7 @@ public class VCSCommitImp implements VCSCommit {
 
    /**
     * {@inheritDoc}
-    * 
+    *
     * <p>
     * WARNING: this method will never consider <code>recursive</code> argument
     * because Git doesn't keep track of directories. So it will probably not
@@ -609,8 +602,8 @@ public class VCSCommitImp implements VCSCommit {
     */
    @Override
    public void walkFileChanges(final VCSCommit commit,
-         final ChangeVisitor<VCSFileDiff<?>> visitor)
-         throws VCSRepositoryException {
+           final ChangeVisitor<VCSFileDiff<?>> visitor)
+           throws VCSRepositoryException {
 
       ArgsCheck.notNull("commit", commit);
       ArgsCheck.notNull("visitor", commit);
@@ -633,7 +626,7 @@ public class VCSCommitImp implements VCSCommit {
             @Override
             public boolean include(VCSChange<?> entity) {
                return VCSFileDiff.class.isAssignableFrom(entity.getClass())
-                     && f.include((VCSFileDiff<?>) entity);
+                       && f.include((VCSFileDiff<?>) entity);
 
             }
          };
@@ -645,7 +638,7 @@ public class VCSCommitImp implements VCSCommit {
 
          /**
           * Get each change and add it to changes list
-          * 
+          *
           * @param entity
           * @return
           */
@@ -678,7 +671,7 @@ public class VCSCommitImp implements VCSCommit {
     */
    @Override
    public List<VCSFileDiff<?>> getFileChanges(final VCSCommit commit)
-         throws VCSRepositoryException {
+           throws VCSRepositoryException {
 
       return this.getFileChanges(commit, true, (String[]) null);
    }
@@ -694,8 +687,8 @@ public class VCSCommitImp implements VCSCommit {
     */
    @Override
    public List<VCSFileDiff<?>> getFileChanges(final VCSCommit commit,
-         final boolean recursive, final String... paths)
-         throws VCSRepositoryException {
+           final boolean recursive, final String... paths)
+           throws VCSRepositoryException {
 
       ArgsCheck.notNull("commit", commit);
 
@@ -705,7 +698,6 @@ public class VCSCommitImp implements VCSCommit {
        * change) however this is preferable because we don't want to repeat code
        * here
        */
-
       // The list where we collect all changes
       final List<VCSFileDiff<?>> changes = new ArrayList<VCSFileDiff<?>>();
 
@@ -714,7 +706,7 @@ public class VCSCommitImp implements VCSCommit {
 
          /**
           * Get each change and add it to changes list
-          * 
+          *
           * @param entity
           * @return
           */
@@ -738,7 +730,7 @@ public class VCSCommitImp implements VCSCommit {
             }
             ArgsCheck.containsNoNull("paths", (Object[]) paths);
             return new OptimizedResourceFilter<R>(
-                  PathFilterGroup.createFromStrings(paths));
+                    PathFilterGroup.createFromStrings(paths));
          }
       };
 
@@ -803,7 +795,7 @@ public class VCSCommitImp implements VCSCommit {
             // For each commit that we parse check if it has parent this commit
             RevCommit current = null;
             while (((current = revWalk.next()) != null)
-                  && !AnyObjectId.equals(current, required)) {
+                    && !AnyObjectId.equals(current, required)) {
 
                // If required (this commit) is parent of current
                // we found a child
@@ -830,36 +822,40 @@ public class VCSCommitImp implements VCSCommit {
    /**
     * Check all the branches of repository this commit belongs to, and find all
     * heads this commit is merged into.
-    * 
+    *
     * @return the heads this commit is reachable from, if empty that means this
-    *         commit is a head which has no children
+    * commit is a head which has no children
     * @throws GitAPIException
     * @throws IOException
     * @throws VCSRepositoryException
     */
    private List<RevCommit> getMergingHeads() throws GitAPIException,
-         IOException, VCSRepositoryException {
+           IOException, VCSRepositoryException {
 
       final List<Ref> refs = new Git(this.repo).branchList()
-            .setListMode(ListMode.ALL).call();
+              .setListMode(ListMode.ALL).call();
       final RevWalk walk = new RevWalk(this.repo);
       final RevCommit base = walk.parseCommit(this.commit);
       final List<RevCommit> heads = new ArrayList<RevCommit>();
 
-      for (final Ref ref : refs) {
+      try {
+         for (final Ref ref : refs) {
 
-         final RevCommit head = walk.parseCommit(ref.getObjectId());
+            final RevCommit head = walk.parseCommit(ref.getObjectId());
 
-         // Case when this commit is head
-         if (AnyObjectId.equals(head, base)) {
-            continue;
+            // Case when this commit is head
+            if (AnyObjectId.equals(head, base)) {
+               continue;
+            }
+
+            // If this commit is newer then the current head
+            // do nothing else if is ancestor of head add it to list
+            if (RevUtils.isAncestor(base, head, this.repo)) {
+               heads.add(head);
+            }
          }
-
-         // If this commit is newer then the current head
-         // do nothing else if is ancestor of head add it to list
-         if (RevUtils.isAncestor(base, head, this.repo)) {
-            heads.add(head);
-         }
+      } finally {
+         walk.release();
       }
 
       return heads;
@@ -892,7 +888,7 @@ public class VCSCommitImp implements VCSCommit {
     */
    @Override
    public VCSResource getResource(final String path)
-         throws VCSRepositoryException, VCSResourceNotFoundException {
+           throws VCSRepositoryException, VCSResourceNotFoundException {
 
       // The walk will be returned only if the path is available and is a
       // known
@@ -903,24 +899,25 @@ public class VCSCommitImp implements VCSCommit {
       // thrown
       // and if there is a problem with the repository a
       // VCSRepositoryException
-
       ArgsCheck.notNull("path", path);
 
       final TreeWalk walk = TreeUtils.getTreeWalkForPath(this.commit,
-            this.repo, path);
+              this.repo, path);
+      try {
+         // Construct the path accordingly
+         final VCSResource.Type type = RevUtils.resourceType(walk.getFileMode(0));
 
-      // Construct the path accordingly
-      final VCSResource.Type type = RevUtils.resourceType(walk.getFileMode(0));
+         if (type.equals(VCSResource.Type.FILE)) {
 
-      if (type.equals(VCSResource.Type.FILE)) {
+            return new VCSFileImp(this, path);
 
-         return new VCSFileImp(this, path);
+         } else if (type.equals(VCSResource.Type.DIR)) {
 
-      } else if (type.equals(VCSResource.Type.DIR)) {
-
-         return new VCSDirectoryImp(this, path);
+            return new VCSDirectoryImp(this, path);
+         }
+      } finally {
+         walk.release();
       }
-
       throw new VCSResourceNotFoundException("uknown path " + path);
    }
 
@@ -954,22 +951,22 @@ public class VCSCommitImp implements VCSCommit {
     */
    @Override
    public void walkTree(final ResourceVisitor<VCSResource> visitor)
-         throws VCSRepositoryException {
+           throws VCSRepositoryException {
 
       ArgsCheck.notNull("visitor", visitor);
       ArgsCheck.isTrue("includeDirs || includeFiles", visitor.includeDirs()
-            || visitor.includeFiles());
+              || visitor.includeFiles());
 
       VCSResourceFilter<VCSResource> filter = visitor.getFilter();
 
       TreeWalk walker = null;
       try {
          walker = TreeUtils.createTreeWalk(this.repo, this.commit,
-               !visitor.includeDirs(), (String[]) null);
+                 !visitor.includeDirs(), (String[]) null);
 
          if (filter != null) {
             OptimizedResourceFilter<VCSResource> of = ResourceFilter.parse(
-                  filter, null);
+                    filter, null);
             if (of != null) {
                walker.setFilter(of.getCurrent());
                filter = null;
@@ -985,7 +982,9 @@ public class VCSCommitImp implements VCSCommit {
       } catch (final IOException e) {
          throw new VCSRepositoryException(e);
       } finally {
-         walker.release();
+         if (walker != null) {
+            walker.release();
+         }
       }
    }
 
@@ -998,16 +997,14 @@ public class VCSCommitImp implements VCSCommit {
     * <p>
     * Whether this should be recursive or not, it depends on includeDirs(). User
     * must ensure that dirs || files is true.
-    * 
-    * @param visitor
-    *           that will visit each resource
-    * @param walker
-    *           to walk the tree
-    * @throws VCSRepositoryException
-    *            if a problem occurs reading repository's object
+    *
+    * @param visitor that will visit each resource
+    * @param walker to walk the tree
+    * @throws VCSRepositoryException if a problem occurs reading repository's
+    * object
     */
    void walkTreeNoFilter(final ResourceVisitor<VCSResource> visitor,
-         final TreeWalk walker) throws VCSRepositoryException {
+           final TreeWalk walker) throws VCSRepositoryException {
 
       boolean dirs = visitor.includeDirs();
       boolean files = visitor.includeFiles();
@@ -1021,10 +1018,10 @@ public class VCSCommitImp implements VCSCommit {
             // this a regular tree, because we do not want to enter
             // submodules
             if (dirs && walker.isSubtree()
-                  && RevUtils.isDirMode(walker.getFileMode(0))) {
+                    && RevUtils.isDirMode(walker.getFileMode(0))) {
 
                VCSDirectoryImp dir = new VCSDirectoryImp(this,
-                     walker.getPathString());
+                       walker.getPathString());
 
                if (!visitor.visit(dir)) {
                   return;
@@ -1056,20 +1053,18 @@ public class VCSCommitImp implements VCSCommit {
     * This assumes that visitor's filter can not be parsed and converted to a
     * JGit tree filter, so it will use the filter. Also it doesn't check if the
     * filter is null, so be sure to check that the filter is not null.
-    * 
+    *
     * <p>
     * Whether this should be recursive or not, it depends on includeDirs(). User
     * must ensure that dirs || files is true.
-    * 
-    * @param visitor
-    *           that will visit each resource
-    * @param walker
-    *           to walk the tree
-    * @throws VCSRepositoryException
-    *            if a problem occurs reading repository's object
+    *
+    * @param visitor that will visit each resource
+    * @param walker to walk the tree
+    * @throws VCSRepositoryException if a problem occurs reading repository's
+    * object
     */
    void walkTreeWithFilter(final ResourceVisitor<VCSResource> visitor,
-         final TreeWalk walker) throws VCSRepositoryException {
+           final TreeWalk walker) throws VCSRepositoryException {
 
       VCSResourceFilter<VCSResource> filter = visitor.getFilter();
       boolean dirs = visitor.includeDirs();
@@ -1083,7 +1078,7 @@ public class VCSCommitImp implements VCSCommit {
             if (dirs && walker.isSubtree() && RevUtils.isDirMode(mode)) {
 
                VCSDirectoryImp dir = new VCSDirectoryImp(this,
-                     walker.getPathString());
+                       walker.getPathString());
 
                if (filter.include(dir)) {
                   if (!visitor.visit(dir)) {
@@ -1119,7 +1114,7 @@ public class VCSCommitImp implements VCSCommit {
     */
    @Override
    public void checkout(final String path, final String... paths)
-         throws VCSRepositoryException {
+           throws VCSRepositoryException {
 
       ArgsCheck.notNull("path", path);
 
@@ -1129,7 +1124,7 @@ public class VCSCommitImp implements VCSCommit {
       // Check if the current path exists and is not directory
       if (dir.exists() && !dir.isDirectory()) {
          throw new VCSRepositoryException("path is a file: "
-               + dir.getAbsolutePath());
+                 + dir.getAbsolutePath());
       }
 
       // If the directory exists try to clean it,
@@ -1203,7 +1198,9 @@ public class VCSCommitImp implements VCSCommit {
          }
          throw new VCSRepositoryException(e);
       } finally {
-         walker.release();
+         if (walker != null) {
+            walker.release();
+         }
       }
    }
 
@@ -1215,19 +1212,19 @@ public class VCSCommitImp implements VCSCommit {
     * filter will be discarded because it requires a lot of resource computation
     * to check for each commit its tree. Usually users should use simple path
     * filters to check if the given paths are modified in the specified commit.
-    * 
+    *
     */
    @Override
    public void walkCommits(final CommitVisitor visitor, boolean descending)
-         throws VCSRepositoryException {
+           throws VCSRepositoryException {
 
       walkAll(repo, new HashSet<VCSCommit>(Arrays.asList(this)), visitor,
-            descending);
+              descending);
    }
 
    public static void walkAll(Repository repo, Set<VCSCommit> commits,
-         CommitVisitor visitor, boolean descending)
-         throws VCSRepositoryException {
+           CommitVisitor visitor, boolean descending)
+           throws VCSRepositoryException {
 
       ArgsCheck.notNull("visitor", visitor);
       ArgsCheck.notNull("repo", repo);
@@ -1236,7 +1233,6 @@ public class VCSCommitImp implements VCSCommit {
       // We have to parse all commits within repository
       // For each commit we have to determine if it is reachable from
       // this commit
-
       // Start with a RevWalk
       final RevWalk walk = new RevWalk(repo);
 
@@ -1247,8 +1243,8 @@ public class VCSCommitImp implements VCSCommit {
 
             if (!(c instanceof VCSCommit)) {
                throw new IllegalArgumentException(
-                     "provided commit is uknown, required type is "
-                           + VCSCommitImp.class);
+                       "provided commit is uknown, required type is "
+                       + VCSCommitImp.class);
             }
             RevCommit rc = ((VCSCommitImp) c).commit;
             // Resolve this commit
@@ -1266,16 +1262,16 @@ public class VCSCommitImp implements VCSCommit {
          // the provided filter to null so it will not be used,
          // but applied directly to walker
          VCSResourceFilter<VCSResource> resourceFilter = visitor
-               .getResourceFilter();
+                 .getResourceFilter();
          if (resourceFilter != null) {
             OptimizedResourceFilter<VCSResource> of = ResourceFilter.parse(
-                  resourceFilter, null);
+                    resourceFilter, null);
             if (of != null) {
                walk.setTreeFilter(of.getCurrent());
             } else {
                throw new IllegalStateException(
-                     "The current resource filter can not be parsed. Try using a simple one, with the default filters at "
-                           + VCSResourceFilter.class.getPackage().getName());
+                       "The current resource filter can not be parsed. Try using a simple one, with the default filters at "
+                       + VCSResourceFilter.class.getPackage().getName());
             }
          }
 
@@ -1343,23 +1339,30 @@ public class VCSCommitImp implements VCSCommit {
 
    @Override
    public boolean equals(Object obj) {
-      if (this == obj)
+      if (this == obj) {
          return true;
-      if (obj == null)
+      }
+      if (obj == null) {
          return false;
-      if (getClass() != obj.getClass())
+      }
+      if (getClass() != obj.getClass()) {
          return false;
+      }
       VCSCommitImp other = (VCSCommitImp) obj;
       if (commit == null) {
-         if (other.commit != null)
+         if (other.commit != null) {
             return false;
-      } else if (!commit.equals(other.commit))
+         }
+      } else if (!commit.equals(other.commit)) {
          return false;
+      }
       if (repo == null) {
-         if (other.repo != null)
+         if (other.repo != null) {
             return false;
-      } else if (!repo.getDirectory().equals(other.repo.getDirectory()))
+         }
+      } else if (!repo.getDirectory().equals(other.repo.getDirectory())) {
          return false;
+      }
       return true;
    }
 }

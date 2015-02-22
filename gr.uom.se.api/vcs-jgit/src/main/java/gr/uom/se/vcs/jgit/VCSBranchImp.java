@@ -137,10 +137,12 @@ public class VCSBranchImp extends GitReference implements VCSBranch {
 
       // We can not check if the commit is null so return false
       ArgsCheck.notNull("'commit' property of commit argument", rCommit);
-
+      
+      RevWalk walk = null;
       try {
+         walk = new RevWalk(this.repo);
          return RevUtils.isAncestor(rCommit,
-               new RevWalk(this.repo).parseCommit(this.ref.getObjectId()),
+               walk.parseCommit(this.ref.getObjectId()),
                this.repo);
       } catch (final MissingObjectException e) {
          throw new VCSRepositoryException(e);
@@ -148,6 +150,17 @@ public class VCSBranchImp extends GitReference implements VCSBranch {
          throw new VCSRepositoryException(e);
       } catch (final IOException e) {
          throw new VCSRepositoryException(e);
+      } finally {
+         if(walk != null) {
+            walk.release();
+         }
+      }
+   }
+
+   @Override
+   public void close() throws IOException {
+      if(repo != null) {
+         repo.close();
       }
    }
 }

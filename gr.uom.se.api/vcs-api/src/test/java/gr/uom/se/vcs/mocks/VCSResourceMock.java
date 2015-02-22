@@ -7,6 +7,7 @@ import gr.uom.se.vcs.VCSCommit;
 import gr.uom.se.vcs.VCSResource;
 import gr.uom.se.vcs.exceptions.VCSRepositoryException;
 import gr.uom.se.vcs.walker.Visitor;
+import java.io.IOException;
 
 import java.util.Collection;
 
@@ -133,6 +134,11 @@ public class VCSResourceMock implements VCSResource {
     public VCSResource getParent() {
 	return parent;
     }
+
+   @Override
+   public void close() throws IOException {
+      throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+   }
     
     
 }

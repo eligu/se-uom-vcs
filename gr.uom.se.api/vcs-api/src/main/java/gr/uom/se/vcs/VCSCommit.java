@@ -8,6 +8,7 @@ import gr.uom.se.vcs.exceptions.VCSResourceNotFoundException;
 import gr.uom.se.vcs.walker.ChangeVisitor;
 import gr.uom.se.vcs.walker.CommitVisitor;
 import gr.uom.se.vcs.walker.ResourceVisitor;
+import java.io.Closeable;
 
 import java.util.Collection;
 import java.util.Date;
@@ -59,7 +60,7 @@ import java.util.List;
  * @since 0.0.1
  * @version 0.0.1
  */
-public interface VCSCommit {
+public interface VCSCommit extends Closeable {
 
    /**
     * Return the commit ID (revision ID).
