@@ -64,6 +64,8 @@ public class VCSTagImp extends GitReference implements VCSTag {
          throw new VCSRepositoryException(e);
       } catch (final IOException e) {
          throw new VCSRepositoryException(e);
+      } finally {
+         walk.release();
       }
    }
 }

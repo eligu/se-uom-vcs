@@ -287,8 +287,6 @@ public class VCSRepositoryImp implements VCSRepository {
          throw new VCSRepositoryException(e);
       } catch (final IOException e) {
          throw new VCSRepositoryException(e);
-      } finally {
-         this.close();
       }
    }
 

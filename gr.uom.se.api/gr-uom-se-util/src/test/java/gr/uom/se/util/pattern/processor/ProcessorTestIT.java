@@ -21,7 +21,7 @@ import org.junit.Test;
  * @version 0.0.1
  * @since 0.0.1
  */
-public class ProcessorTest extends TestCase {
+public class ProcessorTestIT extends TestCase {
 
    /**
     * Test the single prime processor.

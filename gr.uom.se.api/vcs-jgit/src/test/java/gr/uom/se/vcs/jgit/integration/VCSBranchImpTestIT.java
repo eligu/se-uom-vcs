@@ -23,7 +23,7 @@ import org.junit.Test;
  * @version 0.0.1
  * @since 0.0.1
  */
-public class VCSBranchImpTest extends MainSuite {
+public class VCSBranchImpTestIT extends MainSuite {
 
    public static final String[] BRANCHES = { "master", "gh-pages", "multipom",
          "mvn-repo" };

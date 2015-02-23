@@ -3,7 +3,10 @@
  */
 package gr.uom.se.vcs.jgit;
 
+import java.io.IOException;
+
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 
 /**
@@ -26,5 +29,10 @@ public class VCSTest {
    @After
    public void tearDownAfter() throws Exception {
       UTILS.smallRepo().close();
+   }
+   
+   @AfterClass
+   public static void afterClass() throws IOException {
+      //FileUtils.deleteDirectory(new File(TestUtils.instance().smallRepo().getLocalPath()));
    }
 }

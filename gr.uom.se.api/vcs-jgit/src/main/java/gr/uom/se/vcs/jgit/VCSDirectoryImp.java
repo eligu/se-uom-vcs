@@ -24,7 +24,6 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
-
 /**
  * Implementation of {@link VCSDirectory} based on JGit library.
  * <p>
@@ -212,7 +211,7 @@ public class VCSDirectoryImp extends VCSResourceImp implements VCSDirectory {
          }
       }
 
-      final TreeWalk walk;
+      TreeWalk walk = null;
 
       try {
          // Create the tree walk with recursive false so we can have TREE
@@ -257,6 +256,10 @@ public class VCSDirectoryImp extends VCSResourceImp implements VCSDirectory {
          throw new VCSRepositoryException(e);
       } catch (final VCSResourceNotFoundException e) {
          throw new IllegalStateException(e);
+      } finally {
+         if (walk != null) {
+            walk.release();
+         }
       }
 
       throw new IllegalStateException(this.path + " is not a directory");

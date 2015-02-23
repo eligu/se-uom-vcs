@@ -34,7 +34,7 @@ public class RepoMock {
     * Path to test resources.
     * <p>
     */
-   public static final String RESOURCES = "src/test/resources/";
+   public static final String RESOURCES = "target/test-classes/";
 
    /**
     * Path to a small local git repository.

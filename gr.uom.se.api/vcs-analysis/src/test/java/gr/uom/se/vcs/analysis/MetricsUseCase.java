@@ -38,13 +38,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.io.FileUtils;
+
 public class MetricsUseCase {
 
    /**
     * Path to test resources.
     * <p>
     */
-   public static final String RESOURCES = "src/test/resources/";
+   public static final String RESOURCES = "target/test-classes/";
 
    /**
     * Path to a small local git repository.
@@ -70,7 +72,7 @@ public class MetricsUseCase {
 
    public static void main(String[] arg) throws VCSRepositoryException,
          InterruptedException, IOException {
-      
+
       setUp();
       // These two use cases compute the same thing, but in a different way.
       // Test 1 uses available processors to compute a part of its data
@@ -82,6 +84,15 @@ public class MetricsUseCase {
       // but uses some 'special' processors that can be inserted into version
       // change processor. Thus it will perform only one pass for all metrics
       test2();
+      // Clean up
+      cleanUp();
+   }
+
+   public static void cleanUp() throws IOException {
+      if (repo != null) {
+         repo.close();
+         FileUtils.deleteDirectory(new File(LOCAL_GIT_PATH));
+      }
    }
 
    public static void test1() throws InterruptedException,
@@ -359,7 +370,7 @@ public class MetricsUseCase {
       // Create a processor to count the deleted lines per version
       final KeyValueProcessor<CommitEdits, String, Integer> oldLinesPerVersion = getVersionLinesCounter(
             versionProvider, false, null, null, (VCSChange.Type[]) null);
-      
+
       // Create a processor to count the commits within a version that
       // add/modify a .java test
       // file
@@ -383,32 +394,35 @@ public class MetricsUseCase {
             javaNotTestFilter,
             EnumSet.of(VCSChange.Type.ADDED, VCSChange.Type.MODIFIED), null,
             javaTestFilter);
-   
+
       // Create a serial processor to add all KeyValue processors (they will be
       // called
       // by a change processor, because each of them deals with a CommitEdits
       // object
-      // This is the first part of processors, that do not require I/O operations.
+      // This is the first part of processors, that do not require I/O
+      // operations.
       // They will be run in parallel (2 threads mostly)
-      
-      ThreadQueueImp<CommitEdits> nonIOOperations = getBlockingParallelProcessor(2, 1000,
-            filesAddedPerVersion, 
-            filesDeletedPerVersion,
-            filesModifiedPerVersion 
-            , testFilesPerCommitsInVersion,
-            javaFilesAddedNoTestInVersion, javaFilesAddedWithTestInVersion
-            );
 
-      // Previously we did not entered the newLines and oldLines processor in the same
-      // queue, because it was serial, and these two operators requires to read from disks
-      // the files that are deleted/added in order to count their lines, and this would
-      // block other processors to process. We are separating non I/O processors from
+      ThreadQueueImp<CommitEdits> nonIOOperations = getBlockingParallelProcessor(
+            2, 1000, filesAddedPerVersion, filesDeletedPerVersion,
+            filesModifiedPerVersion, testFilesPerCommitsInVersion,
+            javaFilesAddedNoTestInVersion, javaFilesAddedWithTestInVersion);
+
+      // Previously we did not entered the newLines and oldLines processor in
+      // the same
+      // queue, because it was serial, and these two operators requires to read
+      // from disks
+      // the files that are deleted/added in order to count their lines, and
+      // this would
+      // block other processors to process. We are separating non I/O processors
+      // from
       // I/O processors.
-      ThreadQueueImp<CommitEdits> iOOperations = getBlockingParallelProcessor(2, 1000,
-            newLinesPerVersion, oldLinesPerVersion);
+      ThreadQueueImp<CommitEdits> iOOperations = getBlockingParallelProcessor(
+            2, 1000, newLinesPerVersion, oldLinesPerVersion);
       // Now we have the serial processor to run these two blocks of processors
       // and pass it to the change processor.
-      Processor<CommitEdits> editsProcessor = getSerialProcessor(nonIOOperations, iOOperations);
+      Processor<CommitEdits> editsProcessor = getSerialProcessor(
+            nonIOOperations, iOOperations);
       // Create a commit processor to collect the changes for each version
       /*
        * This processor can calculate two types of changes: 1 - The changes
@@ -530,7 +544,7 @@ public class MetricsUseCase {
       Map<String, Set<String>> authorsPerVersion = authorsPerV.getResult();
       Map<String, Set<String>> committersPerVersion = committersPerV
             .getResult();
-      
+
       int commitCounter = 0;
       int offset = findLargestVersionName(versionProvider);
       printRepeat(" ", offset);
@@ -543,22 +557,20 @@ public class MetricsUseCase {
          commitCounter += commitsCounter.get(ver);
 
          // Print the number of commits for the current version
-         //System.out.format("%1s has %2s commits\n", ver,
-         //      commitsCounter.get(ver));
+         // System.out.format("%1s has %2s commits\n", ver,
+         // commitsCounter.get(ver));
          System.out.print(ver);
          printRepeat(" ", offset - ver.length());
          printValues(commitsCounter.get(ver),
-               authorsPerVersion.get(ver).size(),
-               committersPerVersion.get(ver).size(),
-               filesAddedPerVersion.getValue(ver).get(),
+               authorsPerVersion.get(ver).size(), committersPerVersion.get(ver)
+                     .size(), filesAddedPerVersion.getValue(ver).get(),
                filesDeletedPerVersion.getValue(ver).get(),
                filesModifiedPerVersion.getValue(ver).get(),
                newLinesPerVersion.getValue(ver),
                oldLinesPerVersion.getValue(ver),
                javaFilesAddedWithTestInVersion.getValue(ver).get(),
                javaFilesAddedNoTestInVersion.getValue(ver).get(),
-               testFilesPerCommitsInVersion.getValue(ver).get()
-               );
+               testFilesPerCommitsInVersion.getValue(ver).get());
          System.out.println();
       }
 
@@ -570,29 +582,33 @@ public class MetricsUseCase {
    }
 
    static void printHead() {
-      System.out.println(
-            "\tCOMMITS\tAUTHORS\tCOMMITTERS\tADDED FILES\tDELETED FILES\tMODIFIED FILES\tADDED LINES\tDELETED LINES\tSOURCE TEST\tSOURCE NO TEST\tTESTS");
+      System.out
+            .println("\tCOMMITS\tAUTHORS\tCOMMITTERS\tADDED FILES\tDELETED FILES\tMODIFIED FILES\tADDED LINES\tDELETED LINES\tSOURCE TEST\tSOURCE NO TEST\tTESTS");
    }
+
    static void printValues(Number... vals) {
       System.out.format(
-            "\t%7d\t%7d\t%10d\t%11d\t%13d\t%14d\t%11d\t%13d\t%11d\t%14d\t%5d", (Object[])vals);
+            "\t%7d\t%7d\t%10d\t%11d\t%13d\t%14d\t%11d\t%13d\t%11d\t%14d\t%5d",
+            (Object[]) vals);
    }
+
    static void printRepeat(String str, int num) {
-      for(int i = 0; i < num; i++) {
+      for (int i = 0; i < num; i++) {
          System.out.print(str);
       }
    }
+
    static int findLargestVersionName(VersionProvider provider) {
       int maxLen = 0;
-      for(String name : provider.getVersionNames()) {
+      for (String name : provider.getVersionNames()) {
          int len = name.length();
-         if(len > maxLen) {
+         if (len > maxLen) {
             maxLen = len;
          }
       }
       return maxLen;
    }
-   
+
    // THE FOLLOWING FILTERS WILL BE USED TO GATHER INFO ONLY FOR
    // .JAVA FILES AND IN A SPECIAL CASE COVERED IN TEST METHOD.
    // We need a .java filter
@@ -726,8 +742,8 @@ public class MetricsUseCase {
    }
 
    @SafeVarargs
-   static <T> ThreadQueueImp<T> getBlockingParallelProcessor(
-         int threads, int tasks, Processor<T>... processors) {
+   static <T> ThreadQueueImp<T> getBlockingParallelProcessor(int threads,
+         int tasks, Processor<T>... processors) {
       BlockingQueue<T> queue = new BlockingQueue<T>(threads, tasks, null);
       for (Processor<T> p : processors) {
          queue.add(p);

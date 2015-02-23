@@ -156,11 +156,4 @@ public class VCSBranchImp extends GitReference implements VCSBranch {
          }
       }
    }
-
-   @Override
-   public void close() throws IOException {
-      if(repo != null) {
-         repo.close();
-      }
-   }
 }

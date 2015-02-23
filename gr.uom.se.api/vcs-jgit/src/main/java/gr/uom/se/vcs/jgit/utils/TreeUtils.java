@@ -23,7 +23,6 @@ import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
-
 /**
  * A tree utility class to be used only with JGit TreeWalk and other API
  * classes.
@@ -67,20 +66,20 @@ public class TreeUtils {
       // from the commit we can build the tree which allows us to construct
       // the TreeParser
       final RevWalk walk = new RevWalk(repository);
-
-      // If there are specified paths then specify the corresponding filters
-      if ((paths != null) && (paths.length > 0)) {
-
-         ArgsCheck.containsNoNull("paths array", (Object[]) paths);
-
-         walk.setTreeFilter(AndTreeFilter.create(
-               PathFilterGroup.createFromStrings(paths), TreeFilter.ANY_DIFF));
-      } else {
-         walk.setTreeFilter(TreeFilter.ANY_DIFF);
-      }
-
       RevTree tree = null;
+
       try {
+         // If there are specified paths then specify the corresponding filters
+         if ((paths != null) && (paths.length > 0)) {
+
+            ArgsCheck.containsNoNull("paths array", (Object[]) paths);
+
+            walk.setTreeFilter(AndTreeFilter.create(
+                  PathFilterGroup.createFromStrings(paths), TreeFilter.ANY_DIFF));
+         } else {
+            walk.setTreeFilter(TreeFilter.ANY_DIFF);
+         }
+
          commit = walk.parseCommit(commit);
          tree = walk.parseTree(commit.getTree().getId());
       } finally {
@@ -204,14 +203,17 @@ public class TreeUtils {
       // create a tree walker and set path filter to this path only
       final TreeWalk treeWalk = createTreeWalk(repository, commit, recursive,
             (String[]) null);
-      treeWalk.setFilter(PathFilter.create(path));
+      try {
+         treeWalk.setFilter(PathFilter.create(path));
 
-      // If there is not any entry to walk that means the path was not found
-      if (!treeWalk.next()) {
+         // If there is not any entry to walk that means the path was not found
+         if (!treeWalk.next()) {
+            throw new IllegalStateException("Did not find expected path: "
+                  + path);
+         }
+      } finally {
          treeWalk.release();
-         throw new IllegalStateException("Did not find expected path: " + path);
       }
-
       return treeWalk;
    }
 
@@ -340,8 +342,7 @@ public class TreeUtils {
                // We only allow FILE or DIR paths, other paths such as
                // symlink or submodules
                // are not allowed
-               if (RevUtils.isDirMode(mode)
-                     || RevUtils.isFileMode(mode)) {
+               if (RevUtils.isDirMode(mode) || RevUtils.isFileMode(mode)) {
                   return walk;
                }
 
@@ -379,8 +380,8 @@ public class TreeUtils {
 
    /**
     * Check path if it is allowed, and correct it by removing any blank spaces
-    * from the beginning and the end, and removing slashes (/) from the beginning
-    * or the end.
+    * from the beginning and the end, and removing slashes (/) from the
+    * beginning or the end.
     * <p>
     * 
     * @param path

@@ -24,7 +24,7 @@ import org.junit.Test;
  * @version 0.0.1
  * @since 0.0.1
  */
-public class VCSRepositoryImpTest extends MainSuite {
+public class VCSRepositoryImpTestIT extends MainSuite {
 
    /**
     * Check all branches.

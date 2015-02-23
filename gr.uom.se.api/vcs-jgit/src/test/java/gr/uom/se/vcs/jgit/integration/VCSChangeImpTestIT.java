@@ -35,7 +35,7 @@ import org.junit.Test;
  * @version 0.0.1
  * @since 0.0.1
  */
-public class VCSChangeImpTest extends MainSuite {
+public class VCSChangeImpTestIT extends MainSuite {
 
    @Test
    public void testGetChangesFileAddition() throws VCSRepositoryException {

@@ -41,7 +41,7 @@ import org.junit.Test;
  * @version 0.0.1
  * @since 0.0.1
  */
-public class VCSResourceImpTest extends MainSuite {
+public class VCSResourceImpTestIT extends MainSuite {
 
    @Test
    public void testSimpleGetters() throws VCSRepositoryException,

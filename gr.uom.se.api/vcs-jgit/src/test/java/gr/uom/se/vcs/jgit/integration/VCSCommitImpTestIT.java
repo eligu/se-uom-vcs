@@ -37,7 +37,7 @@ import org.junit.Test;
  * @version 0.0.1
  * @since 0.0.1
  */
-public class VCSCommitImpTest extends MainSuite {
+public class VCSCommitImpTestIT extends MainSuite {
 
    @Test
    public void testGetPrevious() throws VCSRepositoryException  {

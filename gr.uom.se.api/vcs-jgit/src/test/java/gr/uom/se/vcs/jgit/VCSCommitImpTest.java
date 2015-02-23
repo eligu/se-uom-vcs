@@ -6,7 +6,6 @@ package gr.uom.se.vcs.jgit;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
 import gr.uom.se.vcs.VCSChange;
 import gr.uom.se.vcs.VCSCommit;
 import gr.uom.se.vcs.VCSFileDiff;
@@ -430,6 +429,7 @@ public class VCSCommitImpTest extends VCSTest {
    public void testCheckout() throws Exception {
 
       final VCSRepository repo = this.UTILS.smallRepo();
+      @SuppressWarnings("resource")
       final VCSRepository remoteRepo = new VCSRepositoryImp(
             RepoMock.REMOTE_GIT_SMALL, null);
 

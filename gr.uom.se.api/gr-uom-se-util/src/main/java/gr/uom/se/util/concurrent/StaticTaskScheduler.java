@@ -1,6 +1,7 @@
 package gr.uom.se.util.concurrent;
 
 import gr.uom.se.util.validation.ArgsCheck;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -442,7 +443,7 @@ public class StaticTaskScheduler implements TaskScheduler {
       final AtomicInteger scheduled = new AtomicInteger(0);
       final AtomicBoolean running;
 
-      public Consumer(Queue queue, int threads) {
+      public Consumer(Queue<Runnable> queue, int threads) {
          this.queue = queue;
          this.maxThreads = threads;
          running = new AtomicBoolean(false);

@@ -64,11 +64,6 @@ public class VCSResourceImp implements VCSResource {
     */
    protected VCSResource.Type type;
 
-   @Override
-   public void close() throws IOException {
-      this.commit.close();
-   }
-
    /**
     * Used as an object holder to keep the cached objects, during
     * synchronization.
