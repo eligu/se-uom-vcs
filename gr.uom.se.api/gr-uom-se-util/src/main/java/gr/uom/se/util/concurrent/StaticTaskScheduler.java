@@ -71,51 +71,52 @@ import java.util.concurrent.atomic.AtomicInteger;
  * A proposed strategy of creating this schedule is to define a thread pool that
  * has enough threads to handle all types of tasks, such as in the following
  * snippet:
+ * 
  * <pre>
- // Define a thread pool of 60 threads
- ExecutorService threadPool = Executors.newFixedThreadPool(60);
-
- // Specify the number of maximum tasks that can be submitted
- // Any client that submit a task after this limit has been reached
- // will hung (will wait) until a previous task has finished
- int maxSize = 5000;
-
- // Define heavy duty tasks that should not run in parallel otherwise the
- // system may suffer from memory
- TaskType heavyTasks = TaskType.Enum.SINGLE_THREAD;
-
- // Define moderate tasks that only 4 of them may run in parallel
- TaskType moderateTasks = TaskType.Enum.get(4, "MODERATE_TASKS");
-
- // Define quick tasks that should run in parallel, however only
- // 52 of them may run simultaneously
- TaskType quickTasks = TaskType.Enum.get(52, "QUICK_TASKS");
-
- // Create the scheduler with the given parameters
- TaskScheduler scheduler = new StaticTaskScheduler(
- maxSize, threadPool, heavyTasks, moderateTasks, quickTasks);
-
- // Submit some job
- Runnable r1 = ...
- Runnable r2 = ...
- Runnable r3 = ...
-
- scheduler.schedule(r1, heavyTasks);
- scheduler.schedule(r2, moderateTasks);
- scheduler.schedule(r3, quickTasks);
-
- // Notify shceduler to shutdown, without interrupting the
- // already submitted tasks. All the consumers will be interrupted
- // to
- shceduler.shutdown(); // this may wait long time
-
- // Or notify the scheduler to shutdown immediately
- // by stopping him to schedule new tasks for execution.
- // This will cause all tasks that are waiting in queue to
- // be dismissed, however the running tasks will not be
- // interrupted
- scheduler.shutdownNow(); // Wait for running tasks to stop and shutdown
- </pre>
+ *  // Define a thread pool of 60 threads
+ *  ExecutorService threadPool = Executors.newFixedThreadPool(60);
+ * 
+ *  // Specify the number of maximum tasks that can be submitted
+ *  // Any client that submit a task after this limit has been reached
+ *  // will hung (will wait) until a previous task has finished
+ *  int maxSize = 5000;
+ * 
+ *  // Define heavy duty tasks that should not run in parallel otherwise the
+ *  // system may suffer from memory
+ *  TaskType heavyTasks = TaskType.Enum.SINGLE_THREAD;
+ * 
+ *  // Define moderate tasks that only 4 of them may run in parallel
+ *  TaskType moderateTasks = TaskType.Enum.get(4, "MODERATE_TASKS");
+ * 
+ *  // Define quick tasks that should run in parallel, however only
+ *  // 52 of them may run simultaneously
+ *  TaskType quickTasks = TaskType.Enum.get(52, "QUICK_TASKS");
+ * 
+ *  // Create the scheduler with the given parameters
+ *  TaskScheduler scheduler = new StaticTaskScheduler(
+ *  maxSize, threadPool, heavyTasks, moderateTasks, quickTasks);
+ * 
+ *  // Submit some job
+ *  Runnable r1 = ...
+ *  Runnable r2 = ...
+ *  Runnable r3 = ...
+ * 
+ *  scheduler.schedule(r1, heavyTasks);
+ *  scheduler.schedule(r2, moderateTasks);
+ *  scheduler.schedule(r3, quickTasks);
+ * 
+ *  // Notify shceduler to shutdown, without interrupting the
+ *  // already submitted tasks. All the consumers will be interrupted
+ *  // to
+ *  shceduler.shutdown(); // this may wait long time
+ * 
+ *  // Or notify the scheduler to shutdown immediately
+ *  // by stopping him to schedule new tasks for execution.
+ *  // This will cause all tasks that are waiting in queue to
+ *  // be dismissed, however the running tasks will not be
+ *  // interrupted
+ *  scheduler.shutdownNow(); // Wait for running tasks to stop and shutdown
+ * </pre>
  *
  * In the previous example the scheduler was provided a thread pool. This is
  * very important in managed environments such as application servers which
@@ -145,7 +146,16 @@ import java.util.concurrent.atomic.AtomicInteger;
  * NOTE: this scheduler will not use any memory at all if there are no tasks
  * waiting. It will not create queues of fix sizes, instead it will uses linked
  * queues that are added and removed tasks as they are submitted or executed.
- *
+ * <p>
+ * <b>WARNING:</b> When creating tasks using the scheduler make sure the tasks
+ * you are creating doesn't create other tasks using the scheduler. That will
+ * potentially create conditions for deadlock, especially in case the queue of
+ * the scheduler is near the end (almost full) and a task you create is blocked
+ * because its waiting to submit a new task to scheduler. In such case the first
+ * task will wait for the second to finish but the second will block at
+ * submitting a task to the scheduler. This may happen when a job creates
+ * multiply tasks that can exceed the queue size of this scheduler!
+ * 
  * @author Elvis Ligu
  */
 public class StaticTaskScheduler implements TaskScheduler {
@@ -207,21 +217,36 @@ public class StaticTaskScheduler implements TaskScheduler {
     * The type of the pool that is created is a cached thread pool that creates
     * threads on request.
     *
-    * @param maxSize the maximum number of tasks that are waiting to be
-    * executed. This size must be greater than 0. If 0 is provided it will be a
-    * maximum default of {@link #MAX_TASKS}. A good size would be the sum of all
-    * threads required for each type plus a reasonable number of tasks, that
-    * will not cause memory leaks, in the meantime will not cause often the
-    * clients to hung when submitting tasks. If the size is smaller than the
-    * number of threads required for all types of tasks not all the threads will
-    * be utilized by the tasks.
-    * @param service the thread pool where all tasks will be submitted for
-    * execution. If null is provided a privately cached thread pool will be
-    * maintained an constructed by this scheduler.
-    * @param types the types of the tasks that this scheduler should accept for
-    * executing.
+    * @param maxSize
+    *           the maximum number of tasks that are waiting to be executed.
+    *           This size must be greater than 0. If 0 is provided it will be a
+    *           maximum default of {@link #MAX_TASKS}. A good size would be the
+    *           sum of all threads required for each type plus a reasonable
+    *           number of tasks, that will not cause memory leaks, in the
+    *           meantime will not cause often the clients to hung when
+    *           submitting tasks. If the size is smaller than the number of
+    *           threads required for all types of tasks not all the threads will
+    *           be utilized by the tasks.
+    *           <p>
+    * @param service
+    *           the thread pool where all tasks will be submitted for execution.
+    *           If null is provided a privately cached thread pool will be
+    *           maintained and constructed by this scheduler.
+    *           <p>
+    * @param types
+    *           the types of the tasks that this scheduler should accept for
+    *           executing. For each type there will be a dedicated thread called
+    *           consumer. A consumer will maintain a private queue to store all
+    *           the coming tasks of the given type. The consumer will mostly
+    *           wait all the time, unless there is a task in its queue and all
+    *           the scheduled for running tasks are less then the number of the
+    *           max threads. In that case the consumer will schedule the task.
+    *           If there are no tasks in consumer's queue he will wait until a
+    *           caller submit a task of its type. In that case he will wake up
+    *           and schedule the task.
     */
-   public StaticTaskScheduler(int maxSize, ExecutorService service, TaskType... types) {
+   public StaticTaskScheduler(int maxSize, ExecutorService service,
+         TaskType... types) {
       if (maxSize < 0) {
          throw new IllegalArgumentException();
       } else if (maxSize == 0) {
@@ -240,7 +265,7 @@ public class StaticTaskScheduler implements TaskScheduler {
       this.pool = service;
 
       if (types == null || types.length == 0) {
-         types = new TaskType[]{TaskType.Enum.UNLIMITED};
+         types = new TaskType[] { TaskType.Enum.UNLIMITED };
       }
       consumers = new HashMap<>(types.length);
       runningCustomers = new AtomicInteger(types.length);
@@ -252,12 +277,13 @@ public class StaticTaskScheduler implements TaskScheduler {
     * will pick up from queue the oldest submitted task (if any) if to submit it
     * to thread pool for execution.
     *
-    * @param types the types of tasks
+    * @param types
+    *           the types of tasks
     */
    private void createConsumers(TaskType... types) {
       for (TaskType type : types) {
          Consumer consumer = new Consumer(
-                 new ConcurrentLinkedQueue<Runnable>(), type.getThreadSize());
+               new ConcurrentLinkedQueue<Runnable>(), type.getThreadSize());
          consumers.put(type, consumer);
          pool.submit(consumer);
       }
@@ -268,7 +294,8 @@ public class StaticTaskScheduler implements TaskScheduler {
     * will throw an exception. If a type's thread size is also less than 1 it
     * will throw an exception.
     *
-    * @param types the task types to check.
+    * @param types
+    *           the task types to check.
     */
    private void checkTypes(TaskType... types) {
       if (types == null) {
@@ -277,7 +304,7 @@ public class StaticTaskScheduler implements TaskScheduler {
       for (TaskType type : types) {
          if (type == null) {
             throw new IllegalArgumentException(
-                    "types must not contain any null");
+                  "types must not contain any null");
          }
          if (type.getThreadSize() < 1) {
             throw new IllegalArgumentException();
@@ -310,11 +337,11 @@ public class StaticTaskScheduler implements TaskScheduler {
       Consumer consumer = consumers.get(type);
       if (consumer == null) {
          throw new IllegalArgumentException(
-                 "there is not a defined task type for: " + type);
+               "there is not a defined task type for: " + type);
       }
       if (!consumer.running.get()) {
-         throw new RuntimeException(
-                 "runner is unavailable for tasks of type: " + type);
+         throw new RuntimeException("runner is unavailable for tasks of type: "
+               + type);
       }
       schedule(consumer, task);
    }
@@ -326,26 +353,37 @@ public class StaticTaskScheduler implements TaskScheduler {
     */
    private void schedule(Consumer consumer, Runnable task) {
 
+      waitIfFull();
+      scheduleToConsumer(consumer, task);
+   }
+
+   private void waitIfFull() {
       try {
          // Wait until a task finishes
          // and notify this
-         allTasksSize.incrementAndGet();
-         while (allTasksSize.get() > maxSize) {
+         while (allTasksSize.get() >= maxSize) {
             synchronized (this) {
+               // We should check here again to ensure that
+               // no task has finished and we didn't got any
+               // signal
+               if (allTasksSize.get() < maxSize) {
+                  continue; // Better make a double check before submitting
+               }
                wait();
             }
          }
       } catch (InterruptedException ex) {
          throw new RuntimeException(ex);
       }
+   }
 
+   private void scheduleToConsumer(Consumer consumer, Runnable task) {
+      allTasksSize.incrementAndGet();
       // Add the task to consumer's queue and notify him
       // if he is waiting for a task to be added
       consumer.queue.add(task);
-      if (consumer.scheduled.get() == 0) {
-         synchronized (consumer) {
-            consumer.notify();
-         }
+      synchronized (consumer) {
+         consumer.notify();
       }
    }
 
@@ -438,9 +476,13 @@ public class StaticTaskScheduler implements TaskScheduler {
     */
    private class Consumer implements Runnable {
 
+      /** Tasks queue */
       Queue<Runnable> queue;
+      /** Number of maximum threads this consumer should allow */
       final int maxThreads;
+      /** Number of currently scheduled jobs (considered as running) */
       final AtomicInteger scheduled = new AtomicInteger(0);
+      /** Flag when it is true the consumer is running */
       final AtomicBoolean running;
 
       public Consumer(Queue<Runnable> queue, int threads) {
@@ -458,42 +500,32 @@ public class StaticTaskScheduler implements TaskScheduler {
             running.set(true);
 
             while (true) {
-               Runnable task = null;
-               while ((task = queue.poll()) == null) {
-                  // If the scheduler has been requested
-                  // a shut down do not wait for new tasks
-                  // just return
-                  if (waitForShutdown.get() || shutdown.get()) {
-                     // Notify the scheduler once because he is waiting
-                     // for this consumer to shutdown
-                     waitAndNotify();
-                     return;
-                  }
-                  // Should wait until the scheduler
-                  // notify this for new task
-                  synchronized (this) {
-                     wait();
-                  }
-               }
+               // Try to get the next task
+               // Wait if no task is available
+               Runnable task = nextTask();
 
+               // If task is null that means there has been a shutdown request
+               // while trying to get the task so we stop here
+               if (task == null) {
+                  return;
+               }
                // Terminate if shutdown now
-               // has been called
+               // has been called, do not make any scheduling at this
+               // point
                if (shutdown.get()) {
                   // Notify the scheduler once because he is waiting
                   // for this consumer to shutdown
                   waitAndNotify();
                   return;
                }
-               task = new TaskWrapper(task, this);
+
                // Wait until a task finishes and lower the number
                // of running threads for this consumer, and notifying
                // this.
-               while (scheduled.get() > maxThreads) {
-                  // Should wait until a task notify this
-                  synchronized (this) {
-                     wait();
-                  }
-               }
+               waitForAvailableThread();
+
+               // A thread is available so now we can schedule the given task
+               task = new TaskWrapper(task, this);
                // Submit the task here after waiting or not
                pool.submit(task);
             }
@@ -505,11 +537,62 @@ public class StaticTaskScheduler implements TaskScheduler {
          }
       }
 
+      private Runnable nextTask() throws InterruptedException {
+         Runnable task = null;
+         // Try to get the next task from queue
+         // and if a task is not available than wait
+         // for scheduler to add a task to this queue
+         while ((task = queue.poll()) == null) {
+            // If the scheduler has been requested
+            // a shut down do not wait for new tasks
+            // just return
+            if (waitForShutdown.get() || shutdown.get()) {
+               // Notify the scheduler once because he is waiting
+               // for this consumer to shutdown
+               waitAndNotify();
+               return null;
+            }
+            // Should wait until the scheduler
+            // notify this for new task
+            synchronized (this) {
+               // Query again the queue
+               // at this point we will be sure that scheduler
+               // will not notify us if he is adding a task to
+               // our queue
+               if ((task = queue.poll()) != null) {
+                  break;
+               }
+               wait();
+            }
+         }
+         return task;
+      }
+
+      private void waitForAvailableThread() throws InterruptedException {
+         while (scheduled.get() >= maxThreads) {
+            // Should wait until a task notify this
+            synchronized (this) {
+               // Check again here after entering the synchronized block
+               // to ensure that we do not enter in sleep while a task
+               // has finished but didn't got the lock of this consumer
+               // before this
+               if (scheduled.get() < maxThreads) {
+                  // Do not wait if there is room to submit
+                  // the task
+                  continue;
+               }
+               wait();
+            }
+         }
+      }
+
       private void waitAndNotify() throws InterruptedException {
          try {
             waitMyTasks();
          } finally {
             notifyScheduler();
+            // Clear my queue to free memory
+            queue.clear();
          }
       }
 
@@ -559,30 +642,21 @@ public class StaticTaskScheduler implements TaskScheduler {
             if (shutdown.get()) {
                return;
             }
+
             runnable.run();
          } finally {
-            // Check the consumer and notify him
+            // Notify consumer
             // if he is waiting because his queue reached his maximum
-            if (consumer.scheduled.decrementAndGet() == consumer.maxThreads) {
-               synchronized (consumer) {
-                  consumer.notify();
-               }
-            }
-            // At this point the consumer who submitted this
-            // task is waiting so notify him to stop waiting
-            // any more
-            if (shutdown.get() || waitForShutdown.get()) {
-               synchronized (consumer) {
-                  consumer.notify();
-               }
+            consumer.scheduled.decrementAndGet();
+            synchronized (consumer) {
+               consumer.notify();
             }
 
-            // Notify the scheduler if he is wating for
+            // Notify the scheduler if he is waiting for
             // tasks to submit
-            if (allTasksSize.decrementAndGet() == maxSize) {
-               synchronized (StaticTaskScheduler.this) {
-                  StaticTaskScheduler.this.notify();
-               }
+            allTasksSize.decrementAndGet();
+            synchronized (StaticTaskScheduler.this) {
+               StaticTaskScheduler.this.notify();
             }
          }
       }

@@ -52,44 +52,44 @@ public class ProcessorTestIT extends TestCase {
    }
 
    /**
-    * Test SerialQueue.
+    * Test SerialProcessorQueue.
     * <p>
     * 
     * @throws InterruptedException
-    * @see {@link SerialQueue}
+    * @see {@link SerialProcessorQueue}
     */
    @Test
    public void testSerialQueue() throws InterruptedException {
-      SerialQueue<Integer> queue = new SerialQueue<Integer>();
+      SerialProcessorQueue<Integer> queue = new SerialProcessorQueue<Integer>();
       testQueue(queue);
    }
 
    /**
-    * A general test for ThreadQueueImp, is the same as testQueue but will call
+    * A general test for DefaultParallelProcessorQueue, is the same as testQueue but will call
     * shutdown in the end of the test.
     * <p>
     * 
     * @throws InterruptedException
-    * @see {@link ThreadQueueImp}
+    * @see {@link DefaultParallelProcessorQueue}
     */
    @Test
    public void testThreadQueue() throws InterruptedException {
 
-      ThreadQueueImp<Integer> queue = new ThreadQueueImp<Integer>(8, null);
+      DefaultParallelProcessorQueue<Integer> queue = new DefaultParallelProcessorQueue<Integer>(8, null);
       testThreadQueue(queue);
    }
 
    /**
-    * A test for BlockingQueue.
+    * A test for BlockingParallelProcessorQueue.
     * <p>
     * Works the same as testThreadQueue().
     * 
     * @throws InterruptedException
-    * @see {@link BlockingQueue}
+    * @see {@link BlockingParallelProcessorQueue}
     */
    @Test
    public void testBlockQueue() throws InterruptedException {
-      ThreadQueueImp<Integer> queue = new BlockingQueue<Integer>(8, 100, null);
+      DefaultParallelProcessorQueue<Integer> queue = new BlockingParallelProcessorQueue<Integer>(8, 100, null);
       testThreadQueue(queue);
    }
 
@@ -118,9 +118,9 @@ public class ProcessorTestIT extends TestCase {
     */
    @Test
    public void testAll() throws InterruptedException {
-      ThreadQueueImp<Integer> tQueue = new ThreadQueueImp<Integer>(8, null);
-      ThreadQueueImp<Integer> bQueue = new BlockingQueue<Integer>(8, 100, null);
-      SerialQueue<Integer> sQueue = new SerialQueue<Integer>();
+      DefaultParallelProcessorQueue<Integer> tQueue = new DefaultParallelProcessorQueue<Integer>(8, null);
+      DefaultParallelProcessorQueue<Integer> bQueue = new BlockingParallelProcessorQueue<Integer>(8, 100, null);
+      SerialProcessorQueue<Integer> sQueue = new SerialProcessorQueue<Integer>();
       MixQueue<Integer> mQueue = new MixQueue<Integer>(2, true, 1000, true,
             null);
 
@@ -144,7 +144,7 @@ public class ProcessorTestIT extends TestCase {
     * @param queue
     * @throws InterruptedException
     */
-   private void testThreadQueue(ThreadQueueImp<Integer> queue)
+   private void testThreadQueue(DefaultParallelProcessorQueue<Integer> queue)
          throws InterruptedException {
       testQueue(queue);
       queue.shutdown();

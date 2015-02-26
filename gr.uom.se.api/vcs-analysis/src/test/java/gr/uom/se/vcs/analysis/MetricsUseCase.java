@@ -1,10 +1,16 @@
 package gr.uom.se.vcs.analysis;
 
+import gr.uom.se.util.concurrent.StaticTaskScheduler;
+import gr.uom.se.util.concurrent.TaskExecutor;
+import gr.uom.se.util.concurrent.TaskScheduler;
+import gr.uom.se.util.concurrent.TaskType;
 import gr.uom.se.util.pattern.processor.AbstractProcessorQueue;
-import gr.uom.se.util.pattern.processor.BlockingQueue;
+import gr.uom.se.util.pattern.processor.BlockingParallelProcessorQueue;
+import gr.uom.se.util.pattern.processor.DefaultParallelProcessorQueue;
+import gr.uom.se.util.pattern.processor.ParallelProcessorQueue;
 import gr.uom.se.util.pattern.processor.Processor;
-import gr.uom.se.util.pattern.processor.SerialQueue;
-import gr.uom.se.util.pattern.processor.ThreadQueueImp;
+import gr.uom.se.util.pattern.processor.ProcessorQueue;
+import gr.uom.se.util.pattern.processor.SerialProcessorQueue;
 import gr.uom.se.vcs.VCSChange;
 import gr.uom.se.vcs.VCSCommit;
 import gr.uom.se.vcs.VCSFile;
@@ -23,12 +29,12 @@ import gr.uom.se.vcs.analysis.version.VersionFileChangeCounter;
 import gr.uom.se.vcs.analysis.version.VersionLinesCounterProcessor;
 import gr.uom.se.vcs.analysis.version.VersionProvider;
 import gr.uom.se.vcs.exceptions.VCSRepositoryException;
+import gr.uom.se.vcs.jgit.VCSRepositoryImp;
 import gr.uom.se.vcs.walker.filter.VCSAndFilter;
 import gr.uom.se.vcs.walker.filter.VCSFilter;
 import gr.uom.se.vcs.walker.filter.VCSNotFilter;
 import gr.uom.se.vcs.walker.filter.resource.ResourceFilterUtility;
 import gr.uom.se.vcs.walker.filter.resource.VCSResourceFilter;
-import gr.uom.se.vcs.jgit.VCSRepositoryImp;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,6 +42,8 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FileUtils;
@@ -78,14 +86,19 @@ public class MetricsUseCase {
       // Test 1 uses available processors to compute a part of its data
       // and then to compute lines/files added/remove and so on, it does
       // this manually by the data that VersionChangeProcessor return.
-      test1();
       // Test 2 compute all metrics using only processors, he avoids computing
       // directly its metrics from the data retained from VersionChangeProcessor
       // but uses some 'special' processors that can be inserted into version
       // change processor. Thus it will perform only one pass for all metrics
+      // Test 3 is identical to test 2 except that it uses a TaskScheduler to schedule
+      // tasks, and it seems it has a better performance
+      test1();
+      test3();
       test2();
+
       // Clean up
-      cleanUp();
+      // cleanUp();
+      threadPool.shutdownNow();
    }
 
    public static void cleanUp() throws IOException {
@@ -403,7 +416,7 @@ public class MetricsUseCase {
       // operations.
       // They will be run in parallel (2 threads mostly)
 
-      ThreadQueueImp<CommitEdits> nonIOOperations = getBlockingParallelProcessor(
+      ParallelProcessorQueue<CommitEdits> nonIOOperations = getBlockingParallelProcessor(
             2, 1000, filesAddedPerVersion, filesDeletedPerVersion,
             filesModifiedPerVersion, testFilesPerCommitsInVersion,
             javaFilesAddedNoTestInVersion, javaFilesAddedWithTestInVersion);
@@ -417,7 +430,7 @@ public class MetricsUseCase {
       // block other processors to process. We are separating non I/O processors
       // from
       // I/O processors.
-      ThreadQueueImp<CommitEdits> iOOperations = getBlockingParallelProcessor(
+      ParallelProcessorQueue<CommitEdits> iOOperations = getBlockingParallelProcessor(
             2, 1000, newLinesPerVersion, oldLinesPerVersion);
       // Now we have the serial processor to run these two blocks of processors
       // and pass it to the change processor.
@@ -538,6 +551,208 @@ public class MetricsUseCase {
             iOOperations.shutdown();
          }
       }
+
+      // Get the results from all processors
+      Map<String, Integer> commitsCounter = cCounterPerV.getResult();
+      Map<String, Set<String>> authorsPerVersion = authorsPerV.getResult();
+      Map<String, Set<String>> committersPerVersion = committersPerV
+            .getResult();
+
+      int commitCounter = 0;
+      int offset = findLargestVersionName(versionProvider);
+      printRepeat(" ", offset);
+      printHead();
+      // Use version provider to iterate over versions as it gives
+      // a sorted view of versions
+      for (String ver : versionProvider.getVersionNames()) {
+
+         // Count the number of processed commits so far
+         commitCounter += commitsCounter.get(ver);
+
+         // Print the number of commits for the current version
+         // System.out.format("%1s has %2s commits\n", ver,
+         // commitsCounter.get(ver));
+         System.out.print(ver);
+         printRepeat(" ", offset - ver.length());
+         printValues(commitsCounter.get(ver),
+               authorsPerVersion.get(ver).size(), committersPerVersion.get(ver)
+                     .size(), filesAddedPerVersion.getValue(ver).get(),
+               filesDeletedPerVersion.getValue(ver).get(),
+               filesModifiedPerVersion.getValue(ver).get(),
+               newLinesPerVersion.getValue(ver),
+               oldLinesPerVersion.getValue(ver),
+               javaFilesAddedWithTestInVersion.getValue(ver).get(),
+               javaFilesAddedNoTestInVersion.getValue(ver).get(),
+               testFilesPerCommitsInVersion.getValue(ver).get());
+         System.out.println();
+      }
+
+      long end = System.currentTimeMillis();
+
+      System.out.format("Time: %1s\n", (end - start));
+      System.out.format("Commits counted: %1s\n", commitCounter);
+      System.out.format("Releases: %1s\n", authorsPerVersion.size());
+   }
+
+   static final TaskType fourThreads = TaskType.Enum.get(4, "fourThreads");
+   static final TaskType twoThreads = TaskType.Enum.get(2, "twoThreads");
+   static final TaskType threadsIO = TaskType.Enum.get(2, "threadsIO");
+   static final TaskType eightThreads = TaskType.Enum.get(8, "eightThreads");
+   static final ExecutorService threadPool = Executors.newFixedThreadPool(8);
+   static final TaskScheduler scheduler = new StaticTaskScheduler(1000,
+         threadPool, twoThreads, threadsIO, fourThreads, eightThreads);
+
+   public static void test3() throws VCSRepositoryException,
+         InterruptedException {
+      // Get the versionProvider from repo, and create a map between tag's
+      // commit and tag name
+      TagVersionProvider versionProvider = new TagVersionProvider(repo);
+      versionProvider.collectVersionInfo();
+
+      // Create a commit processor to count commits per version
+      final CommitVersionCounterProcessor cCounterPerV = new CommitVersionCounterProcessor(
+            versionProvider, null/* id */);
+
+      // Create a commit processor to collect authors per version
+      final AuthorVersionProcessor authorsPerV = new AuthorVersionProcessor(
+            versionProvider, null/* id */, true /* true for authors */);
+
+      // Create a commit processor to collect commiters per version (the boolean
+      // value must be false)
+      final AuthorVersionProcessor committersPerV = new AuthorVersionProcessor(
+            versionProvider, null /* id */, false /* false for committers */);
+
+      // Create a counter processor to count all commits that will visit
+      final CounterProcessor<VCSCommit> counter = new CounterProcessor<VCSCommit>();
+
+      // Create a processor to count added files per version
+      final KeyValueProcessor<CommitEdits, String, AtomicInteger> filesAddedPerVersion = getVersionFileChangeCounter(
+            versionProvider, null, null, VCSChange.Type.ADDED);
+
+      // Create a processor to count deleted files per version
+      final KeyValueProcessor<CommitEdits, String, AtomicInteger> filesDeletedPerVersion = getVersionFileChangeCounter(
+            versionProvider, null, null, VCSChange.Type.DELETED);
+
+      // Create a processor to count modified files per version
+      final KeyValueProcessor<CommitEdits, String, AtomicInteger> filesModifiedPerVersion = getVersionFileChangeCounter(
+            versionProvider, null, null, VCSChange.Type.MODIFIED);
+
+      // Create a processor to count the new lines per version
+      final KeyValueProcessor<CommitEdits, String, Integer> newLinesPerVersion = getVersionLinesCounter(
+            versionProvider, true, null, null, (VCSChange.Type[]) null);
+
+      // Create a processor to count the deleted lines per version
+      final KeyValueProcessor<CommitEdits, String, Integer> oldLinesPerVersion = getVersionLinesCounter(
+            versionProvider, false, null, null, (VCSChange.Type[]) null);
+
+      // Create a processor to count the commits within a version that
+      // add/modify a .java test
+      // file
+      final KeyValueProcessor<CommitEdits, String, AtomicInteger> testFilesPerCommitsInVersion = getCommitFileChangeCounter(
+            versionProvider, null, javaTestFilter, VCSChange.Type.MODIFIED,
+            VCSChange.Type.ADDED);
+
+      // Create a processor to count the commits that add a .java (not in test
+      // dir) but not a corresponding
+      // test file (.java)
+      final KeyValueProcessor<CommitEdits, String, AtomicInteger> javaFilesAddedNoTestInVersion = getFirstAndSecondChangeCounter(
+            versionProvider, false, EnumSet.of(VCSChange.Type.ADDED), null,
+            javaNotTestFilter,
+            EnumSet.of(VCSChange.Type.ADDED, VCSChange.Type.MODIFIED), null,
+            javaTestFilter);
+
+      // Create a processor to count the commits that add a .java (not in test
+      // dir) and a corresponding test file (.java) too
+      final KeyValueProcessor<CommitEdits, String, AtomicInteger> javaFilesAddedWithTestInVersion = getFirstAndSecondChangeCounter(
+            versionProvider, true, EnumSet.of(VCSChange.Type.ADDED), null,
+            javaNotTestFilter,
+            EnumSet.of(VCSChange.Type.ADDED, VCSChange.Type.MODIFIED), null,
+            javaTestFilter);
+
+      TaskExecutor executor = new TaskExecutor(scheduler, fourThreads);
+      ParallelProcessorQueue<CommitEdits> nonIOOperations = new DefaultParallelProcessorQueue<>(
+            executor, "nonIOCommitEdits");
+
+      nonIOOperations.add(filesAddedPerVersion);
+      nonIOOperations.add(filesDeletedPerVersion);
+      nonIOOperations.add(filesModifiedPerVersion);
+      nonIOOperations.add(testFilesPerCommitsInVersion);
+      nonIOOperations.add(javaFilesAddedNoTestInVersion);
+      nonIOOperations.add(javaFilesAddedWithTestInVersion);
+
+      executor = new TaskExecutor(scheduler, fourThreads);
+      ParallelProcessorQueue<CommitEdits> iOOperations = new DefaultParallelProcessorQueue<>(
+            executor, "IOCommitEdits");
+
+      iOOperations.add(newLinesPerVersion);
+      iOOperations.add(oldLinesPerVersion);
+
+      ProcessorQueue<CommitEdits> editsProcessor = getSerialProcessor(
+            nonIOOperations, iOOperations);
+
+      VersionChangeProcessor linesPerV = new VersionChangeProcessor(
+            versionProvider, null /* id */, editsProcessor, null /*
+                                                                  * change
+                                                                  * filter
+                                                                  */, null /*
+                                                                            * Resource
+                                                                            * filter
+                                                                            */,
+            true /* calculate intermediate changes in each version */,
+            true /* calculate changes for two subsequent versions */,
+            (VCSChange.Type[]) null /* calculate all types of change */);
+
+      executor = new TaskExecutor(scheduler, eightThreads);
+      ParallelProcessorQueue<VCSCommit> queue = new DefaultParallelProcessorQueue<>(
+            executor, "mainQueue");
+
+      queue.add(counter);
+      queue.add(committersPerV);
+      queue.add(authorsPerV);
+      queue.add(cCounterPerV);
+
+      ProcessorQueue<VCSCommit> mainQueue = getSerialProcessor(counter, queue);
+
+      // Start visiting all commits
+      long start = System.currentTimeMillis();
+
+      // Start first 8 threads for simple metrics
+      try {
+         mainQueue.start();
+
+         for (VCSCommit version : versionProvider) {
+
+            mainQueue.process(version);
+
+            for (VCSCommit commit : versionProvider.getCommits(version)) {
+               mainQueue.process(commit);
+            }
+         }
+      } finally {
+         // Always stop the analyzer before getting the results
+         mainQueue.stop();
+      }
+
+      // Start 8 threads jobs for version changes
+      try {
+         linesPerV.start();
+
+         for (VCSCommit version : versionProvider) {
+
+            linesPerV.process(version);
+
+            for (VCSCommit commit : versionProvider.getCommits(version)) {
+               linesPerV.process(commit);
+            }
+         }
+      } finally {
+         // Always stop the analyzer before getting the results
+         linesPerV.stop();
+      }
+
+      scheduler.shutdown();
+
+      System.out.println("Scheduler finished.");
 
       // Get the results from all processors
       Map<String, Integer> commitsCounter = cCounterPerV.getResult();
@@ -734,7 +949,7 @@ public class MetricsUseCase {
    @SafeVarargs
    static <T> AbstractProcessorQueue<T> getSerialProcessor(
          Processor<T>... processors) {
-      SerialQueue<T> serial = new SerialQueue<T>();
+      SerialProcessorQueue<T> serial = new SerialProcessorQueue<T>();
       for (Processor<T> p : processors) {
          serial.add(p);
       }
@@ -742,9 +957,10 @@ public class MetricsUseCase {
    }
 
    @SafeVarargs
-   static <T> ThreadQueueImp<T> getBlockingParallelProcessor(int threads,
-         int tasks, Processor<T>... processors) {
-      BlockingQueue<T> queue = new BlockingQueue<T>(threads, tasks, null);
+   static <T> DefaultParallelProcessorQueue<T> getBlockingParallelProcessor(
+         int threads, int tasks, Processor<T>... processors) {
+      BlockingParallelProcessorQueue<T> queue = new BlockingParallelProcessorQueue<T>(
+            threads, tasks, null);
       for (Processor<T> p : processors) {
          queue.add(p);
       }

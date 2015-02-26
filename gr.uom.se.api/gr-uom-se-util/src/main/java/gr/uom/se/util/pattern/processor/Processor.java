@@ -26,13 +26,13 @@ package gr.uom.se.util.pattern.processor;
  * In this package we provide some generic implementations of this interface
  * that can be used in situations such as the above code.
  * <ul>
- * <li>{@link SerialQueue} - works the same as the above code. Each data is
+ * <li>{@link SerialProcessorQueue} - works the same as the above code. Each data is
  * passed to the list of processors in a serial way (no threads)</li>
- * <li>{@link ThreadQueueImp} - works the same as the above code, but you can
+ * <li>{@link DefaultParallelProcessorQueue} - works the same as the above code, but you can
  * specify a number of threads so the incoming data (from
  * {@link #process(Object)} method) will be passed to each processor in the
  * queue who will run in parallel, depending on the number of threads.</li>
- * <li>{@link BlockingQueue} - works the same as the parallel queue processor
+ * <li>{@link BlockingParallelProcessorQueue} - works the same as the parallel queue processor
  * but is very efficient when a new item is passed to the queue because it will
  * block the current thread for sending more data if all the worker threads (the
  * threads that runs the processors) are busy, until one of them finishes

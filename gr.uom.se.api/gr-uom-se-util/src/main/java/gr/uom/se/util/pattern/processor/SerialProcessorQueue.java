@@ -47,7 +47,7 @@ import java.util.Iterator;
  * @version 0.0.1
  * @since 0.0.1
  */
-public class SerialQueue<T> extends AbstractProcessorQueue<T> {
+public class SerialProcessorQueue<T> extends AbstractProcessorQueue<T> {
 
    /**
     * Set the static field to define a default id for all processors of this
@@ -61,7 +61,7 @@ public class SerialQueue<T> extends AbstractProcessorQueue<T> {
     * Creates a new instance of this queue.
     * <p>
     */
-   public SerialQueue() {
+   public SerialProcessorQueue() {
       this(null);
    }
 
@@ -73,7 +73,7 @@ public class SerialQueue<T> extends AbstractProcessorQueue<T> {
     * @param id
     *           of this processor
     */
-   public SerialQueue(String id) {
+   public SerialProcessorQueue(String id) {
       super(id);
    }
 

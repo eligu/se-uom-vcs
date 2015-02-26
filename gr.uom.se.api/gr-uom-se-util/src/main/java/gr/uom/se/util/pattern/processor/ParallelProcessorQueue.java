@@ -14,7 +14,7 @@ package gr.uom.se.util.pattern.processor;
  * @version 0.0.1
  * @since 0.0.1
  */
-public interface ThreadQueue<T> extends ProcessorQueue<T> {
+public interface ParallelProcessorQueue<T> extends ProcessorQueue<T> {
 
    /**
     * Shut down this queue, by shutting down any remaining threads.

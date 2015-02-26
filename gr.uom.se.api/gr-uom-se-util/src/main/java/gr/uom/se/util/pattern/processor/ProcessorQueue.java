@@ -18,8 +18,8 @@ package gr.uom.se.util.pattern.processor;
  * is a processor, however when the method {@link #process(Object)} is called it
  * will delegate the call to all processors it contains. Seeing a queue as a
  * processor we can build complex processors. For example we can have a queue
- * that runs all its processors in serial (see {@link SerialQueue} and a queue
- * that runs in parallel {@link ThreadQueueImp}), and putting both of them to a
+ * that runs all its processors in serial (see {@link SerialProcessorQueue} and a queue
+ * that runs in parallel {@link DefaultParallelProcessorQueue}), and putting both of them to a
  * another serial queue we can build a mixed queue, where some processors run in
  * serial and some in parallel. On the other hand when an object need to obtain
  * two or more processors, to process some data of him, instead of having a list
@@ -34,7 +34,7 @@ package gr.uom.se.util.pattern.processor;
  * Processor&ltT&gt p2 = ...
  * Processor&ltT&gt p3 = ...
  * 
- * ProcessorQueue&ltT&gt queue = new SerialQueue&ltT&gt();
+ * ProcessorQueue&ltT&gt queue = new SerialProcessorQueue&ltT&gt();
  * queue.add(p1);
  * queue.add(p2);
  * queue.add(p3);

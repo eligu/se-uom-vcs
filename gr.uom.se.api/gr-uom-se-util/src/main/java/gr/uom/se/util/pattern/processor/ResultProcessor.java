@@ -8,7 +8,7 @@ package gr.uom.se.util.pattern.processor;
  * <p>
  * This interface is decoupled from the plain processor interface because not
  * all type of processors need to return a specific result. For example all
- * {@link ThreadQueueImp} processors just delegate each entity to be
+ * {@link ProcessorQueue} processors just delegate each entity to be
  * processed to their queued processors, but queues are not required to return a
  * specific kind of result because each queued processor may return a different
  * type of result. However the type of a processor passed in a queue is

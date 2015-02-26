@@ -13,8 +13,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * An implementation of a mixed queue, where some processor will run in parallel
  * and some will run in serial.
  * <p>
- * This implementation uses a {@link SerialQueue} and one of the implementations
- * of {@link ThreadQueue}. It allows the use of a blocking queue, that can be
+ * This implementation uses a {@link SerialProcessorQueue} and one of the implementations
+ * of {@link ParallelProcessorQueue}. It allows the use of a blocking queue, that can be
  * specified in the constructor's parameters. Also you can specify a shared
  * thread pool in case you have a central thread pool used for all tasks in your
  * application.
@@ -37,18 +37,18 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @version 0.0.1
  * @since 0.0.1
  */
-public class MixQueue<T> extends AbstractProcessor<T> implements ThreadQueue<T> {
+public class MixQueue<T> extends AbstractProcessor<T> implements ParallelProcessorQueue<T> {
 
    /**
     * The serial queue of processors.
     * <p>
     */
-   protected SerialQueue<T> serialQueue;
+   protected SerialProcessorQueue<T> serialQueue;
    /**
     * The parallel queue of processors.
     * <p>
     */
-   protected ThreadQueueImp<T> parallelQueue;
+   protected DefaultParallelProcessorQueue<T> parallelQueue;
    /**
     * A reference to the queue that will be used as the main queue.
     * <p>
@@ -87,7 +87,7 @@ public class MixQueue<T> extends AbstractProcessor<T> implements ThreadQueue<T> 
    public MixQueue(int threads, boolean blocking, int taskQueueSize,
          boolean parallelToSerial, String id) {
 
-      this(ThreadQueueImp.checkAndCreateExecutor(threads), blocking,
+      this(DefaultParallelProcessorQueue.checkAndCreateExecutor(threads), blocking,
             taskQueueSize, parallelToSerial, id);
    }
 
@@ -96,11 +96,11 @@ public class MixQueue<T> extends AbstractProcessor<T> implements ThreadQueue<T> 
       super(id);
       ArgsCheck.notNull("service", threadPool);
       if (blocking) {
-         parallelQueue = new BlockingQueue<T>(threadPool, taskQueueSize, id);
+         parallelQueue = new BlockingParallelProcessorQueue<T>(threadPool, taskQueueSize, id);
       } else {
-         parallelQueue = new ThreadQueueImp<T>(threadPool, id);
+         parallelQueue = new DefaultParallelProcessorQueue<T>(threadPool, id);
       }
-      serialQueue = new SerialQueue<T>(id);
+      serialQueue = new SerialProcessorQueue<T>(id);
       this.parallelToSerial = parallelToSerial;
       initQueues();
    }

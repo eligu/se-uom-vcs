@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @version 0.0.1
  * @since 0.0.1
  */
-public class BlockingQueue<T> extends ThreadQueueImp<T> {
+public class BlockingParallelProcessorQueue<T> extends DefaultParallelProcessorQueue<T> {
 
    /**
     * The maximum number of tasks that are allowed to be submitted
@@ -56,7 +56,7 @@ public class BlockingQueue<T> extends ThreadQueueImp<T> {
     * @param id
     *           the id of this queue
     */
-   public BlockingQueue(int threads, String id) {
+   public BlockingParallelProcessorQueue(int threads, String id) {
       this(threads, threads, id);
    }
 
@@ -80,7 +80,7 @@ public class BlockingQueue<T> extends ThreadQueueImp<T> {
     * @param id
     *           the id of this queue
     */
-   public BlockingQueue(int threads, int taskQueueSize, String id) {
+   public BlockingParallelProcessorQueue(int threads, int taskQueueSize, String id) {
 
       super(threads, id);
       if (taskQueueSize < threads) {
@@ -116,7 +116,7 @@ public class BlockingQueue<T> extends ThreadQueueImp<T> {
     * @param id
     *           the id of this queue
     */
-   public BlockingQueue(ExecutorService threadPool, int taskQueueSize, String id) {
+   public BlockingParallelProcessorQueue(ExecutorService threadPool, int taskQueueSize, String id) {
       super(threadPool, id);
       if (taskQueueSize < 1) {
          throw new IllegalArgumentException(

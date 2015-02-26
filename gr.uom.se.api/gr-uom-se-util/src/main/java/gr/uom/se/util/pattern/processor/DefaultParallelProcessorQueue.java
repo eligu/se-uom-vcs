@@ -6,6 +6,7 @@ package gr.uom.se.util.pattern.processor;
 import java.util.Iterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -25,21 +26,21 @@ import java.util.concurrent.atomic.AtomicInteger;
  * While stopping this will wait all unfinished tasks to finish their job. If
  * you want to balance the memory consumed and the running time you can use a
  * blocking queue instead which will block if a maximum limit of tasks is
- * scheduled for run. See {@link BlockingQueue}.
+ * scheduled for run. See {@link BlockingParallelProcessorQueue}.
  * 
  * 
  * @author Elvis Ligu
  * @version 0.0.1
  * @since 0.0.1
  */
-public class ThreadQueueImp<T> extends AbstractProcessorQueue<T> implements
-      ThreadQueue<T> {
+public class DefaultParallelProcessorQueue<T> extends AbstractProcessorQueue<T> implements
+      ParallelProcessorQueue<T> {
 
    /**
     * Used to execute each processor in a different thread.
     * <p>
     */
-   protected ExecutorService threadPool;
+   protected Executor threadPool;
 
    /**
     * The maximum number of processors allowed to run simultaneously.
@@ -80,7 +81,7 @@ public class ThreadQueueImp<T> extends AbstractProcessorQueue<T> implements
     * @param pool
     *           to which all tasks produced by this processor will be submitted
     */
-   public ThreadQueueImp(ExecutorService pool, String id) {
+   public DefaultParallelProcessorQueue(Executor pool, String id) {
       super(id);
       if (pool == null) {
          throw new IllegalArgumentException("pool must not be null");
@@ -97,14 +98,14 @@ public class ThreadQueueImp<T> extends AbstractProcessorQueue<T> implements
     * to create simple processors queue that will process each entity in
     * parallel. If the application must have full control on the number of
     * running threads it creates, and the thread pool should be centralized then
-    * use {@link #ThreadQueueImp(ExecutorService)}.
+    * use {@link #DefaultParallelProcessorQueue(ExecutorService)}.
     * 
     * @param threads
     *           the number of simultaneously running runningThreads. Must be
     *           greater then 1 but not greater then
     *           {@link #MAX_NUM_OF_RUNNING_THREADS}.
     */
-   public ThreadQueueImp(int threads, String id) {
+   public DefaultParallelProcessorQueue(int threads, String id) {
       this(checkAndCreateExecutor(threads), id);
    }
 
@@ -113,7 +114,7 @@ public class ThreadQueueImp<T> extends AbstractProcessorQueue<T> implements
     * 
     * @param pool
     */
-   private void init(ExecutorService pool) {
+   private void init(Executor pool) {
       threadPool = pool;
       tasksSubmitted = new AtomicInteger(0);
       lock = new ExecutorCompletionService<T>(threadPool);
@@ -222,7 +223,7 @@ public class ThreadQueueImp<T> extends AbstractProcessorQueue<T> implements
          super.stopping();
       }
    }
-   
+
    @Override
    public Processor<T> getProcessor(String pid) {
       Processor<T> p = super.getProcessor(pid);
@@ -269,11 +270,16 @@ public class ThreadQueueImp<T> extends AbstractProcessorQueue<T> implements
    public void shutdown() throws InterruptedException {
       runningLock.readLock().lock();
       try {
-         if(running) {
-            throw new IllegalStateException("can not shut down the queue while running");
+         if (running) {
+            throw new IllegalStateException(
+                  "can not shut down the queue while running");
          }
-         this.threadPool.shutdown();
-         this.threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+         if (threadPool instanceof ExecutorService) {
+            ExecutorService service = (ExecutorService) threadPool;
+            service.shutdown();
+            service.awaitTermination(Long.MAX_VALUE,
+                  TimeUnit.NANOSECONDS);
+         }
       } finally {
          runningLock.readLock().unlock();
       }

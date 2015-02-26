@@ -3,11 +3,12 @@
  */
 package gr.uom.se.vcs.analysis;
 
-import gr.uom.se.util.pattern.processor.BlockingQueue;
+import gr.uom.se.util.pattern.processor.BlockingParallelProcessorQueue;
+import gr.uom.se.util.pattern.processor.ParallelProcessorQueue;
 import gr.uom.se.util.pattern.processor.Processor;
 import gr.uom.se.util.pattern.processor.ProcessorQueue;
-import gr.uom.se.util.pattern.processor.SerialQueue;
-import gr.uom.se.util.pattern.processor.ThreadQueueImp;
+import gr.uom.se.util.pattern.processor.SerialProcessorQueue;
+import gr.uom.se.util.pattern.processor.DefaultParallelProcessorQueue;
 import gr.uom.se.vcs.walker.Visitor;
 
 import java.util.Collection;
@@ -35,20 +36,21 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * methods at VCS API.
  * <p>
  * An analyzer makes possible to run a set of processors in parallel, by
- * maintaining a parallel processors queue (see {@link ThreadQueueImp} and or in
- * the main thread (in serial, see {@link SerialQueue}). When using an analyzer
- * to visit entities make sure all light weight processors to run in serial (for
- * example a commit counter processor is preferable to run in serial, while a
- * processor that analyze the source code of a commit is preferable to run in
- * parallel). In order to run a processor in serial use
- * {@link ProcessorQueue#add(Processor)} method, and to run it in parallel use
- * {@link #addParallel(Processor)}. You can add both serial and parallel
- * processors in the same time, however be sure to invoke first {@link #start()}
- * method to notify the queue that a work is going to start. After start you may
- * pass the analyzer to a method that accepts visitor, to walk entities. It is
- * very important to call {@link #stop()} method after the work is done. It will
- * wait any thread to finish its job (and so a processor) and make any actions
- * to finalize the results. A typical usage of an analyzer would be:
+ * maintaining a parallel processors queue (see
+ * {@link DefaultParallelProcessorQueue} and or in the main thread (in serial,
+ * see {@link SerialProcessorQueue}). When using an analyzer to visit entities
+ * make sure all light weight processors to run in serial (for example a commit
+ * counter processor is preferable to run in serial, while a processor that
+ * analyze the source code of a commit is preferable to run in parallel). In
+ * order to run a processor in serial use {@link ProcessorQueue#add(Processor)}
+ * method, and to run it in parallel use {@link #addParallel(Processor)}. You
+ * can add both serial and parallel processors in the same time, however be sure
+ * to invoke first {@link #start()} method to notify the queue that a work is
+ * going to start. After start you may pass the analyzer to a method that
+ * accepts visitor, to walk entities. It is very important to call
+ * {@link #stop()} method after the work is done. It will wait any thread to
+ * finish its job (and so a processor) and make any actions to finalize the
+ * results. A typical usage of an analyzer would be:
  * 
  * <pre>
  * 
@@ -156,7 +158,7 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
     * <p>
     * This will be added to serial queue.
     */
-   protected ThreadQueueImp<T> parallelProcessors;
+   protected ParallelProcessorQueue<T> parallelProcessors;
    /**
     * The lock of parallelProcessors field
     */
@@ -165,7 +167,7 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
    /**
     * The serial queue of the processors
     */
-   protected SerialQueue<T> serialProcessors;
+   protected SerialProcessorQueue<T> serialProcessors;
    /**
     * The lock of serialProcessors field
     */
@@ -308,7 +310,7 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
     *           to be ran in serial. May be null or empty.
     */
    private void init(Collection<Processor<T>> processors) {
-      serialProcessors = new SerialQueue<T>();
+      serialProcessors = new SerialProcessorQueue<T>();
       if (processors != null) {
          for (Processor<T> processor : processors) {
             if (processor == null) {
@@ -334,10 +336,11 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
       try {
          if (parallelProcessors == null) {
             if (blocking) {
-               parallelProcessors = new BlockingQueue<T>(threads, tasks,
-                     "BPARPRO");
+               parallelProcessors = new BlockingParallelProcessorQueue<T>(
+                     threads, tasks, "BPARPRO");
             } else {
-               parallelProcessors = new ThreadQueueImp<T>(threads, "PARPRO");
+               parallelProcessors = new DefaultParallelProcessorQueue<T>(
+                     threads, "PARPRO");
             }
             serialProcessors.addFirst(parallelProcessors);
          }
@@ -527,6 +530,7 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
    /**
     * A utility class that helps constructing processors.
     * <p>
+    * Do not share a builder with multiply threads.
     * 
     * @author Elvis Ligu
     * @version 0.0.1
@@ -540,6 +544,7 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
       private int threads;
       private int taskSize;
       private Boolean blockingQueue;
+      private ParallelProcessorQueue<T> pqueue;
 
       private Builder() {
          init();
@@ -551,6 +556,7 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
          threads = DEFAULT_THREADS_NO;
          taskSize = DEFAULT_TASK_QUEUE_SIZE;
          blockingQueue = true;
+         pqueue = null;
       }
 
       /**
@@ -582,6 +588,22 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
             throw new IllegalArgumentException();
          }
          this.parallel.add(processor);
+         return this;
+      }
+
+      /**
+       * Specify a specialized version of a parallel queue.
+       * <p>
+       * If the queue is defined at this method, when calling
+       * {@link #build(Class)} the number of threads, the task queue size, and
+       * the non blocking properties will not be taken in consideration.
+       * 
+       * @param queue
+       *           a specialized parallel queue
+       * @return this builder.
+       */
+      public Builder<T> setParallelQueue(ParallelProcessorQueue<T> queue) {
+         this.pqueue = queue;
          return this;
       }
 
@@ -655,30 +677,35 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
        * 
        * @param clazz
        *           of the analyzer to be build
-       * @return the new analyzer build with this builder parameters
+       * @return the new analyzer build with this builder parameters. After this
+       *         method you can keep using the builder, however all its
+       *         properties will be initialized just as a new one.
        */
       public <A extends Analyzer<T>> A build(Class<A> clazz) {
          try {
-            ThreadQueueImp<T> parq = null;
             A instance = clazz.newInstance();
             instance.blocking = blockingQueue;
             instance.threads = threads;
             instance.tasks = taskSize;
-            instance.serialProcessors = new SerialQueue<T>();
+            instance.serialProcessors = new SerialProcessorQueue<T>();
 
             if (!parallel.isEmpty()) {
-               if (blockingQueue) {
-                  parq = new BlockingQueue<T>(threads, taskSize, "PARPRO");
-               } else {
-                  parq = new ThreadQueueImp<T>(threads, "PARPRO");
+               if (pqueue == null) {
+                  if (blockingQueue) {
+                     pqueue = new BlockingParallelProcessorQueue<T>(threads,
+                           taskSize, "PARPRO");
+                  } else {
+                     pqueue = new DefaultParallelProcessorQueue<T>(threads,
+                           "PARPRO");
+                  }
                }
                for (Processor<T> p : parallel) {
-                  parq.add(p);
+                  pqueue.add(p);
                }
             }
-            if (parq != null) {
-               instance.add(parq);
-               instance.parallelProcessors = parq;
+            if (pqueue != null) {
+               instance.add(pqueue);
+               instance.parallelProcessors = pqueue;
             }
             for (Processor<T> p : serial) {
                instance.add(p);
