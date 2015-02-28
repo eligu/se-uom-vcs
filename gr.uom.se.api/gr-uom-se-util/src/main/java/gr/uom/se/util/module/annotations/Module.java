@@ -3,6 +3,7 @@ package gr.uom.se.util.module.annotations;
 import gr.uom.se.util.module.ModuleLoader;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -19,6 +20,7 @@ import java.lang.annotation.Target;
  */
 @Target(value = { ElementType.TYPE })
 @Retention(value = RetentionPolicy.RUNTIME)
+@Inherited
 public @interface Module {
 
    /**
