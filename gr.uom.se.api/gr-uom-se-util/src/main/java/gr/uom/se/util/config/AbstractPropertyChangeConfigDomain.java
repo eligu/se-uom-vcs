@@ -119,13 +119,13 @@ public abstract class AbstractPropertyChangeConfigDomain extends
     */
    @Override
    public Map<String, Object> getProperties() {
-      lock.writeLock().lock();
+      lock.readLock().lock();
       try {
          Map<String, Object> properties = new HashMap<>();
          properties.putAll(this.properties);
          return properties;
       } finally {
-         lock.writeLock().unlock();
+         lock.readLock().unlock();
       }
    }
    
@@ -155,7 +155,7 @@ public abstract class AbstractPropertyChangeConfigDomain extends
    @Override
    public Map<String, Object> getPropertiesWithPrefix(String prefix) {
       ArgsCheck.notNull("prefix", prefix);
-      lock.writeLock().lock();
+      lock.readLock().lock();
       try {
          Map<String, Object> properties = new HashMap<>();
          for (String name : this.properties.keySet()) {
@@ -165,7 +165,7 @@ public abstract class AbstractPropertyChangeConfigDomain extends
          }
          return properties;
       } finally {
-         lock.writeLock().unlock();
+         lock.readLock().unlock();
       }
    }
 
@@ -179,7 +179,7 @@ public abstract class AbstractPropertyChangeConfigDomain extends
    @Override
    public Map<String, Object> getPropertiesWithSuffix(String suffix) {
       ArgsCheck.notNull("suffix", suffix);
-      lock.writeLock().lock();
+      lock.readLock().lock();
       try {
          Map<String, Object> properties = new HashMap<>();
          for (String name : this.properties.keySet()) {
@@ -189,7 +189,7 @@ public abstract class AbstractPropertyChangeConfigDomain extends
          }
          return properties;
       } finally {
-         lock.writeLock().unlock();
+         lock.readLock().unlock();
       }
    }
 

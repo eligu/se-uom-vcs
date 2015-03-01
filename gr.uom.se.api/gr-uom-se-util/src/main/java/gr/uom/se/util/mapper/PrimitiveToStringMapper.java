@@ -3,8 +3,7 @@
  */
 package gr.uom.se.util.mapper;
 
-import gr.uom.se.util.validation.ArgsCheck;
-
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,54 +22,11 @@ import net.minidev.json.parser.ParseException;
  * @version 0.0.1
  * @since 0.0.1
  */
-public class PrimitiveToStringMapper implements Mapper {
+public class PrimitiveToStringMapper extends AbstractPrimitiveToStringMapper {
 
-   /**
-    * {@inheritDoc)
-    */
-   @SuppressWarnings("unchecked")
-   @Override
-   public <T, S> T map(S source, Class<T> to) {
-      // If the requested source is null then return a null
-      if (source == null) {
-         return null;
-      }
-      ArgsCheck.notNull("to", to);
+   
 
-      // If the requested type is the same as
-      // the source type, then return the source
-      if (to.isAssignableFrom(source.getClass())) {
-         return (T) source;
-      }
-
-      Class<?> from = source.getClass();
-      Class<?> type = getComponent(to);
-
-      // Case when the source is string
-      if (String.class.isAssignableFrom(from)) {
-         // Check if the required type is primitive or
-         // a corresponding Java type.
-         boolean contains = isPrimitive(type);
-         // If it is primitive (or an array of primitives)
-         // then convert the string to required type
-         if (contains) {
-            return getPrimitiveValue(to, source.toString());
-         }
-      } else if (to.isAssignableFrom(String.class)) {
-         // Case when required type is string and
-         // the source type is a primitive (a wrapper or an array of)
-         type = getComponent(from);
-         boolean contains = isPrimitive(type);
-         // Convert the source to string
-         if (contains) {
-            return (T) getStringValue(source);
-         }
-      }
-
-      return (T) source;
-   }
-
-   private boolean isPrimitive(Class<?> type) {
+   protected boolean isPrimitive(Class<?> type) {
       return primitivesToWrappers.containsKey(type)
             || primitivesToWrappers.containsValue(type);
    }
@@ -84,7 +40,7 @@ public class PrimitiveToStringMapper implements Mapper {
     * @return
     */
    @SuppressWarnings("unchecked")
-   static <T> T getPrimitiveValue(Class<T> type, String strval) {
+   protected <T> T getPrimitiveValue(Class<T> type, String strval) {
       try {
 
          return (T) JSONValue.parseWithException(strval, wrapType(type));
@@ -101,7 +57,7 @@ public class PrimitiveToStringMapper implements Mapper {
     * @param val
     * @return
     */
-   static String getStringValue(Object val) {
+   protected String getStringValue(Object val) {
       return JSONValue.toJSONString(val);
    }
 
@@ -137,26 +93,6 @@ public class PrimitiveToStringMapper implements Mapper {
       primitivesToWrappers.put(boolean.class, Boolean.class);
       primitivesToWrappers.put(byte.class, Byte.class);
       primitivesToWrappers.put(String.class, String.class);
-   }
-
-   /**
-    * Get the base component if the given type is a multidimensional array.
-    * <p>
-    * 
-    * @param array
-    * @return
-    */
-   private static Class<?> getComponent(Class<?> array) {
-      if (!array.isArray()) {
-         return array;
-      }
-      Class<?> component = array.getComponentType();
-      while (true) {
-         Class<?> type = component.getComponentType();
-         if (type == null) {
-            return component;
-         }
-         component = type;
-      }
+      primitivesToWrappers.put(Date.class, Date.class);
    }
 }

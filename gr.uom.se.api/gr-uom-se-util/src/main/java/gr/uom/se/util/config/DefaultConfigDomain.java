@@ -107,6 +107,44 @@ public class DefaultConfigDomain extends AbstractPropertyChangeConfigDomain {
    }
 
    /**
+    * Given an instance of config domain, load a .property file into the domain.
+    * <p>
+    * This will return the same instance provided, but with properties inserted
+    * into it. If the file can not be found it will return null.
+    * 
+    * @param configFolder
+    *           the path of the config folder to look for config file
+    * @param configFile
+    *           the name of the config file to load
+    * @param config
+    *           the config domain into which the .properties file will be loaded
+    * @return the same config domain, or null if the file was not found
+    * @throws IOException
+    *            if the file can not be loaded
+    */
+   public static <T extends ConfigDomain> T loadIfExist(String configFolder,
+         String configFile, T config) throws IOException {
+
+      ArgsCheck.notEmpty("configFolder", configFolder);
+      ArgsCheck.notEmpty("configFile", configFile);
+
+      // Check if the path exists and is readable
+      Path path = Paths.get(configFolder, configFile);
+      if (!Files.exists(path)) {
+         return null;
+      }
+      if (!Files.isReadable(path)) {
+         return null;
+      }
+
+      // Load the properties
+      try (InputStream is = Files.newInputStream(path)) {
+         load(config, is);
+      }
+      return config;
+   }
+
+   /**
     * Given an instance of config domain, load properties from the given input
     * stream into the domain.
     * <p>
