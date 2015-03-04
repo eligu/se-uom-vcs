@@ -88,9 +88,9 @@ public class VersionChangeProcessor extends CommitVersionProcessor implements
    /**
     * This processor will be used to pass each calculated commit edit.
     * <p>
-    * If this processor is not null then no values will be stored in this
-    * in changes and version changes structures, but they will be passed
-    * to this processor.
+    * If this processor is not null then no values will be stored in this in
+    * changes and version changes structures, but they will be passed to this
+    * processor.
     */
    private final Processor<CommitEdits> commitEditsProcessor;
 
@@ -165,9 +165,10 @@ public class VersionChangeProcessor extends CommitVersionProcessor implements
          boolean intermediateCommits, boolean versionCommits,
          VCSChange.Type... edits) {
 
-      this(versionProvider, id, null, changeFilter, resourceFilter, intermediateCommits, versionCommits, edits);
+      this(versionProvider, id, null, changeFilter, resourceFilter,
+            intermediateCommits, versionCommits, edits);
    }
-   
+
    /**
     * Create an instance based on the given version provider.
     * <p>
@@ -180,9 +181,10 @@ public class VersionChangeProcessor extends CommitVersionProcessor implements
     *           the provider of versions. Must not be null.
     * @param id
     *           the id of this processor, If null a default id will be provided
-    *           @param commitEditsProcessor if this processor is not null then
-    *           all calculated commit edits will be passed to this processor,
-    *           and results will not be saved at this object.
+    * @param commitEditsProcessor
+    *           if this processor is not null then all calculated commit edits
+    *           will be passed to this processor, and results will not be saved
+    *           at this object.
     * @param edits
     *           specify the type of changes to collect info for. If null all
     *           types of changes will be collected.
@@ -198,8 +200,7 @@ public class VersionChangeProcessor extends CommitVersionProcessor implements
     *           true if the changes between two subsequent versions should be
     *           computed.
     */
-   public VersionChangeProcessor(VersionProvider versionProvider, 
-         String id,
+   public VersionChangeProcessor(VersionProvider versionProvider, String id,
          Processor<CommitEdits> commitEditsProcessor,
          VCSFilter<VCSFileDiff<?>> changeFilter,
          VCSResourceFilter<VCSResource> resourceFilter,
@@ -260,7 +261,7 @@ public class VersionChangeProcessor extends CommitVersionProcessor implements
                      entity);
                // At this point the walking is finished so we
                // can add to the changes
-               if(commitEditsProcessor != null) {
+               if (commitEditsProcessor != null) {
                   return commitEditsProcessor.process(ce);
                }
                changes.get(ver).add(ce);
@@ -299,7 +300,7 @@ public class VersionChangeProcessor extends CommitVersionProcessor implements
             CommitEdits ce = this.walkChanges(previousCommit, commit);
             // At this point the walking is finished so we
             // can add to the changes
-            if(commitEditsProcessor != null) {
+            if (commitEditsProcessor != null) {
                return commitEditsProcessor.process(ce);
             }
             versionChanges.put(ver, ce);
@@ -322,7 +323,7 @@ public class VersionChangeProcessor extends CommitVersionProcessor implements
 
    @Override
    protected void stopping() {
-      if(commitEditsProcessor != null) {
+      if (commitEditsProcessor != null) {
          try {
             commitEditsProcessor.stop();
          } catch (InterruptedException e) {
@@ -367,7 +368,7 @@ public class VersionChangeProcessor extends CommitVersionProcessor implements
                changes.get(ver).clear();
             }
          }
-         if(commitEditsProcessor != null) {
+         if (commitEditsProcessor != null) {
             commitEditsProcessor.start();
          }
       } finally {
@@ -445,7 +446,7 @@ public class VersionChangeProcessor extends CommitVersionProcessor implements
       runningLock.readLock().lock();
       try {
 
-         // Do not allow this method to be called if he processor is running
+         // Do not allow this method to be called if the processor is running
          if (running) {
             throw new IllegalStateException(
                   "can not return a result while running");
@@ -533,7 +534,7 @@ public class VersionChangeProcessor extends CommitVersionProcessor implements
       public <R extends VCSResource> VCSResourceFilter<R> getResourceFilter() {
          return (VCSResourceFilter<R>) resourceFilter;
       }
-      
+
       @Override
       public boolean visit(VCSFileDiff<?> entity) {
 

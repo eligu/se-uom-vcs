@@ -8,7 +8,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -134,8 +133,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * depending on the needs of the application.
  * <p>
  * <b>NOTE</b>: When shutting down the scheduler if the thread pool was provided
- * provided it will not affect the pool at all, it will just tell the scheduler
- * to stop accepting any new tasks. Depending on what type of shutdown has been
+ * it will not affect the pool at all, it will just tell the scheduler to stop
+ * accepting any new tasks. Depending on what type of shutdown has been
  * requested it will executes all tasks that are waiting (if a shutdown) and
  * then shutdown, or will discard any waiting task (if a shutdown now). This is
  * crucial in managed environments to not stop the managed thread pool. On the
@@ -188,12 +187,12 @@ public class StaticTaskScheduler implements TaskScheduler {
    /**
     * A flag that indicates whether a request for shutdown has been performed.
     */
-   private final AtomicBoolean shutdown = new AtomicBoolean(false);
+   private volatile boolean shutdown = false;
    /**
     * A flag that indicates whether a request for shutdown now has been
     * performed.
     */
-   private final AtomicBoolean waitForShutdown = new AtomicBoolean(false);
+   private volatile boolean waitForShutdown = false;
 
    /**
     * The number of running customers at this moment, used when shutdown is
@@ -242,11 +241,77 @@ public class StaticTaskScheduler implements TaskScheduler {
     *           the scheduled for running tasks are less then the number of the
     *           max threads. In that case the consumer will schedule the task.
     *           If there are no tasks in consumer's queue he will wait until a
+    *           client submit a task of its type. In that case he will wake up
+    *           and schedule the task. By default all worker threads (or
+    *           consumers) will be scheduled for execution before the
+    *           construction of this instance. For each worker thread it will
+    *           wait at most 1000 millis to start. If the thread pool refuses to
+    *           start the worker it will throw an exception. If you want the
+    *           consumers to start on demand, a lazy execution of them then use
+    *           {@linkplain #StaticTaskScheduler(int, ExecutorService, boolean, TaskType...)
+    *           this constructor}.
+    */
+   public StaticTaskScheduler(int maxSize, ExecutorService service,
+         TaskType... types) {
+      this(maxSize, service, true, types);
+   }
+
+   /**
+    * Create a new instance providing the number of maximum queue size, a thread
+    * pool and the types of tasks that this scheduler should manage.
+    * <p>
+    * If the pool is null it will be created, and maintained by this scheduler.
+    * The type of the pool that is created is a cached thread pool that creates
+    * threads on request.
+    *
+    * @param maxSize
+    *           the maximum number of tasks that are waiting to be executed.
+    *           This size must be greater than 0. If 0 is provided it will be a
+    *           maximum default of {@link #MAX_TASKS}. A good size would be the
+    *           sum of all threads required for each type plus a reasonable
+    *           number of tasks, that will not cause memory leaks, in the
+    *           meantime will not cause often the clients to hung when
+    *           submitting tasks. If the size is smaller than the number of
+    *           threads required for all types of tasks not all the threads will
+    *           be utilized by the tasks.
+    *           <p>
+    * @param service
+    *           the thread pool where all tasks will be submitted for execution.
+    *           If null is provided a privately cached thread pool will be
+    *           maintained and constructed by this scheduler.
+    *           <p>
+    * @param startWorkers
+    *           if {@code true} is specified it will start all worker threads
+    *           before the constructor returns. A worker thread is dedicated to
+    *           one type of tasks and will handle all tasks that are of the some
+    *           type. For each task type it will wait the worker thread to
+    *           start. Will wait at most 1000ms for a worker, if the worker is
+    *           not started it will throw an exception. It will poll the state
+    *           of the worker at 1ms interval. This is a safe operation to start
+    *           all workers at the creation of this scheduler, because it will
+    *           ensure that all workers will be available before any task is
+    *           submitted. However if there are cases when there are a lot of
+    *           task types but it is unsure that clients will submit tasks of
+    *           all those types then it is better to set this parameter to
+    *           {@code false} avoiding to have a lot of waiting workers. On the
+    *           other hand having workers to start lazily may cause problems
+    *           latter when a task of the given type is started. Depending on
+    *           the thread pool if all threads are to busy a worker may need
+    *           more than 1000ms to start up.
+    * @param types
+    *           the types of the tasks that this scheduler should accept for
+    *           executing. For each type there will be a dedicated thread called
+    *           consumer. A consumer will maintain a private queue to store all
+    *           the coming tasks of the given type. The consumer will mostly
+    *           wait all the time, unless there is a task in its queue and all
+    *           the scheduled for running tasks are less then the number of the
+    *           max threads. In that case the consumer will schedule the task.
+    *           If there are no tasks in consumer's queue he will wait until a
     *           caller submit a task of its type. In that case he will wake up
     *           and schedule the task.
     */
    public StaticTaskScheduler(int maxSize, ExecutorService service,
-         TaskType... types) {
+         boolean startWorkers, TaskType... types) {
       if (maxSize < 0) {
          throw new IllegalArgumentException();
       } else if (maxSize == 0) {
@@ -269,7 +334,7 @@ public class StaticTaskScheduler implements TaskScheduler {
       }
       consumers = new HashMap<>(types.length);
       runningCustomers = new AtomicInteger(types.length);
-      createConsumers(types);
+      createConsumers(startWorkers, types);
    }
 
    /**
@@ -280,12 +345,69 @@ public class StaticTaskScheduler implements TaskScheduler {
     * @param types
     *           the types of tasks
     */
-   private void createConsumers(TaskType... types) {
+   private void createConsumers(boolean startConsumers, TaskType... types) {
       for (TaskType type : types) {
          Consumer consumer = new Consumer(
                new ConcurrentLinkedQueue<Runnable>(), type.getThreadSize());
          consumers.put(type, consumer);
-         pool.submit(consumer);
+         if (startConsumers) {
+            startConsumer(consumer);
+         }
+      }
+   }
+
+   /**
+    * Try to start a worker thread that will deal with one task type.
+    * <p>
+    * This will synchronize on given consumer and will submit the consumer to
+    * queue. After submitting it wait the consumer to start by polling its state
+    * on 1ms intervals. If 1000ms has passed (1000 polls of its state) and the
+    * consumer is not started it will throw an exception.
+    * 
+    * @param consumer
+    *           the worker thread (a.k.a as consumer)
+    */
+   protected void startConsumer(Consumer consumer) {
+      if (!consumer.running) {
+         synchronized (consumer) {
+            // Ask again the consumer for running
+            // double check
+            if (consumer.running) {
+               return;
+            }
+            // Submit and wait until it starts
+            pool.submit(consumer);
+            waitConsumerToStart(consumer);
+         }
+      }
+   }
+
+   /**
+    * Wait for consumer until he starts.
+    * <p>
+    * Pool consumer state periodically waiting 1ms at most 1000 times. After
+    * that time throw an exception.
+    * 
+    * @param consumer
+    */
+   protected void waitConsumerToStart(Consumer consumer) {
+      int count = 0;
+      // After submitting a consumer we should
+      // wait until he is executed from a thread
+      // We wait for a certain period of time,
+      // after that we throw an exception
+      while (!consumer.running) {
+         try {
+            Thread.sleep(1);
+         } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+         }
+         // We should wait at most 1 sec to start
+         // the consumer if this is impossible we throw
+         // an exception
+         if (++count > 1000) {
+            throw new RuntimeException("Can not start worker");
+         }
       }
    }
 
@@ -331,7 +453,7 @@ public class StaticTaskScheduler implements TaskScheduler {
     */
    @Override
    public void schedule(Runnable task, TaskType type) {
-      if (shutdown.get() || waitForShutdown.get()) {
+      if (shutdown || waitForShutdown) {
          throw new RuntimeException("this scheduler has been shutdown");
       }
       Consumer consumer = consumers.get(type);
@@ -339,10 +461,11 @@ public class StaticTaskScheduler implements TaskScheduler {
          throw new IllegalArgumentException(
                "there is not a defined task type for: " + type);
       }
-      if (!consumer.running.get()) {
-         throw new RuntimeException("runner is unavailable for tasks of type: "
-               + type);
-      }
+      /*
+       * if (!consumer.running) { throw new
+       * RuntimeException("runner is unavailable for tasks of type: " + type); }
+       */
+      // Make an atempt to start consumer if he is not started
       schedule(consumer, task);
    }
 
@@ -378,11 +501,14 @@ public class StaticTaskScheduler implements TaskScheduler {
    }
 
    private void scheduleToConsumer(Consumer consumer, Runnable task) {
-      allTasksSize.incrementAndGet();
       // Add the task to consumer's queue and notify him
       // if he is waiting for a task to be added
-      consumer.queue.add(task);
       synchronized (consumer) {
+         allTasksSize.incrementAndGet();
+         consumer.queue.add(task);
+         // Attempt to start consumer if he is not
+         // started
+         startConsumer(consumer);
          consumer.notify();
       }
    }
@@ -390,7 +516,7 @@ public class StaticTaskScheduler implements TaskScheduler {
    @Override
    public boolean canSchedule(TaskType type) {
       Consumer consumer = consumers.get(type);
-      return consumer != null && consumer.running.get();
+      return consumer != null && consumer.running;
    }
 
    /**
@@ -404,7 +530,7 @@ public class StaticTaskScheduler implements TaskScheduler {
     */
    @Override
    public void shutdown() throws InterruptedException {
-      waitForShutdown.set(true);
+      waitForShutdown = true;
       notifyAndWait();
       if (privatePool) {
          pool.shutdown();
@@ -442,7 +568,7 @@ public class StaticTaskScheduler implements TaskScheduler {
     */
    @Override
    public void shutdownNow() throws InterruptedException {
-      shutdown.set(true);
+      shutdown = true;
       notifyAndWait();
       if (privatePool) {
          pool.shutdownNow();
@@ -451,7 +577,7 @@ public class StaticTaskScheduler implements TaskScheduler {
 
    @Override
    public boolean isShutdown() {
-      return shutdown.get() || waitForShutdown.get();
+      return shutdown || waitForShutdown;
    }
 
    @Override
@@ -483,12 +609,12 @@ public class StaticTaskScheduler implements TaskScheduler {
       /** Number of currently scheduled jobs (considered as running) */
       final AtomicInteger scheduled = new AtomicInteger(0);
       /** Flag when it is true the consumer is running */
-      final AtomicBoolean running;
+      volatile boolean running;
 
       public Consumer(Queue<Runnable> queue, int threads) {
          this.queue = queue;
          this.maxThreads = threads;
-         running = new AtomicBoolean(false);
+         running = false;
       }
 
       @Override
@@ -497,7 +623,7 @@ public class StaticTaskScheduler implements TaskScheduler {
          try {
             // Set running true, in case it is needed by
             // scheduler
-            running.set(true);
+            running = true;
 
             while (true) {
                // Try to get the next task
@@ -512,7 +638,7 @@ public class StaticTaskScheduler implements TaskScheduler {
                // Terminate if shutdown now
                // has been called, do not make any scheduling at this
                // point
-               if (shutdown.get()) {
+               if (shutdown) {
                   // Notify the scheduler once because he is waiting
                   // for this consumer to shutdown
                   waitAndNotify();
@@ -546,7 +672,7 @@ public class StaticTaskScheduler implements TaskScheduler {
             // If the scheduler has been requested
             // a shut down do not wait for new tasks
             // just return
-            if (waitForShutdown.get() || shutdown.get()) {
+            if (waitForShutdown || shutdown) {
                // Notify the scheduler once because he is waiting
                // for this consumer to shutdown
                waitAndNotify();
@@ -600,7 +726,7 @@ public class StaticTaskScheduler implements TaskScheduler {
          // Notify the scheduler once because he is waiting
          // for this consumer to shutdown
          synchronized (StaticTaskScheduler.this) {
-            running.set(false);
+            running = false;
             runningCustomers.decrementAndGet();
             StaticTaskScheduler.this.notify();
          }
@@ -609,7 +735,12 @@ public class StaticTaskScheduler implements TaskScheduler {
       private void waitMyTasks() throws InterruptedException {
          while (scheduled.get() > 0) {
             synchronized (this) {
-               wait();
+               // Check again because all threads may have terminate
+               // since the time we checked this value until we got
+               // the lock
+               if (scheduled.get() > 0) {
+                  wait();
+               }
             }
          }
       }
@@ -639,7 +770,7 @@ public class StaticTaskScheduler implements TaskScheduler {
          try {
             // Terminate if shutdown now has
             // been requested
-            if (shutdown.get()) {
+            if (shutdown) {
                return;
             }
 
@@ -647,15 +778,15 @@ public class StaticTaskScheduler implements TaskScheduler {
          } finally {
             // Notify consumer
             // if he is waiting because his queue reached his maximum
-            consumer.scheduled.decrementAndGet();
             synchronized (consumer) {
+               consumer.scheduled.decrementAndGet();
                consumer.notify();
             }
 
             // Notify the scheduler if he is waiting for
             // tasks to submit
-            allTasksSize.decrementAndGet();
             synchronized (StaticTaskScheduler.this) {
+               allTasksSize.decrementAndGet();
                StaticTaskScheduler.this.notify();
             }
          }
