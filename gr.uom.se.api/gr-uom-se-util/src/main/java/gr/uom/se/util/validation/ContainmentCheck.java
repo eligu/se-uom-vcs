@@ -241,7 +241,7 @@ public class ContainmentCheck {
     * @param source
     *           collection of objects to check
     * @param symbols
-    *           arra of symbols that are allowed to be contained in source
+    *           array of symbols that are allowed to be contained in source
     * @return true if all objects contained in source are already contained in
     *         symbols two.
     */
