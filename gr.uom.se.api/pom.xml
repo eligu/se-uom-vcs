@@ -41,7 +41,7 @@
 		<module>vcs-analysis</module>
 		<module>vcs-api</module>
 		<module>vcs-jgit</module>
-	 <module>gr-uom-se-util</module>
+		<module>gr-uom-se-util</module>
 	</modules>
 
 </project>
