@@ -10,6 +10,7 @@ import gr.uom.se.vcs.VCSFile;
 import gr.uom.se.vcs.VCSFileDiff;
 import gr.uom.se.vcs.analysis.util.CommitEdits;
 import gr.uom.se.vcs.analysis.util.KeyValueProcessor;
+import gr.uom.se.vcs.analysis.version.provider.ConnectedVersionProvider;
 import gr.uom.se.vcs.walker.filter.VCSFilter;
 
 import java.util.ArrayList;
@@ -24,17 +25,17 @@ public class VersionLinesCounterProcessor extends
       KeyValueProcessor<CommitEdits, String, Integer> {
 
    private final boolean newLines;
-   private final VersionProvider provider;
+   private final ConnectedVersionProvider provider;
    private final VCSChange.Type[] edits;
    private final VCSFilter<VCSFileDiff<?>> changeFilter;
    private final VCSFilter<VCSFile> resourceFilter;
 
-   public VersionLinesCounterProcessor(VersionProvider provider, String id,
+   public VersionLinesCounterProcessor(ConnectedVersionProvider provider, String id,
          boolean newLines, VCSChange.Type... types) {
       this(provider, id, newLines, null, null, types);
    }
 
-   public VersionLinesCounterProcessor(VersionProvider provider, String id,
+   public VersionLinesCounterProcessor(ConnectedVersionProvider provider, String id,
          boolean newLines, VCSFilter<VCSFileDiff<?>> changeFilter,
          VCSFilter<VCSFile> resourceFilter, VCSChange.Type... types) {
       super(id);

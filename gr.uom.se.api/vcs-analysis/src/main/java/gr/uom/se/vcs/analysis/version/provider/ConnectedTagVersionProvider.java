@@ -1,105 +1,50 @@
 /**
  * 
  */
-package gr.uom.se.vcs.analysis.version;
+package gr.uom.se.vcs.analysis.version.provider;
 
 import gr.uom.se.util.validation.ArgsCheck;
 import gr.uom.se.vcs.VCSCommit;
 import gr.uom.se.vcs.VCSRepository;
 import gr.uom.se.vcs.VCSResource;
-import gr.uom.se.vcs.VCSTag;
 import gr.uom.se.vcs.exceptions.VCSRepositoryException;
 import gr.uom.se.vcs.walker.CommitVisitor;
 import gr.uom.se.vcs.walker.filter.commit.VCSCommitFilter;
 import gr.uom.se.vcs.walker.filter.resource.VCSResourceFilter;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeSet;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import com.google.common.collect.BiMap;
-import com.google.common.collect.ImmutableBiMap;
-import com.google.common.collect.Maps;
 
 /**
  * A tag version provider consider each tag as a version of a project.
  * <p>
  * This is the simplest implementation of a version provider because it find all
  * versions with a little effort. However keep in mind that some projects may
- * have versionProvider for hot fixes or for other works. If this is the case,
- * this class will fail to provide accurate information for versions.
+ * have version for hot fixes or for other works. If this is the case, this
+ * class will fail to provide accurate information for versions.
  * 
  * @author Elvis Ligu
  * @version 0.0.1
  * @since 0.0.1
  */
-public class TagVersionProvider implements VersionProvider,
-      CommitCheckVersion {
+public class ConnectedTagVersionProvider implements ConnectedVersionProvider {
 
    /**
-    * Where all versions will be stored.
+    * The version name provider.
     */
-   protected final BiMap<VCSCommit, String> versions;
-
-   /**
-    * This will be used to quickly find the commit version of a given commit.
-    * Commits are sorted based on commit date from older to new one.
-    */
-   protected final TreeSet<VCSCommit> versionCommits;
-
-   /**
-    * This comparator is used to build ordered versions, by their commit time.
-    * <p>
-    * Note that in some situations two commits that differ from each other may
-    * have the same commit time. In this situation this comparator will check if
-    * both commits are different but they have the same time it will return -1
-    * (the first one is ordered first by default), and will not return 0 in any.
-    * circumstances.
-    * <p>
-    * The decision to return -1 for the first object is made based on the
-    * implementation of TreeSet (and TreeMap, a tree set is backed of) of java
-    * as when using methods such as tail(key) the first object of the comparator
-    * will be the key we provide and not the already stored object, so we can
-    * get the commit that is at least the same newer than our commit.
-    * Considerations should be taken when using the head(key) method for example
-    * because our key will be older than a stored key if they have the same time
-    * so it will return the next at least older than our key!!!
-    */
-   public static final Comparator<VCSCommit> ascendingCommitTime = new Comparator<VCSCommit>() {
-
-      @Override
-      public int compare(VCSCommit o1, VCSCommit o2) {
-         boolean equals = o1.equals(o2);
-         int comp = 0;
-         // If two commits are equals return 0,
-         // if they have the same time (comp == 0) return -1
-         // otherwise return comp.
-         // This is crucial as two commits may have same time!!!
-         // however they are different so we can not return 0
-         if (equals) {
-            return 0;
-            // They are not equals but have the same time!!!
-            // By default the first is before second
-         } else if ((comp = o1.getCommitDate().compareTo(o2.getCommitDate())) == 0) {
-            return -1;
-         }
-         return comp;
-      }
-   };
-
+   private final ConnectedVersionNameProvider provider;
    /**
     * The lock used for versions info
     */
-   final private ReadWriteLock versionsInfoLock = new ReentrantReadWriteLock();
+   final private ReadWriteLock lock = new ReentrantReadWriteLock();
+
    /**
     * The version commits and the commit that logically belongs to each version.
     * <p>
@@ -108,31 +53,69 @@ public class TagVersionProvider implements VersionProvider,
    private Map<VCSCommit, Set<VCSCommit>> versionsInfo;
 
    /**
+    * Size of versions.
+    */
+   private final int vsize;
+
+   /**
+    * The first version.
+    */
+   private final VCSCommit first;
+
+   /**
     * Creates a tag provider for the following repository.
     * <p>
-    * The provided {@code versionCheckStrategy} argument will be used to check
-    * whether a given commit belongs to a version.
+    * 
+    * This will load the versions based on default
+    * {@linkplain DefaultVersionNameResolver version name resolver}, on default
+    * {@linkplain ConnectedTagVersionNameProvider version name provider} and on
+    * default {@linkplain BranchTagProvider tag provider}.
     * 
     * @param repo
     *           the repository from where will load the versions
-    * @param versionCheckStrategy
-    *           the strategy to use when finding a version for a given commit.
-    *           If null {@link WalkingCommitVersionChecker} will be used as the
-    *           default strategy.
     * 
     * @throws VCSRepositoryException
     *            if the repository could not be read
     */
-   public TagVersionProvider(VCSRepository repo,
-         CommitCheckVersion versionCheckStrategy) throws VCSRepositoryException {
+   public ConnectedTagVersionProvider(VCSRepository repo)
+         throws VCSRepositoryException {
       // Repo must not be null
       ArgsCheck.notNull("repo", repo);
-      versions = createVersions(repo);
-      if (versions == null) {
+      this.provider = createVersions(repo);
+      if (provider == null) {
          throw new IllegalStateException("version mapping is not created");
       }
-      versionCommits = new TreeSet<VCSCommit>(ascendingCommitTime);
-      versionCommits.addAll(versions.keySet());
+      Collection<VCSCommit> commits = this.provider.getCommits();
+      vsize = commits.size();
+      if (vsize == 0) {
+         first = commits.iterator().next();
+      } else {
+         first = null;
+      }
+      this.initVersionsInfo();
+   }
+
+   /**
+    * Creates a tag provider for the following version name provider.
+    * <p>
+    * 
+    * @param repo
+    *           the repository from where will load the versions
+    * @param
+    * @throws VCSRepositoryException
+    *            if the repository could not be read
+    */
+   public ConnectedTagVersionProvider(ConnectedVersionNameProvider provider) {
+      ArgsCheck.notNull("provider", provider);
+      this.provider = provider;
+
+      Collection<VCSCommit> commits = this.provider.getCommits();
+      vsize = commits.size();
+      if (vsize == 0) {
+         first = commits.iterator().next();
+      } else {
+         first = null;
+      }
       this.initVersionsInfo();
    }
 
@@ -140,28 +123,10 @@ public class TagVersionProvider implements VersionProvider,
     * Initialize the versions info
     */
    private void initVersionsInfo() {
-      this.versionsInfo = new HashMap<VCSCommit, Set<VCSCommit>>(
-            versionCommits.size());
-      for (VCSCommit version : versions.keySet()) {
+      this.versionsInfo = new HashMap<VCSCommit, Set<VCSCommit>>(vsize);
+      for (VCSCommit version : provider) {
          versionsInfo.put(version, new HashSet<VCSCommit>());
       }
-   }
-
-   /**
-    * Creates a tag provider for the following repository.
-    * <p>
-    * The default strategy for deciding weather a commit belongs to a version
-    * will be {@link WalkingCommitVersionChecker}.
-    * 
-    * @param repo
-    *           the repository from where will load the versions
-    * 
-    * @throws VCSRepositoryException
-    *            if the repository could not be read
-    */
-   public TagVersionProvider(VCSRepository repo)
-         throws VCSRepositoryException {
-      this(repo, null);
    }
 
    /**
@@ -177,15 +142,12 @@ public class TagVersionProvider implements VersionProvider,
     * @throws VCSRepositoryException
     *            if we can not read the repository
     */
-   protected BiMap<VCSCommit, String> createVersions(VCSRepository repo)
+   protected ConnectedTagVersionNameProvider createVersions(VCSRepository repo)
          throws VCSRepositoryException {
-      SortedMap<VCSCommit, String> tags = Maps.newTreeMap(ascendingCommitTime);
-
-      for (VCSTag tag : repo.getTags()) {
-         tags.put(tag.getCommit(), tag.getName());
-      }
-
-      return ImmutableBiMap.copyOf(tags);
+      TagProvider tagProvider = new BranchTagProvider(repo);
+      ConnectedTagVersionNameProvider provider = new ConnectedTagVersionNameProvider(
+            tagProvider);
+      return provider;
    }
 
    /**
@@ -195,17 +157,17 @@ public class TagVersionProvider implements VersionProvider,
     */
    @Override
    public Map<String, VCSCommit> getVersions() {
-      return versions.inverse();
+      return provider.getVersions();
    }
 
    @Override
-   public Set<String> getVersionNames() {
-      return Collections.unmodifiableSet(this.versions.values());
+   public Set<String> getNames() {
+      return provider.getNames();
    }
 
    @Override
-   public Set<VCSCommit> getVersionCommits() {
-      return Collections.unmodifiableSet(this.versions.keySet());
+   public Set<VCSCommit> getCommits() {
+      return provider.getCommits();
    }
 
    /**
@@ -215,19 +177,19 @@ public class TagVersionProvider implements VersionProvider,
    public String findVersion(VCSCommit commit) {
 
       ArgsCheck.notNull("commit", commit);
-      if (this.versions.containsKey(commit)) {
-         return this.versions.get(commit);
+      if (provider.isVersion(commit)) {
+         return provider.getName(commit);
       }
 
-      versionsInfoLock.readLock().lock();
+      lock.readLock().lock();
       try {
          for (VCSCommit version : versionsInfo.keySet()) {
             if (versionsInfo.get(version).contains(commit)) {
-               return this.versions.get(version);
+               return provider.getName(version);
             }
          }
       } finally {
-         versionsInfoLock.readLock().unlock();
+         lock.readLock().unlock();
       }
       return null;
    }
@@ -237,9 +199,7 @@ public class TagVersionProvider implements VersionProvider,
     */
    @Override
    public VCSCommit getCommit(String ver) {
-      Map<String, VCSCommit> vers = versions.inverse();
-      ArgsCheck.containsKey("ver", ver, vers, "versions");
-      return vers.get(ver);
+      return provider.getCommit(ver);
    }
 
    /**
@@ -247,9 +207,16 @@ public class TagVersionProvider implements VersionProvider,
     */
    @Override
    public boolean isInVersion(String ver, VCSCommit commit) {
-
-      VCSCommit version = this.getCommit(ver);
-      return this.isInVersion(version, commit);
+      VCSCommit version = provider.getCommit(ver);
+      if (version == null) {
+         return false;
+      }
+      lock.readLock().lock();
+      try {
+         return versionsInfo.get(version).contains(commit);
+      } finally {
+         lock.readLock().unlock();
+      }
    }
 
    /**
@@ -257,13 +224,14 @@ public class TagVersionProvider implements VersionProvider,
     */
    @Override
    public boolean isInVersion(VCSCommit versionCommit, VCSCommit commit) {
-      ArgsCheck.containsKey("versionCommit", versionCommit, versions,
-            "versions");
-      versionsInfoLock.readLock().lock();
+      if (!provider.isVersion(versionCommit)) {
+         return false;
+      }
+      lock.readLock().lock();
       try {
          return versionsInfo.get(versionCommit).contains(commit);
       } finally {
-         versionsInfoLock.readLock().unlock();
+         lock.readLock().unlock();
       }
    }
 
@@ -272,8 +240,7 @@ public class TagVersionProvider implements VersionProvider,
     */
    @Override
    public String getName(VCSCommit commit) {
-      ArgsCheck.containsKey("commit", commit, versions, "versions");
-      return this.versions.get(commit);
+      return provider.getName(commit);
    }
 
    /**
@@ -281,8 +248,7 @@ public class TagVersionProvider implements VersionProvider,
     */
    @Override
    public VCSCommit getPrevious(VCSCommit commit) {
-      ArgsCheck.containsKey("commit", commit, versions, "versions");
-      return versionCommits.lower(commit);
+      return provider.getPrevious(commit);
    }
 
    /**
@@ -296,8 +262,7 @@ public class TagVersionProvider implements VersionProvider,
     */
    @Override
    public VCSCommit getNext(VCSCommit commit) {
-      ArgsCheck.containsKey("commit", commit, versions, "versions");
-      return versionCommits.higher(commit);
+      return provider.getNext(commit);
    }
 
    /**
@@ -305,14 +270,12 @@ public class TagVersionProvider implements VersionProvider,
     */
    @Override
    public boolean isVersion(VCSCommit commit) {
-      ArgsCheck.notNull("commit", commit);
-      return this.versions.containsKey(commit);
+      return provider.isVersion(commit);
    }
 
    @Override
    public boolean isVersion(String ver) {
-      ArgsCheck.notNull("ver", ver);
-      return this.versions.containsValue(ver);
+      return provider.isVersion(ver);
    }
 
    /**
@@ -332,17 +295,17 @@ public class TagVersionProvider implements VersionProvider,
     */
    public void collectVersionInfo() throws VCSRepositoryException {
 
-      versionsInfoLock.writeLock().lock();
+      lock.writeLock().lock();
       try {
          initVersionsInfo();
          CommitCollector collector = new CommitCollector();
          // Collect commits for each version
-         for (VCSCommit version : versionCommits) {
+         for (VCSCommit version : provider) {
             collector.version = version;
             version.walkCommits(collector, true);
          }
       } finally {
-         versionsInfoLock.writeLock().unlock();
+         lock.writeLock().unlock();
       }
    }
 
@@ -355,12 +318,14 @@ public class TagVersionProvider implements VersionProvider,
     * @return the number of commits for this version
     */
    public int getSize(VCSCommit version) {
-      versionsInfoLock.readLock().lock();
+      if (provider.isVersion(version)) {
+         throw new IllegalArgumentException("commit is not a version");
+      }
+      lock.readLock().lock();
       try {
-         ArgsCheck.containsKey("version", version, versionsInfo, "versions");
          return versionsInfo.get(version).size() + 1;
       } finally {
-         versionsInfoLock.readLock().unlock();
+         lock.readLock().unlock();
       }
    }
 
@@ -374,7 +339,8 @@ public class TagVersionProvider implements VersionProvider,
     * @return the number of commits this version contains
     */
    public int getSize(String ver) {
-      VCSCommit version = this.getCommit(ver);
+      VCSCommit version = provider.getCommit(ver);
+      ArgsCheck.notNull("version", version);
       return this.getSize(version);
    }
 
@@ -387,12 +353,14 @@ public class TagVersionProvider implements VersionProvider,
     * @return the commits of the given version
     */
    public Set<VCSCommit> getCommits(VCSCommit version) {
-      versionsInfoLock.readLock().lock();
+      if (provider.isVersion(version)) {
+         throw new IllegalArgumentException("commit is not a version");
+      }
+      lock.readLock().lock();
       try {
-         ArgsCheck.containsKey("version", version, versionsInfo, "versions");
          return Collections.unmodifiableSet(versionsInfo.get(version));
       } finally {
-         versionsInfoLock.readLock().unlock();
+         lock.readLock().unlock();
       }
    }
 
@@ -405,7 +373,8 @@ public class TagVersionProvider implements VersionProvider,
     * @return the commits of this version
     */
    public Set<VCSCommit> getCommits(String ver) {
-      VCSCommit version = this.getCommit(ver);
+      VCSCommit version = provider.getCommit(ver);
+      ArgsCheck.notNull("version", version);
       return this.getCommits(version);
    }
 
@@ -425,17 +394,17 @@ public class TagVersionProvider implements VersionProvider,
       @Override
       public boolean visit(VCSCommit entity) {
          // This is not a version commit
-         if (!versions.containsKey(entity)) {
+         if (!provider.isVersion(entity)) {
             // If this is the first version we do not need to check
             // any previous version
-            if (versionCommits.first().equals(version)) {
+            if (first.equals(version)) {
                versionsInfo.get(version).add(entity);
                return true;
             }
             // Check the previous versions
-            Iterator<VCSCommit> it = versionCommits.iterator();
+            Iterator<VCSCommit> it = provider.iterator();
             boolean contains = false;
-            // Here we are sure that we have at least out first
+            // Here we are sure that we have at least our first
             // version so we must check all previous versions
             // until to this one if any of them contains this commit
             // If so then this commit is not part of our version
@@ -477,16 +446,43 @@ public class TagVersionProvider implements VersionProvider,
 
    @Override
    public Iterator<VCSCommit> iterator() {
-      return Collections.unmodifiableSet(versionCommits).iterator();
+      return provider.iterator();
    }
 
    @Override
-   public Iterator<VCSCommit> reverseIterator() {
-      Iterator<VCSCommit> it = versionCommits.descendingIterator();
-      ArrayList<VCSCommit> commits = new ArrayList<VCSCommit>(versionCommits.size());
-      while(it.hasNext()) {
-         commits.add(it.next());
-      }
-      return commits.iterator();
+   public Iterator<VCSCommit> descendingIterator() {
+      return provider.descendingIterator();
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public String getPrevious(String name) {
+      return provider.getPrevious(name);
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public String getNext(String name) {
+      return provider.getNext(name);
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public Iterator<String> nameIterator() {
+      return provider.nameIterator();
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public Iterator<String> descendingNameIterator() {
+      return provider.descendingNameIterator();
    }
 }

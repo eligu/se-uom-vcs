@@ -11,6 +11,7 @@ import gr.uom.se.vcs.VCSCommit;
 import gr.uom.se.vcs.VCSFileDiff;
 import gr.uom.se.vcs.VCSResource;
 import gr.uom.se.vcs.analysis.util.CommitEdits;
+import gr.uom.se.vcs.analysis.version.provider.ConnectedVersionProvider;
 import gr.uom.se.vcs.exceptions.VCSRepositoryException;
 import gr.uom.se.vcs.walker.ChangeVisitor;
 import gr.uom.se.vcs.walker.filter.VCSFilter;
@@ -104,7 +105,7 @@ public class VersionChangeProcessor extends CommitVersionProcessor implements
     * @param id
     *           the id of this processor. If null a default id will be provided
     */
-   public VersionChangeProcessor(VersionProvider versionProvider, String id) {
+   public VersionChangeProcessor(ConnectedVersionProvider versionProvider, String id) {
 
       this(versionProvider, id, (VCSChange.Type[]) null);
    }
@@ -121,7 +122,7 @@ public class VersionChangeProcessor extends CommitVersionProcessor implements
     *           specify the type of changes to collect info for. If null all
     *           types of changes will be collected
     */
-   public VersionChangeProcessor(VersionProvider versionProvider, String id,
+   public VersionChangeProcessor(ConnectedVersionProvider versionProvider, String id,
          VCSChange.Type... edits) {
 
       this(versionProvider, id, null, null, true, true, edits);
@@ -159,7 +160,7 @@ public class VersionChangeProcessor extends CommitVersionProcessor implements
     *           true if the changes between two subsequent versions should be
     *           computed.
     */
-   public VersionChangeProcessor(VersionProvider versionProvider, String id,
+   public VersionChangeProcessor(ConnectedVersionProvider versionProvider, String id,
          VCSFilter<VCSFileDiff<?>> changeFilter,
          VCSResourceFilter<VCSResource> resourceFilter,
          boolean intermediateCommits, boolean versionCommits,
@@ -200,7 +201,7 @@ public class VersionChangeProcessor extends CommitVersionProcessor implements
     *           true if the changes between two subsequent versions should be
     *           computed.
     */
-   public VersionChangeProcessor(VersionProvider versionProvider, String id,
+   public VersionChangeProcessor(ConnectedVersionProvider versionProvider, String id,
          Processor<CommitEdits> commitEditsProcessor,
          VCSFilter<VCSFileDiff<?>> changeFilter,
          VCSResourceFilter<VCSResource> resourceFilter,
@@ -355,7 +356,7 @@ public class VersionChangeProcessor extends CommitVersionProcessor implements
             // If the changes is null that means this processor
             // is first run so we should init the changes
             changes = new TreeMap<String, Set<CommitEdits>>();
-            for (String ver : versionProvider.getVersionNames()) {
+            for (String ver : versionProvider.getNames()) {
                changes
                      .put(ver,
                            Collections
@@ -364,7 +365,7 @@ public class VersionChangeProcessor extends CommitVersionProcessor implements
          } else {
             // The changes is not null so this is a rerun, and we
             // just need to clear old values
-            for (String ver : versionProvider.getVersionNames()) {
+            for (String ver : versionProvider.getNames()) {
                changes.get(ver).clear();
             }
          }

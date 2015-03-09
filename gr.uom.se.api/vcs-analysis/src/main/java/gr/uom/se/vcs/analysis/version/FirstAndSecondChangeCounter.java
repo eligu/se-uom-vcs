@@ -10,6 +10,7 @@ import gr.uom.se.vcs.VCSFileDiff;
 import gr.uom.se.vcs.VCSFile;
 import gr.uom.se.vcs.analysis.util.CommitEdits;
 import gr.uom.se.vcs.analysis.util.KeyValueProcessor;
+import gr.uom.se.vcs.analysis.version.provider.ConnectedVersionProvider;
 import gr.uom.se.vcs.walker.filter.VCSFilter;
 
 import java.util.HashSet;
@@ -30,7 +31,7 @@ public class FirstAndSecondChangeCounter extends
    private final VCSFilter<VCSFile> resourceFilter1;
    private final VCSFilter<VCSFileDiff<?>> changeFilter2;
    private final VCSFilter<VCSFile> resourceFilter2;
-   private final VersionProvider provider;
+   private final ConnectedVersionProvider provider;
    private final boolean changed;
 
    /**
@@ -40,7 +41,7 @@ public class FirstAndSecondChangeCounter extends
     * @param resourceFilter
     * @param types
     */
-   public FirstAndSecondChangeCounter(VersionProvider provider, String id,
+   public FirstAndSecondChangeCounter(ConnectedVersionProvider provider, String id,
          boolean changed, Set<VCSChange.Type> types1,
          VCSFilter<VCSFileDiff<?>> changeFilter1,
          VCSFilter<VCSFile> resourceFilter1, Set<VCSChange.Type> types2,
@@ -131,7 +132,7 @@ public class FirstAndSecondChangeCounter extends
 
    @Override
    protected void startThis() {
-      for (String ver : provider.getVersionNames()) {
+      for (String ver : provider.getNames()) {
          AtomicInteger counter = values.get(ver);
          if (counter == null) {
             counter = new AtomicInteger(0);

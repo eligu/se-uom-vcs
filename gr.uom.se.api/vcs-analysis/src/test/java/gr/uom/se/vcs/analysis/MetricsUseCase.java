@@ -23,11 +23,11 @@ import gr.uom.se.vcs.analysis.version.AuthorVersionProcessor;
 import gr.uom.se.vcs.analysis.version.CommitFileChangeCounter;
 import gr.uom.se.vcs.analysis.version.CommitVersionCounterProcessor;
 import gr.uom.se.vcs.analysis.version.FirstAndSecondChangeCounter;
-import gr.uom.se.vcs.analysis.version.TagVersionProvider;
 import gr.uom.se.vcs.analysis.version.VersionChangeProcessor;
 import gr.uom.se.vcs.analysis.version.VersionFileChangeCounter;
 import gr.uom.se.vcs.analysis.version.VersionLinesCounterProcessor;
-import gr.uom.se.vcs.analysis.version.VersionProvider;
+import gr.uom.se.vcs.analysis.version.provider.ConnectedTagVersionProvider;
+import gr.uom.se.vcs.analysis.version.provider.ConnectedVersionProvider;
 import gr.uom.se.vcs.exceptions.VCSRepositoryException;
 import gr.uom.se.vcs.jgit.VCSRepositoryImp;
 import gr.uom.se.vcs.walker.filter.VCSAndFilter;
@@ -112,7 +112,7 @@ public class MetricsUseCase {
          VCSRepositoryException {
       // Get the versionProvider from repo, and create a map between tag's
       // commit and tag name
-      TagVersionProvider versionProvider = new TagVersionProvider(repo);
+      ConnectedTagVersionProvider versionProvider = new ConnectedTagVersionProvider(repo);
 
       // Create a commit processor to count commits per version
       final CommitVersionCounterProcessor cCounterPerV = new CommitVersionCounterProcessor(
@@ -248,7 +248,7 @@ public class MetricsUseCase {
 
       // Use version provider to iterate over versions as it gives
       // a sorted view of versions
-      for (String ver : versionProvider.getVersionNames()) {
+      for (String ver : versionProvider.getNames()) {
 
          // Count the number of processed commits so far
          commitCounter += commitsCounter.get(ver);
@@ -346,7 +346,7 @@ public class MetricsUseCase {
          VCSRepositoryException {
       // Get the versionProvider from repo, and create a map between tag's
       // commit and tag name
-      TagVersionProvider versionProvider = new TagVersionProvider(repo);
+      ConnectedTagVersionProvider versionProvider = new ConnectedTagVersionProvider(repo);
 
       // Create a commit processor to count commits per version
       final CommitVersionCounterProcessor cCounterPerV = new CommitVersionCounterProcessor(
@@ -564,7 +564,7 @@ public class MetricsUseCase {
       printHead();
       // Use version provider to iterate over versions as it gives
       // a sorted view of versions
-      for (String ver : versionProvider.getVersionNames()) {
+      for (String ver : versionProvider.getNames()) {
 
          // Count the number of processed commits so far
          commitCounter += commitsCounter.get(ver);
@@ -606,7 +606,7 @@ public class MetricsUseCase {
          InterruptedException {
       // Get the versionProvider from repo, and create a map between tag's
       // commit and tag name
-      TagVersionProvider versionProvider = new TagVersionProvider(repo);
+      ConnectedTagVersionProvider versionProvider = new ConnectedTagVersionProvider(repo);
       versionProvider.collectVersionInfo();
 
       // Create a commit processor to count commits per version
@@ -766,7 +766,7 @@ public class MetricsUseCase {
       printHead();
       // Use version provider to iterate over versions as it gives
       // a sorted view of versions
-      for (String ver : versionProvider.getVersionNames()) {
+      for (String ver : versionProvider.getNames()) {
 
          // Count the number of processed commits so far
          commitCounter += commitsCounter.get(ver);
@@ -813,9 +813,9 @@ public class MetricsUseCase {
       }
    }
 
-   static int findLargestVersionName(VersionProvider provider) {
+   static int findLargestVersionName(ConnectedVersionProvider provider) {
       int maxLen = 0;
-      for (String name : provider.getVersionNames()) {
+      for (String name : provider.getNames()) {
          int len = name.length();
          if (len > maxLen) {
             maxLen = len;
@@ -913,14 +913,14 @@ public class MetricsUseCase {
    }
 
    static KeyValueProcessor<CommitEdits, String, AtomicInteger> getVersionFileChangeCounter(
-         VersionProvider provider, VCSFilter<VCSFileDiff<?>> changeFilter,
+         ConnectedVersionProvider provider, VCSFilter<VCSFileDiff<?>> changeFilter,
          VCSFilter<VCSFile> fileFilter, VCSChange.Type... types) {
       return new VersionFileChangeCounter(provider, null, changeFilter,
             fileFilter, types);
    }
 
    static KeyValueProcessor<CommitEdits, String, Integer> getVersionLinesCounter(
-         VersionProvider provider, boolean newLines,
+         ConnectedVersionProvider provider, boolean newLines,
          VCSFilter<VCSFileDiff<?>> changeFilter,
          VCSFilter<VCSFile> resourceFilter, VCSChange.Type... types) {
       return new VersionLinesCounterProcessor(provider, null, newLines,
@@ -928,14 +928,14 @@ public class MetricsUseCase {
    }
 
    static KeyValueProcessor<CommitEdits, String, AtomicInteger> getCommitFileChangeCounter(
-         VersionProvider provider, VCSFilter<VCSFileDiff<?>> changeFilter,
+         ConnectedVersionProvider provider, VCSFilter<VCSFileDiff<?>> changeFilter,
          VCSFilter<VCSFile> resourceFilter, VCSChange.Type... types) {
       return new CommitFileChangeCounter(provider, null, changeFilter,
             resourceFilter, types);
    }
 
    static KeyValueProcessor<CommitEdits, String, AtomicInteger> getFirstAndSecondChangeCounter(
-         VersionProvider provider, boolean changed, Set<VCSChange.Type> types1,
+         ConnectedVersionProvider provider, boolean changed, Set<VCSChange.Type> types1,
          VCSFilter<VCSFileDiff<?>> changeFilter1,
          VCSFilter<VCSFile> resourceFilter1, Set<VCSChange.Type> types2,
          VCSFilter<VCSFileDiff<?>> changeFilter2,

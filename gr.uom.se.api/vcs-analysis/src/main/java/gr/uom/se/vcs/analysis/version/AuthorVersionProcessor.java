@@ -5,6 +5,7 @@ package gr.uom.se.vcs.analysis.version;
 
 import gr.uom.se.util.pattern.processor.ResultProcessor;
 import gr.uom.se.vcs.VCSCommit;
+import gr.uom.se.vcs.analysis.version.provider.ConnectedVersionProvider;
 
 import java.util.Collections;
 import java.util.Map;
@@ -61,7 +62,7 @@ public class AuthorVersionProcessor extends
     * @param id
     *           the id of this processor
     */
-   public AuthorVersionProcessor(VersionProvider versionProvider, String id) {
+   public AuthorVersionProcessor(ConnectedVersionProvider versionProvider, String id) {
       this(versionProvider, id, true);
    }
 
@@ -82,7 +83,7 @@ public class AuthorVersionProcessor extends
     *           true if the authors field of the committer should be collected,
     *           and false if the committer field should be collected
     */
-   public AuthorVersionProcessor(VersionProvider versionProvider, String id,
+   public AuthorVersionProcessor(ConnectedVersionProvider versionProvider, String id,
          boolean authors) {
       super(versionProvider, (id == null ? "AUTH-" + generateDefaultId() : id));
       collectAuthors = authors;
@@ -119,7 +120,7 @@ public class AuthorVersionProcessor extends
             authors = new TreeMap<String, Set<String>>();
          }
          
-         for (String ver : versionProvider.getVersionNames()) {
+         for (String ver : versionProvider.getNames()) {
             Set<String> vAuthors = authors.get(ver);
             if (vAuthors == null) {
                vAuthors = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());

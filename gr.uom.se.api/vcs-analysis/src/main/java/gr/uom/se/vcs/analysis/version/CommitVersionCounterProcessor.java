@@ -5,6 +5,7 @@ package gr.uom.se.vcs.analysis.version;
 
 import gr.uom.se.util.pattern.processor.ResultProcessor;
 import gr.uom.se.vcs.VCSCommit;
+import gr.uom.se.vcs.analysis.version.provider.ConnectedVersionProvider;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -50,7 +51,7 @@ public class CommitVersionCounterProcessor extends CommitVersionProcessor
     * @param id
     *           the id of this processor. If null a default id will be used.
     */
-   public CommitVersionCounterProcessor(VersionProvider versionProvider,
+   public CommitVersionCounterProcessor(ConnectedVersionProvider versionProvider,
          String id) {
       super(versionProvider, (id == null ? "COMCOUNT-" + generateDefaultId()
             : id));
@@ -77,7 +78,7 @@ public class CommitVersionCounterProcessor extends CommitVersionProcessor
             counters = new HashMap<String, AtomicInteger>();
          }
          // The versions map is read only so no need to lock it at all
-         for (String ver : versionProvider.getVersionNames()) {
+         for (String ver : versionProvider.getNames()) {
             AtomicInteger counter = counters.get(ver);
             if (counter == null) {
                counter = new AtomicInteger();

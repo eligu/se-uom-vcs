@@ -7,6 +7,7 @@ import gr.uom.se.vcs.VCSFile;
 import gr.uom.se.vcs.VCSFileDiff;
 import gr.uom.se.vcs.analysis.util.CommitEdits;
 import gr.uom.se.vcs.analysis.util.KeyValueProcessor;
+import gr.uom.se.vcs.analysis.version.provider.ConnectedVersionProvider;
 import gr.uom.se.vcs.walker.filter.VCSFilter;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -14,17 +15,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class CommitFileChangeCounter extends
       KeyValueProcessor<CommitEdits, String, AtomicInteger> {
 
-   private final VersionProvider provider;
+   private final ConnectedVersionProvider provider;
    private final VCSChange.Type[] edits;
    private final VCSFilter<VCSFileDiff<?>> changeFilter;
    private final VCSFilter<VCSFile> resourceFilter;
 
-   public CommitFileChangeCounter(VersionProvider provider, String id,
+   public CommitFileChangeCounter(ConnectedVersionProvider provider, String id,
          VCSChange.Type... types) {
       this(provider, id, null, null, types);
    }
 
-   public CommitFileChangeCounter(VersionProvider provider, String id,
+   public CommitFileChangeCounter(ConnectedVersionProvider provider, String id,
          VCSFilter<VCSFileDiff<?>> changeFilter,
          VCSFilter<VCSFile> resourceFilter, VCSChange.Type... types) {
       super(id);
@@ -72,7 +73,7 @@ public class CommitFileChangeCounter extends
 
    @Override
    protected void startThis() {
-      for (String ver : provider.getVersionNames()) {
+      for (String ver : provider.getNames()) {
          AtomicInteger counter = values.get(ver);
          if (counter == null) {
             counter = new AtomicInteger(0);

@@ -3,6 +3,7 @@ package gr.uom.se.vcs.analysis.version;
 import gr.uom.se.util.pattern.processor.Processor;
 import gr.uom.se.util.validation.ArgsCheck;
 import gr.uom.se.vcs.VCSCommit;
+import gr.uom.se.vcs.analysis.version.provider.ConnectedVersionProvider;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -110,7 +111,7 @@ public abstract class CommitVersionProcessor implements Processor<VCSCommit> {
     * The version provider used by this processor.
     * <p>
     */
-   protected final VersionProvider versionProvider;
+   protected final ConnectedVersionProvider versionProvider;
 
    /**
     * {@inheritDoc}
@@ -221,7 +222,7 @@ public abstract class CommitVersionProcessor implements Processor<VCSCommit> {
     */
    protected final String id;
 
-   public CommitVersionProcessor(VersionProvider versionProvider, String id) {
+   public CommitVersionProcessor(ConnectedVersionProvider versionProvider, String id) {
 
       ArgsCheck.notNull("versionProvider", versionProvider);
 

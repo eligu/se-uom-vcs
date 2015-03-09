@@ -1,21 +1,46 @@
 /**
  * 
  */
-package gr.uom.se.vcs.analysis.version;
+package gr.uom.se.vcs.analysis.version.provider;
 
 import gr.uom.se.vcs.VCSCommit;
 
 /**
- * This is the strategy interface for checking where a given commit belongs to a
- * given version.
- * <p>
- * 
  * @author Elvis Ligu
  * @version 0.0.1
  * @since 0.0.1
  */
-public interface CommitCheckVersion {
+public interface ConnectedVersionProvider extends Iterable<VCSCommit>, ConnectedVersionNameProvider {
 
+   /**
+    * Find the version where the specified commit belongs to.
+    * <p>
+    * Finding the version where a commit belongs to is in some cases very
+    * resource angry. The reason for that is that in some repositories a commit
+    * may have a older time than the previous version. For example in Git
+    * repositories if we have commit c1 from a repository which was cloned from
+    * the central repository before version v0 happened, and this commit was
+    * merged into repository after the version v0 but before v1 than this commit
+    * is part of v1 as it was not merged into v0, however its commit time is
+    * older than v0.
+    * <p>
+    * For finding the version for a commit, probably the best strategy is to
+    * find the most close version in time to this commit, and check if the
+    * commit is reachable by this version, but not reachable by any other
+    * previous version. Keep in mind that this will require to keep in memory
+    * all commits that belong to previous versions, so if we find the required
+    * commit and it is not in a previous version that means it belongs to this version.
+    * <p>
+    * Note that if the given commit is equal to a commit of a version then it
+    * will return that version, in this case we consider that the version commit
+    * is it self part of the version.
+    * 
+    * @param commit
+    *           to find the version for
+    * @return the version this commit belongs to
+    */
+   public String findVersion(VCSCommit commit);
+   
    /**
     * Find out if the given commit is part of the given version.
     * <p>
