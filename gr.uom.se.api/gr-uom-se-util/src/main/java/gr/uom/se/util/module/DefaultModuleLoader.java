@@ -114,7 +114,7 @@ public class DefaultModuleLoader implements ModuleLoader {
 
    @Override
    public <T> T load(Class<T> clazz) {
-      return load(clazz, null);
+      return load(clazz, (Class<?>) null);
    }
 
    /**
@@ -123,13 +123,13 @@ public class DefaultModuleLoader implements ModuleLoader {
     * <p>
     */
    @Override
-   public <T> T load(Class<T> clazz, Class<?> loader) {
+   public <T> T load(Class<T> clazz, Class<?> provider) {
       // Make the necessary checks
       ArgsCheck.notNull("clazz", clazz);
 
       // Try to load with the specified loader
-      if (loader != null && !loader.equals(NULLVal.class)) {
-         return loadModule(clazz, loader);
+      if (provider != null && !provider.equals(NULLVal.class)) {
+         return loadModule(clazz, provider, null);
       }
 
       // Fallback to default strategy
@@ -139,16 +139,20 @@ public class DefaultModuleLoader implements ModuleLoader {
       // 1 - Case when there is no @Module annotation
       // or a loader specified
       // The defaults will be used to load the module
-      loader = ModuleUtils.getProviderClassFor(clazz, config,
-            ModuleUtils.resolveModuleConfig(clazz));
+      return load(clazz, (Map<String, Map<String, Object>>) null);
+   }
 
-      if (loader == null) {
-         return loadNoLoader(clazz);
+   public <T> T load(Class<T> clazz, Map<String, Map<String, Object>> properties) {
+      ArgsCheck.notNull("clazz", clazz);
+      Class<?> provider = ModuleUtils.getProviderClassFor(clazz, config,
+            properties);
+      if (provider == null) {
+         return loadNoLoader(clazz, properties);
       }
 
       // 2 - Case when a @Module annotation is present and a default loader
       // is specified
-      return loadModule(clazz, loader);
+      return loadModule(clazz, provider, properties);
    }
 
    /**
@@ -163,7 +167,8 @@ public class DefaultModuleLoader implements ModuleLoader {
     * @return a new instance of T
     */
    @SuppressWarnings("unchecked")
-   private <T> T loadModule(Class<T> moduleType, Class<?> provider) {
+   private <T> T loadModule(Class<T> moduleType, Class<?> provider,
+         Map<String, Map<String, Object>> properties) {
       // To load a module with @Module annotation
       // 1- There is a specified loader, so this loader should be used to
       // load the module
@@ -173,29 +178,34 @@ public class DefaultModuleLoader implements ModuleLoader {
 
       Method method = getInstanceLoaderMethod(moduleType, provider);
       Object providerInstance = null;
-      Map<String, Map<String, Object>> properties = null;
 
       if (method != null) {
-         properties = ModuleUtils.resolveModuleConfig(moduleType);
-         providerInstance = resolveModuleProvider(moduleType, provider, properties);
+         if (properties == null) {
+            properties = ModuleUtils.resolveModuleConfig(moduleType);
+         }
+         providerInstance = resolveModuleProvider(moduleType, provider,
+               properties);
       } else {
          method = getStaticLoaderMethod(moduleType, provider);
       }
-      
-      // If the provider doesn't have a provider method but is a concrete subtype of the
-      // given moduleType then we should load the provider and return the provider instead.
-      // That should be the case when an interface is registering as a provider its implementation
-      
+
+      // If the provider doesn't have a provider method but is a concrete
+      // subtype of the
+      // given moduleType then we should load the provider and return the
+      // provider instead.
+      // That should be the case when an interface is registering as a provider
+      // its implementation
+
       if (method == null) {
          // The case when the moduleType is a super type of the provider
          // so we can safely create an instance of the provider itself
-         if(moduleType.isAssignableFrom(provider)) {
+         if (moduleType.isAssignableFrom(provider)) {
             if (properties == null) {
                properties = ModuleUtils.resolveModuleConfig(provider);
             }
             return (T) resolveLoader(provider, properties).load(provider);
          }
-         
+
          throw new IllegalArgumentException(
                "the specified provider: "
                      + provider
@@ -336,7 +346,8 @@ public class DefaultModuleLoader implements ModuleLoader {
       return method;
    }
 
-   private <T> T loadNoLoader(Class<T> moduleType) {
+   private <T> T loadNoLoader(Class<T> moduleType,
+         Map<String, Map<String, Object>> properties) {
       // To load a module without a @Module annotations
       // 1) There is a constructor with an annotation @ProvideModule
       // 2) There is no constructor with such annotation but there is
@@ -362,7 +373,8 @@ public class DefaultModuleLoader implements ModuleLoader {
 
       if (constructor == null) {
          throw new IllegalArgumentException(
-               "no annotated (@ProvideModule) or default constructor found for type " + moduleType);
+               "no annotated (@ProvideModule) or default constructor found for type "
+                     + moduleType);
       }
 
       // Execute the default constructor if this is the default
@@ -377,9 +389,9 @@ public class DefaultModuleLoader implements ModuleLoader {
 
       // Try to execute the constructor with annotation
       // @ProvideModule
-      Map<String, Map<String, Object>> properties = ModuleUtils
-            .resolveModuleConfig(moduleType);
-
+      if (properties == null) {
+         properties = ModuleUtils.resolveModuleConfig(moduleType);
+      }
       return executor.execute(moduleType, constructor, properties);
    }
 
