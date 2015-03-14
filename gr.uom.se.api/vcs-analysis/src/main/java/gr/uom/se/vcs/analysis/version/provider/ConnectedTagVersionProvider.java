@@ -381,11 +381,10 @@ public class ConnectedTagVersionProvider implements ConnectedVersionProvider {
    /**
     * This visitor will be used to collect the commits for each version.
     * <p>
-    * The algorithm used is: using sorted versions (the field versionCommits) it
-    * assumes that is going to perform a walk for each version. For each version
-    * walking, each commit that is visited will be check if he is in a previous
-    * version, if not than it will count this commit as belonging to the current
-    * version.
+    * The algorithm used is: using sorted versions it assumes that is going to
+    * perform a walk for each version. For each version walking, each commit
+    * that is visited will be check if he is in a previous version, if not than
+    * it will count this commit as belonging to the current version.
     */
    private class CommitCollector implements CommitVisitor {
 

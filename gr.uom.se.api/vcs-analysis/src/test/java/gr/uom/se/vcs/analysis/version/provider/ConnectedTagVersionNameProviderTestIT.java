@@ -24,11 +24,11 @@ import org.junit.Test;
 /**
  * @author Elvis Ligu
  */
-public class ConnectedTagVersionNameProviderTest {
+public class ConnectedTagVersionNameProviderTestIT {
 
    private static final Collection<String> URLS = new ArrayList<String>();
    private static final Logger logger = Logger
-         .getLogger(ConnectedTagVersionNameProviderTest.class.getName());
+         .getLogger(ConnectedTagVersionNameProviderTestIT.class.getName());
    static {
       URLS.add("https://github.com/jboss-javassist/javassist.git");
       URLS.add("https://github.com/pubnub/java.git");
