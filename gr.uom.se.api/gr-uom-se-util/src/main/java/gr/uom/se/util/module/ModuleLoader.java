@@ -1,5 +1,7 @@
 package gr.uom.se.util.module;
 
+import java.util.Map;
+
 /**
  * A general interface to define a contract between a class instance (module)
  * and a loader.
@@ -36,5 +38,18 @@ public interface ModuleLoader {
     *           the loader to load the instance
     * @return an instance of type {@code clazz}
     */
-   public <T> T load(Class<T> clazz, Class<?> loader);
+   <T> T load(Class<T> clazz, Class<?> loader);
+
+   /**
+    * Given a type and a properties map, get an instance of it.
+    * <p>
+    * 
+    * @param clazz
+    *           the type of required instance, must not be null
+    * @param properties
+    *           a map of properties to be used to load the instance, may be
+    *           null.
+    * @return an instance of type {@code clazz}
+    */
+   <T> T load(Class<T> clazz, Map<String, Map<String, Object>> properties);
 }

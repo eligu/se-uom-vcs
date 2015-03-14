@@ -112,15 +112,16 @@ public class DefaultModuleLoader implements ModuleLoader {
       this.parameterProvider = provider;
    }
 
+   /**
+    * {@inheritDoc}
+    */
    @Override
    public <T> T load(Class<T> clazz) {
-      return load(clazz, (Class<?>) null);
+      return load(clazz, (Map<String, Map<String, Object>>) null);
    }
 
    /**
-    * Given bean type and a loader class create an instance of bean using
-    * loader.
-    * <p>
+    * {@inheritDoc}
     */
    @Override
    public <T> T load(Class<T> clazz, Class<?> provider) {
@@ -142,6 +143,7 @@ public class DefaultModuleLoader implements ModuleLoader {
       return load(clazz, (Map<String, Map<String, Object>>) null);
    }
 
+   @Override
    public <T> T load(Class<T> clazz, Map<String, Map<String, Object>> properties) {
       ArgsCheck.notNull("clazz", clazz);
       Class<?> provider = ModuleUtils.getProviderClassFor(clazz, config,
@@ -195,7 +197,6 @@ public class DefaultModuleLoader implements ModuleLoader {
       // provider instead.
       // That should be the case when an interface is registering as a provider
       // its implementation
-
       if (method == null) {
          // The case when the moduleType is a super type of the provider
          // so we can safely create an instance of the provider itself
