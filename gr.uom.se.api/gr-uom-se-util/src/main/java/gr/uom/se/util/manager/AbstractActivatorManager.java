@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Logger;
 
 /**
  * @author Elvis Ligu
@@ -23,6 +24,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public abstract class AbstractActivatorManager implements ActivatorManager {
 
+   /**
+    * The logger.
+    */
+   private static final Logger logger = Logger.getLogger(ActivatorManager.class.getName()); 
+   
    /**
     * Contains all activator types that has been previously activated.
     * <p>
@@ -125,6 +131,7 @@ public abstract class AbstractActivatorManager implements ActivatorManager {
       }
       deps.remove(activator);
       actives.add(activator);
+      logger.info("Activated: " + activator.getName());
    }
 
    private boolean isActive(Class<?> activator) {

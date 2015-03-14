@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Logger;
 
 /**
  * A default implementation for the main manager.
@@ -35,6 +36,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public abstract class AbstractMainManager implements MainManager {
 
+   /**
+    * Main manager's logger.
+    */
+   protected static final Logger logger = Logger.getLogger(MainManager.class.getName());
+   
    /**
     * A lock for synchronizing writes to managers and for allowing reads
     * where there are no writes.
@@ -335,6 +341,7 @@ public abstract class AbstractMainManager implements MainManager {
          executor.execute(managerInstance, managerInstance.getClass(),
                initMethod,
                ModuleUtils.resolveModuleConfig(managerInstance.getClass()));
+         logger.info("Starting manager: " + managerInstance);
       }
       managerKey.started = true;
       return (T) managerKey.manager;
@@ -385,6 +392,7 @@ public abstract class AbstractMainManager implements MainManager {
          executor.execute(managerInstance, managerInstance.getClass(),
                stopMethod,
                ModuleUtils.resolveModuleConfig(managerInstance.getClass()));
+         logger.info("Stopping manager: " + managerInstance);
       }
       managerKey.started = false;
       return (T) managerKey.manager;
@@ -467,11 +475,7 @@ public abstract class AbstractMainManager implements MainManager {
          managersLock.readLock().unlock();
       }
    }
-   
-   public void activate(Class<?> activator) {
-      
-   }
-
+  
    /**
     * Get a manager key who manager instance is a subtype of the given type or
     * is the same.

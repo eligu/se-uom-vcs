@@ -12,12 +12,24 @@ import gr.uom.se.util.validation.ArgsCheck;
 import java.util.Map;
 
 /**
+ * The default activation manager based on abstract implementation provided by
+ * {@link AbstractActivatorManager}.
+ * <p>
+ * When this manager is initialized, it will try to activate all activators that
+ * are registered in managers configuration domain. In order to register an
+ * activator at managers domain, one should create a property starting with
+ * prefix {@linkplain ManagerConstants#ACTIVATOR_PREFIX activator prefix}, and
+ * following the fully qualified class name.
+ * 
  * @author Elvis Ligu
  * @version 0.0.1
  * @since 0.0.1
  */
 public class DefaultActivatorManager extends AbstractActivatorManager {
 
+   /**
+    * The main manager responsible for this activator manager.
+    */
    private MainManager manager;
 
    @ProvideModule

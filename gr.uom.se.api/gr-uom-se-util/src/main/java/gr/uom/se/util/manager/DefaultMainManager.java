@@ -116,9 +116,7 @@ public class DefaultMainManager extends AbstractMainManager {
          // some other may have loaded it, otherwise load it
          config.loadAndMergeDomain(domain);
       } catch (Exception e) {
-         // TODO this line must be checked for consistency
-         // Probably a logger would be a better idea
-         System.err.println("Default domain " + domain
+         logger.warning("Default domain " + domain
                + " could not be loaded. Reason: " + e.getMessage());
       }
    }
