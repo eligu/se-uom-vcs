@@ -452,11 +452,39 @@ public class ArgsCheck {
    public static void isSubtype(final String name, final Class<?> clazz,
          final Object arg) {
       notNull(name, arg);
-      if (!clazz.isAssignableFrom(arg.getClass())) {
+      isSubtype(name, clazz, arg.getClass());
+   }
+   
+   /**
+    * Check if the given type is the same as or a subtype of clazz
+    * argument.
+    * <p>
+    * 
+    * The message format used here is
+    * 
+    * <pre>
+    * &quot;{0} is not a {1} instance&quot;
+    * </pre>
+    * 
+    * This will check for null too by calling {@link #notNull(String, Object)}.
+    * <p>
+    * 
+    * @param name
+    *           argument name
+    * @param clazz
+    *           class to check the argument
+    * @param type
+    *           to check
+    */
+   public static void isSubtype(final String name, final Class<?> clazz, 
+         final Class<?> type) {
+      notNull(name, type);
+      if (!clazz.isAssignableFrom(type)) {
          throw new IllegalArgumentException(MessageFormat.format(
                "{0} is not a {1} instance", name, clazz.getName()));
       }
    }
+   
 
    /**
     * Check if the given key is a key in the given map.

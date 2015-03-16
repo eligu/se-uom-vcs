@@ -11,6 +11,9 @@ import gr.uom.se.util.module.ModuleLoader;
 import gr.uom.se.util.module.ModuleManager;
 import gr.uom.se.util.module.PropertyInjector;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -148,6 +151,57 @@ public class DefaultManagerTest {
       assertEquals("elvis", cc.getUsername());
       assertEquals("123456", cc.getPassword());
       assertEquals("org.example.jdbc.JDriver", cc.getJdbcDriver());
+   }
+
+   @Test
+   public void testManagerAndBeanWithProperties() {
+      // Will inject these properties during the loading process to
+      // override the config properties
+      Map<String, Map<String, Object>> properties = new HashMap<>();
+
+      // Using configurations we will be able to work only with
+      // interfaces avoiding the need for a creating instances
+      // by hand. We will also be able to register managers
+      // automatically. All the configurations are created
+      // on disk by setting up the config files for manager
+      // and for module dependencies
+      ConfigManager config = mainManager.getManager(ConfigManager.class);
+      assertNotNull(config);
+
+      // We should read the db config from here
+      // However the properties will not be the same as those from db config
+      // we just load this to ensure that it will not be read by parameter
+      // provider
+      config.loadDomain("dbconfig");
+      
+      // Set up the properties to be injected
+      Map<String, Object> dbconfig = new HashMap<>();
+      String port = "1045";
+      String username = "user";
+      String password = "123456";
+      String driver = "org.example.jdbc.Driver";
+      dbconfig.put("port", port);
+      dbconfig.put("username", username);
+      dbconfig.put("password", password);
+      dbconfig.put("jdbcDriver", driver);
+      properties.put("dbconfig", dbconfig);
+      
+      ModuleManager modules = mainManager.getManager(ModuleManager.class);
+      assertNotNull(modules);
+      ModuleLoader loader =  modules.getLoader(DBManager.class);
+      assertNotNull(loader);
+      // Here we should expect that db manager will load with properties
+      // that is the loaded dbconfig from file will be ignored
+      DBManager db = loader.load(DBManager.class, properties);
+      assertNotNull(db);
+      
+      ConnectionConfig cconfig = db.getConnection().getConfig();
+      assertNotNull(cconfig);
+      System.out.println("Port" + cconfig.getPort() + 
+            ", Username " + cconfig.getUsername() + 
+            ", Password " + cconfig.getPassword() +
+            ", Driver " + cconfig.getJdbcDriver());
+      
    }
 
    @Test

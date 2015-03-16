@@ -24,7 +24,7 @@ public class ModuleConstants {
     * <p>
     */
    public static final String DEFAULT_MODULE_CONFIG_DOMAIN_PROPERTY = "gr.uom.se.util.module.defaultDomain";
-   
+
    /**
     * The name of the property where the module manager should be saved.
     * <p>
@@ -219,9 +219,8 @@ public class ModuleConstants {
     * Get the name of the property where the system can find the module loader
     * class of the given class.
     * <p>
-    * By default the loader clas is stored at a property named same as the
-    * fully qualified name of the class it injects appended
-    * .moduleLoader.class.
+    * By default the loader clas is stored at a property named same as the fully
+    * qualified name of the class it injects appended .moduleLoader.class.
     * 
     * @param clazz
     * @return
@@ -241,8 +240,8 @@ public class ModuleConstants {
    }
 
    /**
-    * Given a property name return a new property name appended {@code .class} at
-    * the end of the name.
+    * Given a property name return a new property name appended {@code .class}
+    * at the end of the name.
     * <p>
     * 
     * @param name
@@ -251,5 +250,20 @@ public class ModuleConstants {
     */
    public static String getPropertyNameForConfigClass(String name) {
       return name + ".class";
+   }
+
+   /**
+    * Given a type and a property name will return a property name that will a
+    * prefix equals to the type's fully qualified name and a prefix equals to
+    * the name provided.
+    * 
+    * @param type
+    *           to get the config property name for
+    * @param name
+    *           the name of the property
+    * @return a conbfig property name for the given type and given name
+    */
+   public static String getPropertyNameForConfig(Class<?> type, String name) {
+      return type.getName() + "." + name;
    }
 }
