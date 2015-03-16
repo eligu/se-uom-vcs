@@ -580,7 +580,7 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
                   classType, defaultType, null, properties);
          }
       }
-      if(pClass == null) {
+      if (pClass == null) {
          pClass = defaultType;
       }
       return pClass;
@@ -1124,29 +1124,100 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     *           to look up the mapper
     * @param properties
     *           to lookup the mapper
-    * @return a mapper for the given module type, that should convet from
+    * @return a mapper for the given module type, that should convert from
     *         {@code from} to {@code to}
     */
    @Override
    public Mapper getMapperOfType(Class<?> type, Class<?> from, Class<?> to,
          ConfigManager config, Map<String, Map<String, Object>> properties) {
 
+      // Try to resolve a mapper object first from both sources
       String property = ModuleConstants.getMapperNameFor(from, to);
-      String domain = ModuleConstants.getDefaultConfigFor(type);
+      Mapper mapper = getConfigPropertyObjectWithDefault(property, type,
+            Mapper.class, config, properties);
 
-      Mapper mapper = getProperty(domain, property, Mapper.class, config,
-            properties);
-
+      // If mapper object was not found then try to resolve a
+      // mapper class, and load the mapper from that class.
       if (mapper == null) {
-         property = ModuleConstants.DEFAULT_MAPPER_FACTORY_PROPERTY;
-         domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
-         MapperFactory factory = getProperty(domain, property,
-               MapperFactory.class, config, properties);
-         if (factory == null) {
-            factory = MapperFactory.getInstance();
+         Class<? extends Mapper> mapperClass = getMapperClass(type, from, to,
+               config, properties);
+         if (mapperClass != null) {
+            mapper = resolveLoader(mapperClass, config, properties).load(
+                  mapperClass);
          }
+      }
+
+      // Mapper object or mapper class was not resolved now try
+      // to resolve a factory, so we can get the mapper from there
+      if (mapper == null) {
+
+         MapperFactory factory = getMapperFactory(type, from, to, config,
+               properties);
          mapper = factory.getMapper(from, to);
       }
       return mapper;
+   }
+
+   /**
+    * Return a mapper factory for the given type, or the default one.
+    * <p>
+    * It will look in all three default places (under two domains). If a factory
+    * object is specified it will return it, otherwise it will lookup a factory
+    * class, if it is found it will try to load it, if not it will return the
+    * default factory.
+    * 
+    * @param type
+    * @param from
+    * @param to
+    * @param config
+    * @param properties
+    * @return
+    */
+   private MapperFactory getMapperFactory(Class<?> type, Class<?> from,
+         Class<?> to, ConfigManager config,
+         Map<String, Map<String, Object>> properties) {
+
+      // Try to resolve a mapper object first from both sources
+      String property = ModuleConstants.DEFAULT_MAPPER_FACTORY_PROPERTY;
+      MapperFactory mapper = getConfigPropertyObjectWithDefault(property, type,
+            MapperFactory.class, config, properties);
+
+      // If mapper object was not found then try to resolve a
+      // mapper class, and load the mapper from that class.
+      if (mapper == null) {
+         Class<? extends MapperFactory> mapperClass = getConfigPropertyClassWithDefault(
+               property, type, MapperFactory.class, null, config, properties);
+         if (mapperClass != null) {
+            mapper = resolveLoader(mapperClass, config, properties).load(
+                  mapperClass);
+         } else {
+            mapper = MapperFactory.getInstance();
+         }
+      }
+      return mapper;
+   }
+
+   /**
+    * Return a mapper class for the given type.
+    * <p>
+    * It will look in all three default places (under two domains).
+    * 
+    * @param type
+    * @param from
+    * @param to
+    * @param config
+    * @param properties
+    * @return
+    */
+   private Class<? extends Mapper> getMapperClass(Class<?> type, Class<?> from,
+         Class<?> to, ConfigManager config,
+         Map<String, Map<String, Object>> properties) {
+
+      String name = ModuleConstants.getMapperNameFor(from, to);
+      Class<? extends Mapper> mapperClass = null;
+
+      mapperClass = getConfigPropertyClassWithDefault(name, type, Mapper.class,
+            null, config, properties);
+      return mapperClass;
    }
 }
