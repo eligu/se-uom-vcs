@@ -71,19 +71,26 @@ public interface ModulePropertyLocator {
     * For each given {@code type} there is a default config domain which can be
     * obtained by calling {@link ModuleConstants#getDefaultConfigFor(Class)}.
     * Different configurations that can affect the operation of modules are
-    * stored within this default type config. This method will look under this
-    * domain for an instance of the given type {@code objectType}. If an
-    * instance was not found there, it will look under the default domain
-    * {@linkplain ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN default modules
-    * domain}. If no instance was found a null will be returned.
+    * stored within this default type config. This domain is called the module
+    * domain. There is also an other domain which is common for all modules, and
+    * that is the default modules domain (
+    * {@link ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN}). When a module needs
+    * to store a property in its domain he can do so by specifying the property
+    * name, as long as there is no conflict with other properties (i.e.
+    * {@code moduleProvider} is the name of module provider property). However
+    * when a module stores a property in defaul modules domain, the property
+    * should be prefixed with a proper prefix unique for the module. The
+    * prefixed property can be obtained calling
+    * {@link ModuleConstants#getPropertyNameForConfig(Class, String)}.
+    * <p>
+    * This method will first look for the object (be it a java object or a
+    * primitive type) in module domain. If the object was not found it will look
+    * under the default modules domain. And if not found it will return null.
     * <p>
     * Note: This is the same as calling
     * {@linkplain #getProperty(String, String, Class, ConfigManager, Map) get
-    * property} method, the only difference is that, it will look for the
-    * property in two different domains, the first domain will be the type
-    * domain and the second domain will be the default modules config domain.
-    * That is, if the client wants to look only one of the sources he should
-    * specify only that source (config manager or properties).
+    * property} method, that means that it will look first under configuration
+    * manager and then under properties map.
     * 
     * @param name
     *           the name of the property where to find instance
@@ -92,9 +99,10 @@ public interface ModulePropertyLocator {
     * @param objectType
     *           the type of the instance we are looking
     * @param config
-    *           to look for the instance
+    *           to look first for the instance
     * @param properties
-    *           to look for the instance
+    *           if a property can not be found in the config manager it will
+    *           look under this map
     * @return an instance of type {@code objectType} or null if the instance was
     *         not provided or sources are null.
     */

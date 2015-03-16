@@ -11,9 +11,31 @@ import gr.uom.se.util.validation.ArgsCheck;
 import java.util.Map;
 
 /**
+ * Default implementation of {@link ModulePropertyLocator}.
+ * <p>
+ * This implementation is fully compatible with locator's interface and the
+ * requirements it has for its methods. Although, when using one one of these
+ * method implementations, keen in mind that it will first look up properties in
+ * given configuration manager, and then in properties map. The reason is that
+ * it assumes the properties map is a result of default configuration collected
+ * from a module's annotation {@link Module}. If the client wants to have a
+ * different look up strategy he must provide the config manager and properties
+ * map accordingly. The two parameters (usually required) from methods of this
+ * implementation are called sources, and they are allowed to be null. That is
+ * if for example the client wants to look first under properties map, and then
+ * under configuration manager, he can call the same method twice, providing at
+ * first call the properties map, and then the configuration manager.
+ * 
  * @author Elvis Ligu
  */
 public class DefaultModulePropertyLocator implements ModulePropertyLocator {
+
+   /**
+    * Default constructor which may be used by module loader to create instances
+    * of this locator.
+    */
+   public DefaultModulePropertyLocator() {
+   }
 
    /**
     * Will try to resolve first a property from the configuration manager, if
@@ -74,21 +96,26 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     * For each given {@code type} there is a default config domain which can be
     * obtained by calling {@link ModuleConstants#getDefaultConfigFor(Class)}.
     * Different configurations that can affect the operation of modules are
-    * stored within this default type config. This method will look under this
-    * domain for an instance of the given type {@code objectType}. If an
-    * instance was not found there, it will look under the default domain
-    * {@linkplain ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN default modules
-    * domain}, however the property name will be
-    * {@link ModuleConstants#getPropertyNameForConfig(Class, String)}. If no
-    * instance was found a null will be returned.
+    * stored within this default type config. This domain is called the module
+    * domain. There is also an other domain which is common for all modules, and
+    * that is the default modules domain (
+    * {@link ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN}). When a module needs
+    * to store a property in its domain he can do so by specifying the property
+    * name, as long as there is no conflict with other properties (i.e.
+    * {@code moduleProvider} is the name of module provider property). However
+    * when a module stores a property in defaul modules domain, the property
+    * should be prefixed with a proper prefix unique for the module. The
+    * prefixed property can be obtained calling
+    * {@link ModuleConstants#getPropertyNameForConfig(Class, String)}.
+    * <p>
+    * This method will first look for the object (be it a java object or a
+    * primitive type) in module domain. If the object was not found it will look
+    * under the default modules domain. And if not found it will return null.
     * <p>
     * Note: This is the same as calling
     * {@linkplain #getProperty(String, String, Class, ConfigManager, Map) get
-    * property} method, the only difference is that, it will look for the
-    * property in two different domains, the first domain will be the calls
-    * domain and the second domain will be the default modules config domain.
-    * That is, if the client wants to look only one of the sources he should
-    * specify only that source (config manager or properties).
+    * property} method, that means that it will look first under configuration
+    * manager and then under properties map.
     * 
     * @param name
     *           the name of the property where to find instance
@@ -109,19 +136,48 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
          Class<T> objectType, ConfigManager config,
          Map<String, Map<String, Object>> properties) {
 
-      // Check first under the default domain of the given class
+      // We should repeat the algorithm two times,
+      // one for config and one for properties
+
+      // ////////////////////////////////////////////////////////////////////
+      // Check first the configuration manager
       String typeDomain = ModuleConstants.getDefaultConfigFor(type);
+      String typeName = null;
+      String defaultDomain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+      String defaultName = name;
+      T configObject = null;
+      if (config != null) {
+         // Check first under the default domain of the given class
+         configObject = getProperty(typeDomain, defaultName, objectType,
+               config, null);
 
-      T configObject = getProperty(typeDomain, name, objectType, config,
-            properties);
+         // If a property is not available then check under the default
+         // module's domain if it is available there
+         if (configObject == null) {
+            typeName = ModuleConstants.getPropertyNameForConfig(type, name);
+            configObject = getProperty(defaultDomain, typeName, objectType,
+                  config, null);
+         }
+      }
 
-      // If a property is not available then check under the default
-      // module's domain if it is available there
-      if (configObject == null) {
-         typeDomain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
-         name = ModuleConstants.getPropertyNameForConfig(type, name);
-         configObject = getProperty(typeDomain, name, objectType, config,
+      // //////////////////////////////////////////////////////////////////////
+      // Check the properties map
+      if (configObject == null && properties != null) {
+         // Check first under the default domain of the given class
+         configObject = getProperty(typeDomain, defaultName, objectType, null,
                properties);
+
+         // If a property is not available then check under the default
+         // module's domain if it is available there
+         if (configObject == null) {
+            // Here the typeName property has not received a value
+            // so set a value
+            if (typeName == null) {
+               typeName = ModuleConstants.getPropertyNameForConfig(type, name);
+            }
+            configObject = getProperty(defaultDomain, typeName, objectType,
+                  null, properties);
+         }
       }
       return configObject;
    }
@@ -169,13 +225,33 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
          Class<T> objectType, ConfigManager config,
          Map<String, Map<String, Object>> properties) {
 
-      T configObject = getConfigPropertyObject(name, type, objectType, config,
-            properties);
+      T configObject = null;
+      // We should repeat the algorithm two times,
+      // one for config and one for properties
 
-      if (configObject == null) {
-         String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
-         configObject = getProperty(domain, name, objectType, config,
+      // ////////////////////////////////////////////////////////////////////
+      // Check first the configuration manager
+      if (config != null) {
+         configObject = getConfigPropertyObject(name, type, objectType, config,
+               null);
+
+         if (configObject == null) {
+            String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+            configObject = getProperty(domain, name, objectType, config, null);
+         }
+      }
+
+      // //////////////////////////////////////////////////////////////////////
+      // Check the properties map
+      if (configObject == null && properties != null) {
+         configObject = getConfigPropertyObject(name, type, objectType, null,
                properties);
+
+         if (configObject == null) {
+            String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+            configObject = getProperty(domain, name, objectType, null,
+                  properties);
+         }
       }
       return configObject;
    }
@@ -218,55 +294,111 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
    public <T> Class<? extends T> getConfigPropertyClassForDomain(String domain,
          String name, Class<T> classType, ConfigManager config,
          Map<String, Map<String, Object>> properties) {
-      if (config == null && properties == null) {
-         return null;
-      }
 
-      // Try to find a type within config
-      T tObject = getProperty(domain, name, classType, config, properties);
+      // We should repeat the algorithm two times,
+      // one for config and one for properties
 
-      Class<? extends T> tClass = null;
-      // There is not a type for the given domain
-      if (tObject == null) {
-         // We must check for a classType
-         name = ModuleConstants.getPropertyNameForConfigClass(name);
-         Object propertyObject = getProperty(domain, name, Object.class,
-               config, properties);
+      // ////////////////////////////////////////////////////////////////////
+      // Check first the configuration manager
+      Class<?> clazz = null;
+      String classNameProperty = null;
 
-         // We found the class object (be it a String name or a class)
-         if (propertyObject != null) {
-            // We expect the object to be a string (case when the name of the
-            // class
-            // is provided as a string) or a class type.
-            Class<?> clazz = null;
-            // In case the object we found is a string
-            // we assume this string is the class name
-            if (String.class.isAssignableFrom(propertyObject.getClass())) {
-               String className = (String) propertyObject;
-               // now load the class and check if it is the same as the given
-               // type
-               try {
-                  clazz = Class.forName(className);
-                  ArgsCheck.isSubtype(
-                        "property {" + domain + ":" + name + "} ", classType,
-                        clazz);
-                  tClass = (Class<? extends T>) clazz;
+      if (config != null) {
+         // Try to find a type within config
+         T tObject = getProperty(domain, name, classType, config, null);
 
-               } catch (ClassNotFoundException e) {
-                  throw new RuntimeException(e);
+         if (tObject != null) {
+            clazz = tObject.getClass();
+         } else {
+            // There is not a type for the given domain
+            // We must check for a classType
+            classNameProperty = ModuleConstants
+                  .getPropertyNameForConfigClass(name);
+            Object propertyObject = getProperty(domain, classNameProperty,
+                  Object.class, config, null);
+
+            // We found the class object (be it a String name or a class)
+            if (propertyObject != null) {
+               // We expect the object to be a string (case when the name of the
+               // class
+               // is provided as a string) or a class type.
+               // In case the object we found is a string
+               // we assume this string is the class name
+               if (String.class.isAssignableFrom(propertyObject.getClass())) {
+                  String className = (String) propertyObject;
+                  // now load the class and check if it is the same as the given
+                  // type
+                  try {
+                     clazz = Class.forName(className);
+                  } catch (ClassNotFoundException e) {
+                     throw new RuntimeException(e);
+                  }
+                  // Case when the property object is a class
+               } else if (propertyObject instanceof Class) {
+                  clazz = (Class<?>) propertyObject;
+               } else {
+                  throw new IllegalArgumentException("property {" + domain
+                        + ":" + name
+                        + "} must be a class or a class name (String)");
                }
-               // Case when the property object is a class
-            } else if (propertyObject instanceof Class) {
-               clazz = (Class<?>) propertyObject;
-               ArgsCheck.isSubtype("property {" + domain + ":" + name + "} ",
-                     classType, clazz);
-               tClass = (Class<? extends T>) clazz;
             }
          }
-      } else {
-         tClass = (Class<? extends T>) tObject.getClass();
       }
-      return tClass;
+      // //////////////////////////////////////////////////////////////////////
+      // Check the properties map
+      if (clazz == null && properties != null) {
+         // Try to find a type within config
+         T tObject = getProperty(domain, name, classType, null, properties);
+
+         if (tObject != null) {
+            clazz = tObject.getClass();
+         } else {
+            // There is not a type for the given domain
+            // We must check for a classType
+            if (classNameProperty == null) {
+               // The class name here will ensure it is not null
+               classNameProperty = ModuleConstants
+                     .getPropertyNameForConfigClass(name);
+            }
+            Object propertyObject = getProperty(domain, classNameProperty,
+                  Object.class, null, properties);
+
+            // We found the class object (be it a String name or a class)
+            if (propertyObject != null) {
+               // We expect the object to be a string (case when the name of the
+               // class
+               // is provided as a string) or a class type.
+               // In case the object we found is a string
+               // we assume this string is the class name
+               if (String.class.isAssignableFrom(propertyObject.getClass())) {
+                  String className = (String) propertyObject;
+                  // now load the class and check if it is the same as the given
+                  // type
+                  try {
+                     clazz = Class.forName(className);
+                  } catch (ClassNotFoundException e) {
+                     throw new RuntimeException(e);
+                  }
+                  // Case when the property object is a class
+               } else if (propertyObject instanceof Class) {
+                  clazz = (Class<?>) propertyObject;
+               } else {
+                  throw new IllegalArgumentException("property {" + domain
+                        + ":" + name
+                        + "} must be a class or a class name (String)");
+               }
+            }
+         }
+      }
+
+      // Make a check to ensure the clazz we found is
+      // the same type as the required one
+      if (clazz != null) {
+         ArgsCheck.isSubtype("property {" + domain + ":" + name + "} ",
+               classType, clazz);
+      }
+
+      return (Class<? extends T>) clazz;
    }
 
    /**
@@ -350,17 +482,44 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
 
       // Check first under the default domain of the given class
       String typeDomain = ModuleConstants.getDefaultConfigFor(type);
+      String typeName = null;
+      String defaultDomain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+      String defaultName = name;
+      Class<? extends T> configClass = null;
 
-      Class<? extends T> configClass = getConfigPropertyClassForDomain(
-            typeDomain, name, classType, config, properties);
+      // We should repeat the algorithm two times,
+      // one for config and one for properties
 
-      // If a property is not available then check under the default
-      // module's domain if it is available there
-      if (configClass == null) {
-         typeDomain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
-         name = ModuleConstants.getPropertyNameForConfig(type, name);
-         configClass = getConfigPropertyClassForDomain(typeDomain, name,
-               classType, config, properties);
+      // ////////////////////////////////////////////////////////////////////
+      // Check first the configuration manager
+      if (config != null) {
+         configClass = getConfigPropertyClassForDomain(typeDomain, defaultName,
+               classType, config, null);
+
+         // If a property is not available then check under the default
+         // module's domain if it is available there
+         if (configClass == null) {
+            typeName = ModuleConstants.getPropertyNameForConfig(type, name);
+            configClass = getConfigPropertyClassForDomain(defaultDomain,
+                  typeName, classType, config, null);
+         }
+      }
+
+      // //////////////////////////////////////////////////////////////////////
+      // Check the properties map
+      if (configClass == null && properties != null) {
+         configClass = getConfigPropertyClassForDomain(typeDomain, defaultName,
+               classType, null, properties);
+
+         // If a property is not available then check under the default
+         // module's domain if it is available there
+         if (configClass == null) {
+            if (typeName == null) {
+               typeName = ModuleConstants.getPropertyNameForConfig(type, name);
+            }
+            configClass = getConfigPropertyClassForDomain(defaultDomain,
+                  typeName, classType, null, properties);
+         }
       }
       return configClass;
    }
@@ -391,14 +550,38 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
          Class<?> type, Class<T> classType, Class<? extends T> defaultType,
          ConfigManager config, Map<String, Map<String, Object>> properties) {
 
-      Class<? extends T> pClass = getConfigPropertyClass(name, type, classType,
-            config, properties);
+      Class<? extends T> pClass = null;
 
-      if (pClass == null) {
-         String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
-         // Check for the property under the default domain
-         pClass = getConfigPropertyClassWithDefaultForDomain(domain, name,
-               classType, defaultType, config, properties);
+      // We should repeat the algorithm two times,
+      // one for config and one for properties
+
+      // ////////////////////////////////////////////////////////////////////
+      // Check first the configuration manager
+      if (config != null) {
+         pClass = getConfigPropertyClass(name, type, classType, config, null);
+
+         if (pClass == null) {
+            String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+            // Check for the property under the default domain
+            pClass = getConfigPropertyClassWithDefaultForDomain(domain, name,
+                  classType, null, config, null);
+         }
+      }
+      // //////////////////////////////////////////////////////////////////////
+      // Check the properties map
+      if (pClass == null && properties != null) {
+         pClass = getConfigPropertyClass(name, type, classType, null,
+               properties);
+
+         if (pClass == null) {
+            String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+            // Check for the property under the default domain
+            pClass = getConfigPropertyClassWithDefaultForDomain(domain, name,
+                  classType, defaultType, null, properties);
+         }
+      }
+      if(pClass == null) {
+         pClass = defaultType;
       }
       return pClass;
    }

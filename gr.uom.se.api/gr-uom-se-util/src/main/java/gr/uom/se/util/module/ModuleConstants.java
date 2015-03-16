@@ -100,7 +100,7 @@ public class ModuleConstants {
     * A prefix of the mapper property for a given class.
     * <p>
     */
-   public static final String MAPPER_PROPERTY = ".mapper.";
+   public static final String MAPPER_PROPERTY = "-mapper-";
 
    /**
     * Get the default config domain for the given class.

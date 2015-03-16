@@ -478,7 +478,8 @@ public class ArgsCheck {
     */
    public static void isSubtype(final String name, final Class<?> clazz, 
          final Class<?> type) {
-      notNull(name, type);
+      notNull("clazz", clazz);
+      notNull("type", type);
       if (!clazz.isAssignableFrom(type)) {
          throw new IllegalArgumentException(MessageFormat.format(
                "{0} is not a {1} instance", name, clazz.getName()));
