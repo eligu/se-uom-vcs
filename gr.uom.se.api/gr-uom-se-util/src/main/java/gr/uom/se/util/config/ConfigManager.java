@@ -118,18 +118,6 @@ public interface ConfigManager {
    public ConfigDomain loadDomain(String domain);
 
    /**
-    * Load the domain based on a given class.
-    * <p>
-    * This method may use a specific mechanism for loading an instance given its
-    * type. It should rely on gr.uom.se.util.module package and its classes.
-    * 
-    * @param domain
-    *           the type of the domain to load
-    * @return an instance of the given domain
-    */
-   public <T extends ConfigDomain> T loadDomain(Class<T> domain);
-
-   /**
     * Get the instance of the domain with the given name.
     * <p>
     * 
@@ -148,20 +136,7 @@ public interface ConfigManager {
     *           to be added to this manager, must not be null.
     */
    void setDomain(ConfigDomain domain);
-
-   /**
-    * Load the given domain into this manager, and merge the new properties to
-    * an old domain with the same name, if any.
-    * <p>
-    * This will load the given domain. If there is an old domain with the same
-    * name it will merge the new domain to old one.
-    * 
-    * @param domain
-    *           the domain type to be loaded, must not be null.
-    * @return the new domain created
-    */
-   <T extends ConfigDomain> T loadAndMergeDomain(Class<T> domain);
-
+   
    /**
     * Load the given domain into this manager, and merge the new properties to
     * an old domain with the same name, if any.

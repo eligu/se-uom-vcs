@@ -33,13 +33,6 @@ public class DefaultConfigDomainTest {
    }
 
    @Test
-   public void testCreationOfDefaultDomain() {
-      DefaultConfigDomain domain = config.loadDomain(DefaultConfigDomain.class);
-      assertNotNull(domain);
-      testDefaultConfigValues(domain);
-   }
-
-   @Test
    public void testCreationOfDefaultDomainByName() {
       config.loadDomain(ConfigConstants.DEFAULT_CONFIG_DOMAIN);
       ConfigDomain domain = config

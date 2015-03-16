@@ -4,6 +4,8 @@
 package gr.uom.se.util.module;
 
 import gr.uom.se.util.config.ConfigManager;
+import gr.uom.se.util.mapper.Mapper;
+import gr.uom.se.util.mapper.MapperFactory;
 import gr.uom.se.util.validation.ArgsCheck;
 
 import java.util.Map;
@@ -533,7 +535,7 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
       String name = ModuleConstants.PARAMETER_PROVIDER_PROPERTY;
       ParameterProvider provider = getConfigPropertyObjectWithDefault(name,
             type, ParameterProvider.class, config, properties);
-      
+
       return provider;
    }
 
@@ -910,5 +912,58 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
          }
       }
       return injector;
+   }
+
+   /**
+    * Get a mapper to map value from type {@code from} to type {@code to}.
+    * <p>
+    * 
+    * First will look for the domain calling at
+    * {@link ModuleConstants#getDefaultConfigFor(Class)} where the Class is the
+    * {@code type} parameter. And the property name will be retrieved by calling
+    * {@link ModuleConstants#getMapperNameFor(Class, Class)}. The property will
+    * be retrieved using
+    * {@link #getCompatibleProperty(String, String, Class, ConfigManager, Map)}.
+    * If the mapper was not found at this domain then it will look under the
+    * default module domain {@link ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN}
+    * a property called {@link ModuleConstants#DEFAULT_MAPPER_FACTORY_PROPERTY}
+    * to get the default mapper factory. If the factory was not found then it
+    * will get the singleton factory using {@link MapperFactory#getInstance()},
+    * and load the mapper from there.
+    * 
+    * @param type
+    *           the module's type
+    * @param from
+    *           the type from which to convert to
+    * @param to
+    *           the type to convert to
+    * @param config
+    *           to look up the mapper
+    * @param properties
+    *           to lookup the mapper
+    * @return a mapper for the given module type, that should convet from
+    *         {@code from} to {@code to}
+    */
+   @Override
+   public Mapper getMapperOfType(Class<?> type, Class<?> from, Class<?> to,
+         ConfigManager config, Map<String, Map<String, Object>> properties) {
+
+      String property = ModuleConstants.getMapperNameFor(from, to);
+      String domain = ModuleConstants.getDefaultConfigFor(type);
+
+      Mapper mapper = getProperty(domain, property, Mapper.class, config,
+            properties);
+
+      if (mapper == null) {
+         property = ModuleConstants.DEFAULT_MAPPER_FACTORY_PROPERTY;
+         domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+         MapperFactory factory = getProperty(domain, property,
+               MapperFactory.class, config, properties);
+         if (factory == null) {
+            factory = MapperFactory.getInstance();
+         }
+         mapper = factory.getMapper(from, to);
+      }
+      return mapper;
    }
 }

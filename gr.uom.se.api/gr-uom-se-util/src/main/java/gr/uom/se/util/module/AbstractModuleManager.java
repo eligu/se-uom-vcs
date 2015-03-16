@@ -26,6 +26,15 @@ import java.util.Map;
  */
 public abstract class AbstractModuleManager implements ModuleManager {
 
+   private final ModulePropertyLocator locator;
+
+   /**
+    * 
+    */
+   protected AbstractModuleManager(ModulePropertyLocator locator) {
+      this.locator = locator;
+   }
+
    /**
     * {@inheritDoc}
     */
@@ -141,13 +150,13 @@ public abstract class AbstractModuleManager implements ModuleManager {
       // /////////////////////////////////////////////////////////////////////
       // 1 - Check if the class has any provider available
       // Check first at this manager to find a provider
-      Object provider = ModuleUtils.getModuleProvider(moduleClass,
-            Object.class, resolveConfig(), null);
+      Object provider = locator.getModuleProvider(moduleClass, Object.class,
+            resolveConfig(), null);
 
       // If provider is null then check at the given properties
       if (provider == null) {
-         provider = ModuleUtils.getModuleProvider(moduleClass, Object.class,
-               null, props);
+         provider = locator.getModuleProvider(moduleClass, Object.class, null,
+               props);
          // If provider is found at this place then register it
          if (provider != null) {
             this.registerProvider(provider, moduleClass);
@@ -159,13 +168,13 @@ public abstract class AbstractModuleManager implements ModuleManager {
       // So we must register the provider class if any
       if (provider == null) {
          // Get first the provider class from this manager if any
-         Class<?> providerClass = ModuleUtils.getProviderClassFor(moduleClass,
-               resolveConfig(), null);
+         Class<?> providerClass = locator.getModuleProviderClassFor(
+               moduleClass, resolveConfig(), null);
          // If provider class was not defined in config then check at the given
          // properties
          if (providerClass == null) {
-            providerClass = ModuleUtils.getProviderClassFor(moduleClass, null,
-                  props);
+            providerClass = locator.getModuleProviderClassFor(moduleClass,
+                  null, props);
          } else {
             // A provider class is found at this manager so no need to
             // register it again
@@ -194,13 +203,13 @@ public abstract class AbstractModuleManager implements ModuleManager {
 
       // 1 - Check if the class has any parameter provider available
       // Check first at this manager to find a provider
-      ParameterProvider parameterProvider = ModuleUtils.getParameterProvider(
+      ParameterProvider parameterProvider = locator.getParameterProvider(
             moduleClass, resolveConfig(), null);
 
       // If provider is null then check at the given properties
       if (parameterProvider == null) {
-         parameterProvider = ModuleUtils.getParameterProvider(moduleClass,
-               null, props);
+         parameterProvider = locator.getParameterProvider(moduleClass, null,
+               props);
 
          // If provider is found at this place and it is not the default one
          // then register it
@@ -215,13 +224,13 @@ public abstract class AbstractModuleManager implements ModuleManager {
       // So we must register the provider class if any
       if (parameterProvider == null) {
          // Get first the provider class from this manager if any
-         Class<? extends ParameterProvider> providerClass = ModuleUtils
+         Class<? extends ParameterProvider> providerClass = locator
                .getParameterProviderClassFor(moduleClass, resolveConfig(), null);
 
          // If provider class was not defined in config then check at the given
          // properties
          if (providerClass == null) {
-            providerClass = ModuleUtils.getParameterProviderClassFor(
+            providerClass = locator.getParameterProviderClassFor(
                   moduleClass, null, props);
          } else {
             // A provider class is found at this manager so no need to
@@ -253,12 +262,12 @@ public abstract class AbstractModuleManager implements ModuleManager {
 
       // 1 - Check if the class has any property injector available
       // Check first at this manager to find a provider
-      PropertyInjector injector = ModuleUtils.getPropertyInjector(moduleClass,
+      PropertyInjector injector = locator.getPropertyInjector(moduleClass,
             resolveConfig(), null);
 
       // If injector is null then check at the given properties
       if (injector == null) {
-         injector = ModuleUtils.getPropertyInjector(moduleClass, null, props);
+         injector = locator.getPropertyInjector(moduleClass, null, props);
 
          // If injector is found at this place and it is not the default one
          // then register it
@@ -272,13 +281,13 @@ public abstract class AbstractModuleManager implements ModuleManager {
       // So we must register the injector class if any
       if (injector == null) {
          // Get first the injector class from this manager if any
-         Class<? extends PropertyInjector> injectorClass = ModuleUtils
+         Class<? extends PropertyInjector> injectorClass = locator
                .getPropertyInjectorClassFor(moduleClass, resolveConfig(), null);
 
          // If injector class was not defined in config then check at the given
          // properties
          if (injectorClass == null) {
-            injectorClass = ModuleUtils.getPropertyInjectorClassFor(
+            injectorClass = locator.getPropertyInjectorClassFor(
                   moduleClass, null, props);
          } else {
             // A provider class is found at this manager so no need to
@@ -310,12 +319,12 @@ public abstract class AbstractModuleManager implements ModuleManager {
 
       // 1 - Check if the class has any loader available
       // Check first at this manager to find a loader
-      ModuleLoader loader = ModuleUtils.getLoader(moduleClass, resolveConfig(),
+      ModuleLoader loader = locator.getLoader(moduleClass, resolveConfig(),
             null);
 
       // If loader is null then check at the given properties
       if (loader == null) {
-         loader = ModuleUtils.getLoader(moduleClass, null, props);
+         loader = locator.getLoader(moduleClass, null, props);
 
          // If loader is found at this place and it is not the default one
          // then register it
@@ -329,13 +338,13 @@ public abstract class AbstractModuleManager implements ModuleManager {
       // So we must register the loader class if any
       if (loader == null) {
          // Get first the loader class from this manager if any
-         Class<? extends ModuleLoader> loaderClass = ModuleUtils
+         Class<? extends ModuleLoader> loaderClass = locator
                .getLoaderClassFor(moduleClass, resolveConfig(), null);
 
          // If loader class was not defined in config then check at the given
          // properties
          if (loaderClass == null) {
-            loaderClass = ModuleUtils.getLoaderClassFor(moduleClass, null,
+            loaderClass = locator.getLoaderClassFor(moduleClass, null,
                   props);
          } else {
             // A loader class is found at this manager so no need to
@@ -367,7 +376,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
     */
    @Override
    public Class<? extends ParameterProvider> getDefaultParameterProviderClass() {
-      return ModuleUtils
+      return locator
             .getDefaultParameterProviderClass(resolveConfig(), null);
    }
 
@@ -386,7 +395,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
     */
    @Override
    public Class<? extends PropertyInjector> getDefaultPropertyInjectorClass() {
-      return ModuleUtils.getDefaultPropertyInjectorClass(resolveConfig(), null);
+      return locator.getDefaultPropertyInjectorClass(resolveConfig(), null);
    }
 
    /**
@@ -404,7 +413,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
     */
    @Override
    public Class<? extends ModuleLoader> getDefaultLoaderClass() {
-      return ModuleUtils.getDefaultLoaderClass(resolveConfig(), null);
+      return locator.getDefaultLoaderClass(resolveConfig(), null);
    }
 
    /**
@@ -845,7 +854,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
     */
    @Override
    public ModuleLoader getLoader(Class<?> forClass) {
-      return ModuleUtils.resolveLoader(forClass, resolveConfig(),
+      return locator.resolveLoader(forClass, resolveConfig(),
             ModuleUtils.resolveModuleConfig(forClass));
    }
 
@@ -854,7 +863,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
     */
    @Override
    public Class<? extends ModuleLoader> getLoaderClass(Class<?> forClass) {
-      return ModuleUtils.getLoaderClassFor(forClass, resolveConfig(),
+      return locator.getLoaderClassFor(forClass, resolveConfig(),
             ModuleUtils.resolveModuleConfig(forClass));
    }
 
@@ -871,7 +880,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
     */
    @Override
    public <T> T getProvider(Class<?> forClass, Class<T> providerType) {
-      return ModuleUtils.getModuleProvider(forClass, providerType,
+      return locator.getModuleProvider(forClass, providerType,
             resolveConfig(), ModuleUtils.resolveModuleConfig(forClass));
    }
 
@@ -880,7 +889,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
     */
    @Override
    public Class<?> getProviderClass(Class<?> forClass) {
-      return ModuleUtils.getProviderClassFor(forClass, resolveConfig(),
+      return locator.getModuleProviderClassFor(forClass, resolveConfig(),
             ModuleUtils.resolveModuleConfig(forClass));
    }
 
@@ -889,7 +898,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
     */
    @Override
    public ParameterProvider getParameterProvider(Class<?> forClass) {
-      return ModuleUtils.resolveParameterProvider(forClass, resolveConfig(),
+      return locator.resolveParameterProvider(forClass, resolveConfig(),
             ModuleUtils.resolveModuleConfig(forClass));
    }
 
@@ -899,7 +908,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
    @Override
    public Class<? extends ParameterProvider> getParameterProviderClass(
          Class<?> forClass) {
-      return ModuleUtils.getParameterProviderClassFor(forClass,
+      return locator.getParameterProviderClassFor(forClass,
             resolveConfig(), ModuleUtils.resolveModuleConfig(forClass));
    }
 
@@ -908,7 +917,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
     */
    @Override
    public PropertyInjector getPropertyInjector(Class<?> forClass) {
-      return ModuleUtils.resolvePropertyInjector(forClass, resolveConfig(),
+      return locator.resolvePropertyInjector(forClass, resolveConfig(),
             ModuleUtils.resolveModuleConfig(forClass));
    }
 
@@ -918,7 +927,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
    @Override
    public Class<? extends PropertyInjector> getPropertyInjectorClass(
          Class<?> forClass) {
-      return ModuleUtils.getPropertyInjectorClassFor(forClass, resolveConfig(),
+      return locator.getPropertyInjectorClassFor(forClass, resolveConfig(),
             ModuleUtils.resolveModuleConfig(forClass));
    }
 

@@ -43,6 +43,8 @@ public class DefaultPropertyInjector implements PropertyInjector {
     * <p>
     */
    private ConfigManager config;
+   
+   private final ModulePropertyLocator locator;
 
    /**
     * Create a new injector given the property provider.
@@ -56,6 +58,7 @@ public class DefaultPropertyInjector implements PropertyInjector {
          @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.PARAMETER_PROVIDER_PROPERTY) ParameterProvider provider) {
       this.config = config;
       this.provider = provider;
+      this.locator = new DefaultModulePropertyLocator();
    }
 
    /**
@@ -121,7 +124,7 @@ public class DefaultPropertyInjector implements PropertyInjector {
     */
    protected ParameterProvider resolveParameterProvider(Class<?> type,
          Map<String, Map<String, Object>> properties) {
-      ParameterProvider provider = ModuleUtils.getParameterProvider(type,
+      ParameterProvider provider = locator.getParameterProvider(type,
             config, properties);
       // If no provider was found then create a default provider
       if (provider == null) {

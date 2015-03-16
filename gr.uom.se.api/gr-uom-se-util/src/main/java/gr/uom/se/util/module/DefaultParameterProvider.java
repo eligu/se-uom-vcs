@@ -85,6 +85,8 @@ public class DefaultParameterProvider implements ParameterProvider {
     * This loader is a cached loader for the default loader.
     */
    protected ModuleLoader loader;
+   
+   private final ModulePropertyLocator locator;
 
    /**
     * Create a parameter provider with the given config, and loader.
@@ -96,6 +98,7 @@ public class DefaultParameterProvider implements ParameterProvider {
          @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.LOADER_PROPERTY) ModuleLoader loader) {
       this.config = config;
       this.loader = loader;
+      this.locator = new DefaultModulePropertyLocator();
    }
 
    /**
@@ -130,7 +133,7 @@ public class DefaultParameterProvider implements ParameterProvider {
 
    protected ModuleLoader resolveLoader(Class<?> type,
          Map<String, Map<String, Object>> properties) {
-      ModuleLoader loader = ModuleUtils.getLoader(type, config, properties);
+      ModuleLoader loader = locator.getLoader(type, config, properties);
       // If no loader was found then create a default module loader
       // if it is not created
       if (loader == null) {
@@ -218,8 +221,8 @@ public class DefaultParameterProvider implements ParameterProvider {
       // Use a mapper to map the default string value to the given type
       if (strval != null && !strval.isEmpty()) {
 
-         Mapper mapper = ModuleUtils.getMapperOfType(parameterType,
-               String.class, parameterType, properties, config);
+         Mapper mapper = locator.getMapperOfType(parameterType,
+               String.class, parameterType, config, properties);
 
          if (mapper == null) {
             throw new IllegalArgumentException(

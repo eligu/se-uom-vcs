@@ -4,6 +4,8 @@
 package gr.uom.se.util.module;
 
 import gr.uom.se.util.config.ConfigManager;
+import gr.uom.se.util.mapper.Mapper;
+import gr.uom.se.util.mapper.MapperFactory;
 import gr.uom.se.util.module.annotations.ProvideModule;
 
 import java.util.Map;
@@ -155,7 +157,8 @@ public interface ModulePropertyLocator {
     * @return a class for the given type
     */
    <T> Class<? extends T> getConfigPropertyClass(String name, Class<?> type,
-         Class<T> classType, ConfigManager config, Map<String, Map<String, Object>> properties);
+         Class<T> classType, ConfigManager config,
+         Map<String, Map<String, Object>> properties);
 
    /**
     * Will try to look up for a provider of {@code type} instances that are of
@@ -456,5 +459,38 @@ public interface ModulePropertyLocator {
     * @return a property injector for the given type
     */
    PropertyInjector resolvePropertyInjector(Class<?> type,
+         ConfigManager config, Map<String, Map<String, Object>> properties);
+
+   /**
+    * Get a mapper to map value from type {@code from} to type {@code to}.
+    * <p>
+    * 
+    * First will look for the domain calling at
+    * {@link ModuleConstants#getDefaultConfigFor(Class)} where the Class is the
+    * {@code type} parameter. And the property name will be retrieved by calling
+    * {@link ModuleConstants#getMapperNameFor(Class, Class)}. The property will
+    * be retrieved using
+    * {@link #getCompatibleProperty(String, String, Class, ConfigManager, Map)}.
+    * If the mapper was not found at this domain then it will look under the
+    * default module domain {@link ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN}
+    * a property called {@link ModuleConstants#DEFAULT_MAPPER_FACTORY_PROPERTY}
+    * to get the default mapper factory. If the factory was not found then it
+    * will get the singleton factory using {@link MapperFactory#getInstance()},
+    * and load the mapper from there.
+    * 
+    * @param type
+    *           the module's type
+    * @param from
+    *           the type from which to convert to
+    * @param to
+    *           the type to convert to
+    * @param config
+    *           to look up the mapper
+    * @param properties
+    *           to lookup the mapper
+    * @return a mapper for the given module type, that should convet from
+    *         {@code from} to {@code to}
+    */
+   Mapper getMapperOfType(Class<?> type, Class<?> from, Class<?> to,
          ConfigManager config, Map<String, Map<String, Object>> properties);
 }

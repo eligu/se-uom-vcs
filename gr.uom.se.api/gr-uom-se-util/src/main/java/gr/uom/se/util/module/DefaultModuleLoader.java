@@ -96,6 +96,8 @@ public class DefaultModuleLoader implements ModuleLoader {
     * annotated using @ProvideModule.
     */
    private ConfigManager config;
+   
+   private final ModulePropertyLocator locator;
 
    /**
     * The parameter provider is used to provide the parameters when a call to a
@@ -110,6 +112,7 @@ public class DefaultModuleLoader implements ModuleLoader {
          @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.PARAMETER_PROVIDER_PROPERTY) ParameterProvider provider) {
       this.config = config;
       this.parameterProvider = provider;
+      this.locator = new DefaultModulePropertyLocator();
    }
 
    /**
@@ -146,7 +149,10 @@ public class DefaultModuleLoader implements ModuleLoader {
    @Override
    public <T> T load(Class<T> clazz, Map<String, Map<String, Object>> properties) {
       ArgsCheck.notNull("clazz", clazz);
-      Class<?> provider = ModuleUtils.getProviderClassFor(clazz, config,
+      if(properties == null) {
+         properties = ModuleUtils.resolveModuleConfig(clazz);
+      }
+      Class<?> provider = locator.getModuleProviderClassFor(clazz, config,
             properties);
       if (provider == null) {
          return loadNoLoader(clazz, properties);
@@ -240,7 +246,7 @@ public class DefaultModuleLoader implements ModuleLoader {
    protected <T> T resolveModuleProvider(Class<?> type, Class<T> provider,
          Map<String, Map<String, Object>> properties) {
 
-      T pInstance = ModuleUtils.getModuleProvider(type, provider, config,
+      T pInstance = locator.getModuleProvider(type, provider, config,
             properties);
       // If the provider was not found then we should create
       // the provider by using the parameter provider
@@ -271,11 +277,11 @@ public class DefaultModuleLoader implements ModuleLoader {
    protected ModuleLoader resolveLoader(Class<?> type,
          Map<String, Map<String, Object>> properties) {
 
-      ModuleLoader loader = ModuleUtils.getLoader(type, config, properties);
+      ModuleLoader loader = locator.getLoader(type, config, properties);
       // If no loader was found then try to find a loader class
       // for the given type
       if (loader == null) {
-         Class<? extends ModuleLoader> loaderClass = ModuleUtils
+         Class<? extends ModuleLoader> loaderClass = locator
                .getLoaderClassFor(type, config, properties);
          // No loader class was found for this type
          // we should provide the default loader
@@ -410,11 +416,11 @@ public class DefaultModuleLoader implements ModuleLoader {
     */
    protected ParameterProvider resolveParameterProvider(Class<?> type,
          Map<String, Map<String, Object>> properties) {
-      ParameterProvider provider = ModuleUtils.getParameterProvider(type,
+      ParameterProvider provider = locator.getParameterProvider(type,
             config, properties);
       // If no provider was found then create a default provider
       if (provider == null) {
-         Class<? extends ParameterProvider> pClass = ModuleUtils
+         Class<? extends ParameterProvider> pClass = locator
                .getParameterProviderClassFor(type, config, properties);
          // If there is the default parameter privder, but it is not
          // resolved then try to resolve it

@@ -6,7 +6,6 @@ package gr.uom.se.util.config;
 import gr.uom.se.util.mapper.Mapper;
 import gr.uom.se.util.mapper.MapperFactory;
 import gr.uom.se.util.module.ModuleLoader;
-import gr.uom.se.util.module.ModuleUtils;
 import gr.uom.se.util.validation.ArgsCheck;
 
 import java.io.IOException;
@@ -156,23 +155,6 @@ public abstract class AbstractConfigManager implements ConfigManager {
       return newD;
    }
 
-   @SuppressWarnings("unchecked")
-   @Override
-   public <T extends ConfigDomain> T loadAndMergeDomain(Class<T> domain) {
-      T newD = loadDomain0(domain);
-      ConfigDomain oldD = getDomain(newD.getName());
-      if (oldD != null) {
-         oldD.merge(newD);
-         if (newD.getClass().isAssignableFrom(oldD.getClass())) {
-            newD = (T) oldD;
-         } else {
-            newD.merge(oldD);
-         }
-      }
-      this.domains.put(newD.getName(), newD);
-      return newD;
-   }
-
    /**
     * {@inheritDoc}
     */
@@ -251,30 +233,6 @@ public abstract class AbstractConfigManager implements ConfigManager {
          domain = ConfigConstants.DEFAULT_CONFIG_DOMAIN;
       }
       return domain;
-   }
-
-   /**
-    * {@inheritDoc}
-    */
-   @Override
-   public <T extends ConfigDomain> T loadDomain(Class<T> domain) {
-      T cfg = loadDomain0(domain);
-      addDomain(cfg);
-      return cfg;
-   }
-
-   private <T extends ConfigDomain> T loadDomain0(Class<T> domain) {
-      // Get a module loader, even if there is not a default
-      // loader for the given type, get the default loader
-      // implementation
-      ModuleLoader loader = ModuleUtils.resolveLoader(domain, this,
-            ModuleUtils.resolveModuleConfig(domain));
-      T instanceDomain = loader.load(domain);
-      if (instanceDomain == null) {
-         throw new IllegalArgumentException("Domain instance " + domain
-               + " can not be loaded by " + loader);
-      }
-      return instanceDomain;
    }
 
    /**
@@ -360,23 +318,6 @@ public abstract class AbstractConfigManager implements ConfigManager {
 
       if (factory != null) {
          return factory;
-      }
-      // If factory is null then look for the class
-      // of mapper factory
-      Class<?> fClass = getProperty(
-            ConfigConstants.getPropertyNameForConfigClass(name), Class.class);
-
-      // If class was found then load the mapper factory
-      if (fClass != null) {
-         // Check the class of mapper factory
-         if (!MapperFactory.class.isAssignableFrom(fClass)) {
-            throw new RuntimeException(
-                  "Wrong class specified for mapper factory: " + fClass);
-         }
-         // Load the factory
-         factory = ModuleUtils.resolveLoader(fClass, this,
-               ModuleUtils.resolveModuleConfig(fClass)).load(
-               MapperFactory.class);
       }
 
       // If a class was not found

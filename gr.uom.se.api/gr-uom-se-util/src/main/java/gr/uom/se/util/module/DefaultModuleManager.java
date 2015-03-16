@@ -48,6 +48,7 @@ public class DefaultModuleManager extends AbstractModuleManager {
     *           the config manager, may be null.
     */
    public DefaultModuleManager(ConfigManager manager) {
+      super(new DefaultModulePropertyLocator());
       if (manager == null) {
          manager = new DefaultConfigManager();
          created = true;
