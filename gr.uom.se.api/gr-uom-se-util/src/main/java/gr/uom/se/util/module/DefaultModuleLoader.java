@@ -96,7 +96,7 @@ public class DefaultModuleLoader implements ModuleLoader {
     * annotated using @ProvideModule.
     */
    private ConfigManager config;
-   
+
    private final ModulePropertyLocator locator;
 
    /**
@@ -120,7 +120,7 @@ public class DefaultModuleLoader implements ModuleLoader {
     */
    @Override
    public <T> T load(Class<T> clazz) {
-      return load(clazz, (Map<String, Map<String, Object>>) null);
+      return load(clazz, (Class<?>) null);
    }
 
    /**
@@ -131,25 +131,31 @@ public class DefaultModuleLoader implements ModuleLoader {
       // Make the necessary checks
       ArgsCheck.notNull("clazz", clazz);
 
-      // Try to load with the specified loader
+      // Try to load with the specified provider
+      // If provider is not null or it is not a type of
+      // NULLVal that means we have a provider
       if (provider != null && !provider.equals(NULLVal.class)) {
          return loadModule(clazz, provider, null);
       }
-
       // Fallback to default strategy
+      // Get the properties from module annotation @Module (if it is present)
+      Map<String, Map<String, Object>> properties = ModuleUtils
+            .resolveModuleConfig(clazz);
+      // Locate the provider (if available)
+      provider = locator.getModuleProviderClassFor(clazz, config, properties);
       // 1 - Case where there is not a default loader
-      // 2 - Case where there is a default loader
+      if (provider == null) {
+         return loadNoLoader(clazz, properties);
+      }
 
-      // 1 - Case when there is no @Module annotation
-      // or a loader specified
-      // The defaults will be used to load the module
-      return load(clazz, (Map<String, Map<String, Object>>) null);
+      // 2 - Case where there is a default provider
+      return loadModule(clazz, provider, properties);
    }
 
    @Override
    public <T> T load(Class<T> clazz, Map<String, Map<String, Object>> properties) {
       ArgsCheck.notNull("clazz", clazz);
-      if(properties == null) {
+      if (properties == null) {
          properties = ModuleUtils.resolveModuleConfig(clazz);
       }
       Class<?> provider = locator.getModuleProviderClassFor(clazz, config,
@@ -158,8 +164,6 @@ public class DefaultModuleLoader implements ModuleLoader {
          return loadNoLoader(clazz, properties);
       }
 
-      // 2 - Case when a @Module annotation is present and a default loader
-      // is specified
       return loadModule(clazz, provider, properties);
    }
 
@@ -183,7 +187,6 @@ public class DefaultModuleLoader implements ModuleLoader {
       // 2 - There is not a specified loader
       // a) The class has a constructor with the @ProvideModule instance
       // b) The class has a default constructor which will be used to load it
-
       Method method = getInstanceLoaderMethod(moduleType, provider);
       Object providerInstance = null;
 
@@ -281,8 +284,8 @@ public class DefaultModuleLoader implements ModuleLoader {
       // If no loader was found then try to find a loader class
       // for the given type
       if (loader == null) {
-         Class<? extends ModuleLoader> loaderClass = locator
-               .getLoaderClassFor(type, config, properties);
+         Class<? extends ModuleLoader> loaderClass = locator.getLoaderClassFor(
+               type, config, properties);
          // No loader class was found for this type
          // we should provide the default loader
          if (loaderClass.equals(DefaultModuleLoader.class)) {
@@ -416,8 +419,8 @@ public class DefaultModuleLoader implements ModuleLoader {
     */
    protected ParameterProvider resolveParameterProvider(Class<?> type,
          Map<String, Map<String, Object>> properties) {
-      ParameterProvider provider = locator.getParameterProvider(type,
-            config, properties);
+      ParameterProvider provider = locator.getParameterProvider(type, config,
+            properties);
       // If no provider was found then create a default provider
       if (provider == null) {
          Class<? extends ParameterProvider> pClass = locator

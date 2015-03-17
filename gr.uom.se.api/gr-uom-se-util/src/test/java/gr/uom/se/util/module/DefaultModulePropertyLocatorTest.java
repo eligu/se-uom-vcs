@@ -21,6 +21,7 @@ import org.junit.Test;
 public class DefaultModulePropertyLocatorTest {
 
    static ModulePropertyLocator locator = new DefaultModulePropertyLocator();
+   static RevertedModulePropertyLocator revertedLocator = new RevertedModulePropertyLocator();
 
    @Test
    public void testGetLoader() {
@@ -144,6 +145,27 @@ public class DefaultModulePropertyLocatorTest {
       locatedLoader = locator.getLoader(Object.class, config, map);
       assertNotNull(locatedLoader);
       assertEquals(otherLoader, locatedLoader);
+   }
+
+   @Test
+   public void getLoaderReverted() {
+      ConfigManager config = new DefaultConfigManager();
+      MyModuleLoader configLoader = new MyModuleLoader();
+      DefaultModuleLoader mapLoader = new DefaultModuleLoader(null, null);
+      String defaultDomain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+      String defaultName = ModuleConstants.LOADER_PROPERTY;
+      config.setProperty(defaultDomain, defaultName, configLoader);
+      ModuleLoader locatedLoader = locator
+            .getLoader(Object.class, config, null);
+      assertNotNull(locatedLoader);
+      assertEquals(configLoader, locatedLoader);
+      Map<String, Map<String, Object>> properties = new HashMap<>();
+      Map<String, Object> map = config.getDomain(defaultDomain).getProperties();
+      properties.put(defaultDomain, map);
+      map.put(defaultName, mapLoader);
+      
+      locatedLoader = revertedLocator.getLoader(Object.class, config, properties);
+      assertEquals(mapLoader, locatedLoader);
    }
 
    @Test
@@ -699,6 +721,34 @@ public class DefaultModulePropertyLocatorTest {
    }
 
    @Test
+   public void testGetParameterProviderClassReverted() {
+      ConfigManager config = new DefaultConfigManager();
+      Class<? extends ParameterProvider> configClass = DefaultParameterProvider.class;
+      Class<? extends ParameterProvider> mapClass = MyParameterProvider.class;
+      
+      String defaultDomain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+      String defaultName = ModuleConstants
+            .getPropertyNameForConfigClass(ModuleConstants.PARAMETER_PROVIDER_PROPERTY);
+      
+      Class<?> clazz = Object.class;
+      
+      // Get the default loader class
+      config.setProperty(defaultDomain, defaultName, configClass);
+      Class<? extends ParameterProvider> locatedClass = locator
+            .getParameterProviderClassFor(clazz, config, null);
+      assertNotNull(locatedClass);
+      assertEquals(configClass, locatedClass);
+
+      Map<String, Map<String, Object>> properties = new HashMap<>();
+      Map<String, Object> map = config.getDomain(defaultDomain).getProperties();
+      properties.put(defaultDomain, map);
+      map.put(defaultName, mapClass);
+      
+      locatedClass = revertedLocator.getParameterProviderClassFor(Object.class, config, properties);
+      assertEquals(mapClass, locatedClass);
+   }
+   
+   @Test
    public void testGetPropertyInjectorClass() {
       ConfigManager config = new DefaultConfigManager();
       Class<? extends PropertyInjector> defaultClass = DefaultPropertyInjector.class;
@@ -850,7 +900,8 @@ public class DefaultModulePropertyLocatorTest {
    public void testGetProvider() {
       ConfigManager config = new DefaultConfigManager();
       MyParameterProvider providerAtDefaultDomain = new MyParameterProvider();
-      DefaultParameterProvider providerAtClassDomain = new DefaultParameterProvider(null, null);
+      DefaultParameterProvider providerAtClassDomain = new DefaultParameterProvider(
+            null, null);
       String defaultDomain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
       String defaultName = ModuleConstants.PROVIDER_PROPERTY;
       Class<?> clazz = Object.class;
@@ -863,7 +914,8 @@ public class DefaultModulePropertyLocatorTest {
 
       config.setProperty(classDomain, defaultName, providerAtClassDomain);
       locatedProvider = null;
-      locatedProvider = locator.getModuleProvider(clazz, Object.class, config, null);
+      locatedProvider = locator.getModuleProvider(clazz, Object.class, config,
+            null);
       assertNotNull(locatedProvider);
       assertEquals(providerAtClassDomain, locatedProvider);
 
@@ -872,7 +924,8 @@ public class DefaultModulePropertyLocatorTest {
 
       locatedProvider = null;
       config.setProperty(defaultDomain, providerName, providerAtDefaultDomain);
-      locatedProvider = locator.getModuleProvider(clazz,Object.class, config, null);
+      locatedProvider = locator.getModuleProvider(clazz, Object.class, config,
+            null);
       assertNotNull(locatedProvider);
       assertEquals(providerAtDefaultDomain, locatedProvider);
 
@@ -880,7 +933,8 @@ public class DefaultModulePropertyLocatorTest {
       config.setProperty(classDomain, defaultName, providerAtClassDomain);
       config.setProperty(defaultDomain, providerName, providerAtDefaultDomain);
       // We should expect the injector at class domain
-      locatedProvider = locator.getModuleProvider(clazz,Object.class, config, null);
+      locatedProvider = locator.getModuleProvider(clazz, Object.class, config,
+            null);
       assertNotNull(locatedProvider);
       assertEquals(providerAtClassDomain, locatedProvider);
 
@@ -888,7 +942,8 @@ public class DefaultModulePropertyLocatorTest {
       config.setProperty(classDomain, defaultName, null);
       // We should expect the injector at default domain but with class name
       // as prefix
-      locatedProvider = locator.getModuleProvider(clazz,Object.class, config, null);
+      locatedProvider = locator.getModuleProvider(clazz, Object.class, config,
+            null);
       assertNotNull(locatedProvider);
       assertEquals(providerAtDefaultDomain, locatedProvider);
 
@@ -902,15 +957,14 @@ public class DefaultModulePropertyLocatorTest {
       // Clear config
       config.setProperty(defaultDomain, defaultName, null);
       map.put(defaultDomain, null);
-      assertNull(locator.getModuleProvider(clazz, Object.class, config,
-            null));
+      assertNull(locator.getModuleProvider(clazz, Object.class, config, null));
 
       // Get the injector from class domain
       classDomain = ModuleConstants.getDefaultConfigFor(Object.class);
       config.setProperty(classDomain, defaultName, providerAtClassDomain);
       map.put(classDomain, config.getDomain(classDomain).getProperties());
       locatedProvider = null;
-      locatedProvider = locator.getModuleProvider(clazz,Object.class, null,
+      locatedProvider = locator.getModuleProvider(clazz, Object.class, null,
             map);
       assertNotNull(locatedProvider);
       assertEquals(providerAtClassDomain, locatedProvider);
@@ -921,7 +975,7 @@ public class DefaultModulePropertyLocatorTest {
       locatedProvider = null;
       config.setProperty(defaultDomain, providerName, providerAtDefaultDomain);
       map.put(defaultDomain, config.getDomain(defaultDomain).getProperties());
-      locatedProvider = locator.getModuleProvider(clazz,Object.class, null,
+      locatedProvider = locator.getModuleProvider(clazz, Object.class, null,
             map);
       assertNotNull(locatedProvider);
       assertEquals(providerAtDefaultDomain, locatedProvider);
@@ -932,7 +986,7 @@ public class DefaultModulePropertyLocatorTest {
       map.put(defaultDomain, config.getDomain(defaultDomain).getProperties());
       map.put(classDomain, config.getDomain(classDomain).getProperties());
       // We should expect the injector at class domain
-      locatedProvider = locator.getModuleProvider(clazz,Object.class, null,
+      locatedProvider = locator.getModuleProvider(clazz, Object.class, null,
             map);
       assertNotNull(locatedProvider);
       assertEquals(providerAtClassDomain, locatedProvider);
@@ -942,7 +996,7 @@ public class DefaultModulePropertyLocatorTest {
       map.put(classDomain, null);
       // We should expect the provider at default domain but with class name
       // as prefix
-      locatedProvider = locator.getModuleProvider(clazz,Object.class, null,
+      locatedProvider = locator.getModuleProvider(clazz, Object.class, null,
             map);
       assertNotNull(locatedProvider);
       assertEquals(providerAtDefaultDomain, locatedProvider);
@@ -954,12 +1008,12 @@ public class DefaultModulePropertyLocatorTest {
       // locator should find that of config
       // We should expect the injector at default domain but with class name
       // as prefix. However it should be the otherInjector
-      locatedProvider = locator.getModuleProvider(clazz,Object.class, config,
+      locatedProvider = locator.getModuleProvider(clazz, Object.class, config,
             map);
       assertNotNull(locatedProvider);
       assertEquals(otherProvider, locatedProvider);
    }
-   
+
    @Test
    public void testGetProviderClass() {
       ConfigManager config = new DefaultConfigManager();
@@ -978,7 +1032,8 @@ public class DefaultModulePropertyLocatorTest {
 
       config.setProperty(classDomain, defaultName, classAtClassDomain);
       locatedClass = null;
-      locatedClass = locator.getModuleProviderClassFor(Object.class, config, null);
+      locatedClass = locator.getModuleProviderClassFor(Object.class, config,
+            null);
       assertNotNull(locatedClass);
       assertEquals(classAtClassDomain, locatedClass);
 
@@ -987,7 +1042,8 @@ public class DefaultModulePropertyLocatorTest {
 
       locatedClass = null;
       config.setProperty(defaultDomain, className, classAtDefaultDomain);
-      locatedClass = locator.getModuleProviderClassFor(Object.class, config, null);
+      locatedClass = locator.getModuleProviderClassFor(Object.class, config,
+            null);
       assertNotNull(locatedClass);
       assertEquals(classAtDefaultDomain, locatedClass);
 
@@ -995,7 +1051,8 @@ public class DefaultModulePropertyLocatorTest {
       config.setProperty(classDomain, defaultName, classAtClassDomain);
       config.setProperty(defaultDomain, className, classAtDefaultDomain);
       // We should expect the injector at class domain
-      locatedClass = locator.getModuleProviderClassFor(Object.class, config, null);
+      locatedClass = locator.getModuleProviderClassFor(Object.class, config,
+            null);
       assertNotNull(locatedClass);
       assertEquals(classAtClassDomain, locatedClass);
 
@@ -1003,7 +1060,8 @@ public class DefaultModulePropertyLocatorTest {
       config.setProperty(classDomain, defaultName, null);
       // We should expect the injector at default domain but with class name
       // as prefix
-      locatedClass = locator.getModuleProviderClassFor(Object.class, config, null);
+      locatedClass = locator.getModuleProviderClassFor(Object.class, config,
+            null);
       assertNotNull(locatedClass);
       assertEquals(classAtDefaultDomain, locatedClass);
 
@@ -1017,16 +1075,14 @@ public class DefaultModulePropertyLocatorTest {
       // Clear config
       config.setProperty(defaultDomain, defaultName, null);
       map.put(defaultDomain, null);
-      assertNull(locator.getModuleProviderClassFor(Object.class, config,
-            null));
+      assertNull(locator.getModuleProviderClassFor(Object.class, config, null));
 
       // Get the injector from class domain
       classDomain = ModuleConstants.getDefaultConfigFor(Object.class);
       config.setProperty(classDomain, defaultName, classAtClassDomain);
       map.put(classDomain, config.getDomain(classDomain).getProperties());
       locatedClass = null;
-      locatedClass = locator.getModuleProviderClassFor(Object.class, null,
-            map);
+      locatedClass = locator.getModuleProviderClassFor(Object.class, null, map);
       assertNotNull(locatedClass);
       assertEquals(classAtClassDomain, locatedClass);
 
@@ -1036,8 +1092,7 @@ public class DefaultModulePropertyLocatorTest {
       locatedClass = null;
       config.setProperty(defaultDomain, className, classAtDefaultDomain);
       map.put(defaultDomain, config.getDomain(defaultDomain).getProperties());
-      locatedClass = locator.getModuleProviderClassFor(Object.class, null,
-            map);
+      locatedClass = locator.getModuleProviderClassFor(Object.class, null, map);
       assertNotNull(locatedClass);
       assertEquals(classAtDefaultDomain, locatedClass);
 
@@ -1047,8 +1102,7 @@ public class DefaultModulePropertyLocatorTest {
       map.put(defaultDomain, config.getDomain(defaultDomain).getProperties());
       map.put(classDomain, config.getDomain(classDomain).getProperties());
       // We should expect the injector at class domain
-      locatedClass = locator.getModuleProviderClassFor(Object.class, null,
-            map);
+      locatedClass = locator.getModuleProviderClassFor(Object.class, null, map);
       assertNotNull(locatedClass);
       assertEquals(classAtClassDomain, locatedClass);
 
@@ -1057,8 +1111,7 @@ public class DefaultModulePropertyLocatorTest {
       map.put(classDomain, null);
       // We should expect the provider at default domain but with class name
       // as prefix
-      locatedClass = locator.getModuleProviderClassFor(Object.class, null,
-            map);
+      locatedClass = locator.getModuleProviderClassFor(Object.class, null, map);
       assertNotNull(locatedClass);
       assertEquals(classAtDefaultDomain, locatedClass);
 
