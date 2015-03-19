@@ -211,7 +211,7 @@ public class DefaultParameterProvider implements ParameterProvider {
             return null;
          }
          if (strval.equals(NULLVal.LOAD_STR)) {
-            return getParameter(parameterType, null, properties, null);
+            return getParameter(parameterType, null, properties, propertyLocator);
          }
       }
 
