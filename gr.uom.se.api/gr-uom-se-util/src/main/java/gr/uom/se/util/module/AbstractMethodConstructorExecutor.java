@@ -19,8 +19,8 @@ import java.util.Map;
  * @version 0.0.1
  * @since 0.0.1
  */
-public abstract class AbstractMethodConstructorExecutor implements MethodExecutor,
-      ConstructorExecutor {
+public abstract class AbstractMethodConstructorExecutor implements
+      MethodExecutor, ConstructorExecutor {
 
    /**
     * {@inheritDoc}
@@ -28,13 +28,14 @@ public abstract class AbstractMethodConstructorExecutor implements MethodExecuto
    @SuppressWarnings("unchecked")
    @Override
    public <T> T execute(Object instance, Class<?> onBehalf, Method method,
-         Map<String, Map<String, Object>> properties) {
+         Map<String, Map<String, Object>> properties,
+         ModulePropertyLocator propertyLocator) {
 
       // Try to execute the method with annotation
       Class<?>[] parameterTypes = method.getParameterTypes();
       Annotation[][] annotations = method.getParameterAnnotations();
       Object[] args = getParameters(onBehalf, parameterTypes, annotations,
-            properties);
+            properties, propertyLocator);
       try {
          return (T) method.invoke(instance, args);
       } catch (IllegalAccessException | IllegalArgumentException
@@ -45,14 +46,14 @@ public abstract class AbstractMethodConstructorExecutor implements MethodExecuto
 
    @Override
    public <T> T execute(Class<?> onBehalf, Constructor<T> constructor,
-         Map<String, Map<String, Object>> properties) {
-      
+         Map<String, Map<String, Object>> properties, ModulePropertyLocator propertyLocator) {
+
       // Get the parameter types and its values in order to execute
       Class<?>[] parameterTypes = constructor.getParameterTypes();
       Annotation[][] annotations = constructor.getParameterAnnotations();
       // Get the values for each parameter
       Object[] args = getParameters(onBehalf, parameterTypes, annotations,
-            properties);
+            properties, propertyLocator);
       try {
          return constructor.newInstance(args);
       } catch (InstantiationException | IllegalAccessException
@@ -81,16 +82,18 @@ public abstract class AbstractMethodConstructorExecutor implements MethodExecuto
     * @return parameter values
     */
    protected Object[] getParameters(Class<?> type, Class<?>[] parameterTypes,
-         Annotation[][] annotations, Map<String, Map<String, Object>> properties) {
+         Annotation[][] annotations,
+         Map<String, Map<String, Object>> properties,
+         ModulePropertyLocator propertyLocator) {
 
       Object[] parameterValues = new Object[parameterTypes.length];
       for (int i = 0; i < parameterTypes.length; i++) {
-         parameterValues[i] = resolveParameterProvider(type, properties)
-               .getParameter(parameterTypes[i], annotations[i], properties);
+         parameterValues[i] = resolveParameterProvider(type, properties, propertyLocator)
+               .getParameter(parameterTypes[i], annotations[i], properties, propertyLocator);
       }
       return parameterValues;
    }
 
    protected abstract ParameterProvider resolveParameterProvider(Class<?> type,
-         Map<String, Map<String, Object>> properties);
+         Map<String, Map<String, Object>> properties, ModulePropertyLocator propertyLocator);
 }

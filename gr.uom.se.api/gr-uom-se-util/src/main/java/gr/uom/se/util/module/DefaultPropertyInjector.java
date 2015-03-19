@@ -43,7 +43,7 @@ public class DefaultPropertyInjector implements PropertyInjector {
     * <p>
     */
    private ConfigManager config;
-   
+
    private final ModulePropertyLocator locator;
 
    /**
@@ -71,7 +71,36 @@ public class DefaultPropertyInjector implements PropertyInjector {
     *           the instance to where properties should be inserted
     */
    public void injectProperties(Object bean) {
+      injectProperties(bean, locator);
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public void injectProperties(Object bean,
+         Map<String, Map<String, Object>> properties) {
       ArgsCheck.notNull("bean", bean);
+      ModulePropertyLocator thisLocator;
+      if(properties == null || properties.isEmpty()) {
+         thisLocator = locator;
+      } else {
+         thisLocator = new DynamicModulePropertyLocator(properties);
+      }
+      injectProperties(bean, thisLocator);
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public void injectProperties(Object bean,
+         ModulePropertyLocator propertyLocator) {
+      ArgsCheck.notNull("bean", bean);
+
+      if (propertyLocator == null) {
+         propertyLocator = locator;
+      }
 
       Class<?> beanClass = bean.getClass();
       // Get the injectable fields
@@ -86,7 +115,7 @@ public class DefaultPropertyInjector implements PropertyInjector {
             .resolveModuleConfig(beanClass);
       // Get a parameter provider for the given bean
       ParameterProvider provider = resolveParameterProvider(beanClass,
-            properties);
+            properties, propertyLocator);
       for (Field f : fields) {
 
          // Set up first the access to this field
@@ -99,13 +128,15 @@ public class DefaultPropertyInjector implements PropertyInjector {
 
          // Use the provider to get the value
          Object val = provider.getParameter(f.getType(), f.getAnnotations(),
-               properties);
+               properties, propertyLocator);
          try {
             f.set(bean, val);
          } catch (IllegalArgumentException | IllegalAccessException e) {
             throw new IllegalArgumentException(e);
          } finally {
-            f.setAccessible(accessible);
+            if (!accessible) {
+               f.setAccessible(accessible);
+            }
          }
       }
    }
@@ -123,8 +154,9 @@ public class DefaultPropertyInjector implements PropertyInjector {
     * @return
     */
    protected ParameterProvider resolveParameterProvider(Class<?> type,
-         Map<String, Map<String, Object>> properties) {
-      ParameterProvider provider = locator.getParameterProvider(type,
+         Map<String, Map<String, Object>> properties,
+         ModulePropertyLocator propertyLocator) {
+      ParameterProvider provider = propertyLocator.getParameterProvider(type,
             config, properties);
       // If no provider was found then create a default provider
       if (provider == null) {

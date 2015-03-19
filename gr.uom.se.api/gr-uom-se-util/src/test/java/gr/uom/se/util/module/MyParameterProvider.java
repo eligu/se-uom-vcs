@@ -16,7 +16,7 @@ public class MyParameterProvider implements ParameterProvider{
     */
    @Override
    public <T> T getParameter(Class<T> parameterType, Annotation[] annotations,
-         Map<String, Map<String, Object>> properties) {
+         Map<String, Map<String, Object>> properties, ModulePropertyLocator propertyLocator) {
       return null;
    }
 

@@ -131,6 +131,92 @@ public class ModuleUtils {
    }
 
    /**
+    * Set the given property in the domain:name like properties map.
+    * <p>
+    * 
+    * @param domain
+    *           the first key
+    * @param name
+    *           the second key
+    * @param val
+    *           the object value
+    * @param properties
+    *           the map
+    */
+   static void setProperty(String domain, String name, Object val,
+         Map<String, Map<String, Object>> properties) {
+      Map<String, Object> map = properties.get(domain);
+      if (map == null) {
+         if (val != null) {
+            map = new HashMap<>();
+            properties.put(domain, map);
+         }
+      }
+      if (map != null) {
+         if (val == null) {
+            map.remove(name);
+         } else {
+            map.put(name, val);
+         }
+         if (map.isEmpty()) {
+            properties.remove(domain);
+         }
+      }
+   }
+
+   /**
+    * Override the domain with the given name, in domain:name like properties
+    * map, with the one provided.
+    * <p>
+    * 
+    * @param dname
+    *           domain name
+    * @param domain
+    *           the domain values
+    * @param properties
+    *           the properties
+    */
+   static void overrideDomain(String dname, Map<String, Object> domain,
+         Map<String, Map<String, Object>> properties) {
+      if (domain == null || domain.isEmpty()) {
+         properties.remove(dname);
+      } else {
+         for (String skey : domain.keySet()) {
+            Object val = domain.get(skey);
+            setProperty(dname, skey, val, properties);
+         }
+      }
+   }
+
+   /**
+    * Override the properties from source to target in a domain:properties like
+    * map.
+    * <p>
+    * 
+    * @param source
+    *           the source of properties
+    * @param target
+    *           the target of properties to be overridden
+    * @return the overridden map 
+    */
+   static Map<String, Map<String, Object>> override(
+         Map<String, Map<String, Object>> source,
+         Map<String, Map<String, Object>> target) {
+      if (target == null || target.isEmpty()) {
+         target = source;
+      }
+      if (source == null || source.isEmpty()) {
+         return target;
+      } else if (source != target) {
+         for (String dname : source.keySet()) {
+            Map<String, Object> domain = source.get(dname);
+            overrideDomain(dname, domain, target);
+         }
+      }
+      return target;
+   }
+
+   /**
     * Return a property annotation, or null if annotations is null or empty.
     * <p>
     * This method will throw an exception if there are more than one property

@@ -45,7 +45,8 @@ import java.util.Set;
  * module configuration domain.</li>
  * <li>If the provider is not found at these default places within configuration
  * manager then try to load the provider using an instance of
- * {@link ParameterProvider#getParameter(Class, Annotation[], Map)}</li>
+ * {@link ParameterProvider#getParameter(Class, Annotation[], Map, ModulePropertyLocator)}
+ * </li>
  * <li>If the provider can not be loaded it will cause a null pointer exception.
  * </li>
  * </ol>
@@ -97,6 +98,10 @@ public class DefaultModuleLoader implements ModuleLoader {
     */
    private ConfigManager config;
 
+   /**
+    * The locator strategy to locate module's properties. This will first locate
+    * properties from a configuration manager and then from a properties map.
+    */
    private final ModulePropertyLocator locator;
 
    /**
@@ -131,40 +136,71 @@ public class DefaultModuleLoader implements ModuleLoader {
       // Make the necessary checks
       ArgsCheck.notNull("clazz", clazz);
 
+      // Resolve the properties of this module (clazz). These are the
+      // static properties that are described by @Module annotation
+      Map<String, Map<String, Object>> properties = ModuleUtils
+            .resolveModuleConfig(clazz);
       // Try to load with the specified provider
       // If provider is not null or it is not a type of
       // NULLVal that means we have a provider
       if (provider != null && !provider.equals(NULLVal.class)) {
-         return loadModule(clazz, provider, null);
+         return loadModule(clazz, provider, properties, locator);
       }
-      // Fallback to default strategy
-      // Get the properties from module annotation @Module (if it is present)
-      Map<String, Map<String, Object>> properties = ModuleUtils
-            .resolveModuleConfig(clazz);
+
       // Locate the provider (if available)
       provider = locator.getModuleProviderClassFor(clazz, config, properties);
-      // 1 - Case where there is not a default loader
+      // 1 - Case where there is not a provider
       if (provider == null) {
-         return loadNoLoader(clazz, properties);
+         return loadNoLoader(clazz, properties, locator);
       }
 
-      // 2 - Case where there is a default provider
-      return loadModule(clazz, provider, properties);
+      // 2 - Case where there is a provider
+      return loadModule(clazz, provider, properties, locator);
    }
 
+   /**
+    * {@inheritDoc}
+    */
    @Override
    public <T> T load(Class<T> clazz, Map<String, Map<String, Object>> properties) {
       ArgsCheck.notNull("clazz", clazz);
-      if (properties == null) {
-         properties = ModuleUtils.resolveModuleConfig(clazz);
+      // Because this will be a dynamic properties resolving strategy we should
+      // create a dynamic locator that will look into the provided properties
+      ModulePropertyLocator thisLocator;
+      // If there are provided properties then just set this
+      // module to be loaded with dynamic properties
+      if (properties != null) {
+         thisLocator = new DynamicModulePropertyLocator(properties);
+      } else {
+         // Use default locating strategy if there are not dynamic properties
+         thisLocator = locator;
       }
-      Class<?> provider = locator.getModuleProviderClassFor(clazz, config,
-            properties);
+      return load(clazz, thisLocator);
+   }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public <T> T load(Class<T> clazz, ModulePropertyLocator propertyLocator) {
+      ArgsCheck.notNull("clazz", clazz);
+      // If locator is null we should use the default locating strategy
+      if (propertyLocator == null) {
+         propertyLocator = locator;
+      }
+      // Load the static properties described at @Module annotation for
+      // the given module
+      Map<String, Map<String, Object>> properties = ModuleUtils
+            .resolveModuleConfig(clazz);
+      Class<?> provider = propertyLocator.getModuleProviderClassFor(clazz,
+            config, properties);
+      // If there is not a provider then load without a provider
       if (provider == null) {
-         return loadNoLoader(clazz, properties);
+         return loadNoLoader(clazz, properties, propertyLocator);
       }
 
-      return loadModule(clazz, provider, properties);
+      // Load with provider
+      return loadModule(clazz, provider, properties, propertyLocator);
    }
 
    /**
@@ -180,23 +216,23 @@ public class DefaultModuleLoader implements ModuleLoader {
     */
    @SuppressWarnings("unchecked")
    private <T> T loadModule(Class<T> moduleType, Class<?> provider,
-         Map<String, Map<String, Object>> properties) {
-      // To load a module with @Module annotation
-      // 1- There is a specified loader, so this loader should be used to
-      // load the module
-      // 2 - There is not a specified loader
-      // a) The class has a constructor with the @ProvideModule instance
-      // b) The class has a default constructor which will be used to load it
+         Map<String, Map<String, Object>> properties,
+         ModulePropertyLocator propertyLocator) {
+      // Try to get an instance method first.
+      // We prioritize instance methods because they can provide
+      // a better loading in general (they can be overrided by subtypes,
+      // which allows the loading to be dynamic).
       Method method = getInstanceLoaderMethod(moduleType, provider);
       Object providerInstance = null;
 
+      // If method is found then the provider will be considered a module
+      // so try to resolve the provider (load it, or get it from properties).
       if (method != null) {
-         if (properties == null) {
-            properties = ModuleUtils.resolveModuleConfig(moduleType);
-         }
          providerInstance = resolveModuleProvider(moduleType, provider,
-               properties);
+               properties, propertyLocator);
       } else {
+         // The provider doesn't have an instance method so we should
+         // try to find a static method
          method = getStaticLoaderMethod(moduleType, provider);
       }
 
@@ -210,25 +246,82 @@ public class DefaultModuleLoader implements ModuleLoader {
          // The case when the moduleType is a super type of the provider
          // so we can safely create an instance of the provider itself
          if (moduleType.isAssignableFrom(provider)) {
-            if (properties == null) {
-               properties = ModuleUtils.resolveModuleConfig(provider);
-            }
-            return (T) resolveLoader(provider, properties).load(provider);
+            // Resolve a loader (from configurations, or create one), and load
+            // the provider
+            return (T) resolveLoader(provider, properties, propertyLocator)
+                  .load(provider, propertyLocator);
          }
 
+         // We should throw an exception here, because the provider doesn't have
+         // an
+         // instance method not or a static method, also he is not a subtype of
+         // the module
+         // so we can load it.
          throw new IllegalArgumentException(
                "the specified provider: "
                      + provider
                      + " doesn't have a method annotated with @ProvideModule with a return type of: "
                      + moduleType);
       }
-      // Try to execute the method with annotation
-      // @ProvideModule
-      if (properties == null) {
-         properties = ModuleUtils.resolveModuleConfig(moduleType);
+
+      // Execute the provider method and load the module
+      return executor.execute(providerInstance, provider, method, properties,
+            propertyLocator);
+   }
+
+   /**
+    * If module doesn't have a provider, it should be loaded using its
+    * constructors, that means that the module must have a constructor annotated
+    * with @ProvideModule (a.k.a. the provider constructor), or a default
+    * constructor (no parameters).
+    * 
+    * @param moduleType
+    * @param properties
+    * @param propertyLocator
+    * @return
+    */
+   private <T> T loadNoLoader(Class<T> moduleType,
+         Map<String, Map<String, Object>> properties,
+         ModulePropertyLocator propertyLocator) {
+
+      // Create filters to look up the constructors
+      // A constructor must be accessible by this loader
+      Filter<Constructor<?>> accessFilter = new AccessibleMemberFilter<Constructor<?>>(
+            moduleType, getClass());
+      Filter<Constructor<?>> filter = FilterUtils.and(constructorLoaderFilter,
+            accessFilter);
+
+      // Find any constructor with @ProvideModule annotation
+      // If no such constructor then find the default one
+      Set<Constructor<T>> cons = ReflectionUtils.getConstructors(moduleType,
+            filter);
+      Constructor<T> constructor = null;
+      if (!cons.isEmpty()) {
+         constructor = cons.iterator().next();
+      } else {
+         constructor = ReflectionUtils.getDefaultConstructor(moduleType);
       }
 
-      return executor.execute(providerInstance, provider, method, properties);
+      // If no suitable constructor was find that means we have
+      // module that can not be loaded
+      if (constructor == null) {
+         throw new IllegalArgumentException(
+               "no annotated (@ProvideModule) or default constructor found for type "
+                     + moduleType);
+      }
+
+      // Execute the default constructor if this is the default
+      if (constructor.getParameterTypes().length == 0) {
+         try {
+            return constructor.newInstance();
+         } catch (InstantiationException | IllegalAccessException
+               | IllegalArgumentException | InvocationTargetException ex) {
+            throw new IllegalArgumentException(ex);
+         }
+      }
+      // Execute the provider constructor
+      return executor.execute(moduleType, constructor, properties,
+            propertyLocator);
    }
 
    /**
@@ -236,30 +329,38 @@ public class DefaultModuleLoader implements ModuleLoader {
     * <p>
     * Will look first at the default configuration domains if there is a
     * provider instance already there, using
-    * {@link ModuleUtils#getModuleProvider(Class, Class, ConfigManager, Map)} .
-    * If the provider was not found it will retrieve it using a parameter
-    * provider. If it was not found, then the provider will be considered a
-    * module and will be loaded by this loader.
+    * {@link ModulePropertyLocator#getModuleProvider(Class, Class, ConfigManager, Map)}
+    * . If the provider was not found it will retrieve it using a loader. If it
+    * was not found, then the provider will be considered a module and will be
+    * loaded by this loader.
     * 
     * @param type
     * @param provider
     * @param properties
+    * @param propertyLocator
+    *           if its different from default locator then the strategy of
+    *           looking up properties will be implemented by this locator.
     * @return
     */
    protected <T> T resolveModuleProvider(Class<?> type, Class<T> provider,
-         Map<String, Map<String, Object>> properties) {
+         Map<String, Map<String, Object>> properties,
+         ModulePropertyLocator propertyLocator) {
 
-      T pInstance = locator.getModuleProvider(type, provider, config,
+      // Look up a provider for the given module (type)
+      T pInstance = propertyLocator.getModuleProvider(type, provider, config,
             properties);
       // If the provider was not found then we should create
-      // the provider by using the parameter provider
+      // the provider by using a loader
       if (pInstance == null) {
          // It will create it first by looking for a loader (like this one)
          // if a loader was not found then it will create a loader
-         // and load the provider
-         ModuleLoader providerLoader = resolveLoader(provider, properties);
+         // and load the provider. We look up for a loader because we
+         // allows the loaders of a class to be changed at runtime, so
+         // we may have dynamic loading.
+         ModuleLoader providerLoader = resolveLoader(provider, properties,
+               propertyLocator);
          // Load the instance
-         pInstance = providerLoader.load(provider);
+         pInstance = providerLoader.load(provider, propertyLocator);
       }
       return pInstance;
    }
@@ -268,24 +369,29 @@ public class DefaultModuleLoader implements ModuleLoader {
     * This will resolve a loader for the given type.
     * <p>
     * It is different to
-    * {@link ModuleUtils#resolveLoader(Class, ConfigManager, Map)} in that it
-    * will not create a an instance of this type each time a loader is not
-    * found, but it will return this instance. We assume that each instance of
-    * this loader perform the same in any circumstance.
+    * {@link ModulePropertyLocator#resolveLoader(Class, ConfigManager, Map)} in
+    * that it will not create a an instance of this type each time a loader is
+    * not found, but it will return this instance. We assume that each instance
+    * of this loader perform the same in any circumstance.
     * 
     * @param type
     * @param properties
+    * @param propertyLocator
+    *           if its different from default locator then the strategy of
+    *           looking up properties will be implemented by this locator.
     * @return
     */
    protected ModuleLoader resolveLoader(Class<?> type,
-         Map<String, Map<String, Object>> properties) {
+         Map<String, Map<String, Object>> properties,
+         ModulePropertyLocator propertyLocator) {
 
-      ModuleLoader loader = locator.getLoader(type, config, properties);
+      // Try to locate the loader
+      ModuleLoader loader = propertyLocator.getLoader(type, config, properties);
       // If no loader was found then try to find a loader class
       // for the given type
       if (loader == null) {
-         Class<? extends ModuleLoader> loaderClass = locator.getLoaderClassFor(
-               type, config, properties);
+         Class<? extends ModuleLoader> loaderClass = propertyLocator
+               .getLoaderClassFor(type, config, properties);
          // No loader class was found for this type
          // we should provide the default loader
          if (loaderClass.equals(DefaultModuleLoader.class)) {
@@ -296,8 +402,8 @@ public class DefaultModuleLoader implements ModuleLoader {
             // this custom loader by resolving a loader for
             // it
             loader = resolveLoader(loaderClass,
-                  ModuleUtils.resolveModuleConfig(loaderClass)).load(
-                  loaderClass);
+                  ModuleUtils.resolveModuleConfig(loaderClass), propertyLocator)
+                  .load(loaderClass, propertyLocator);
          }
       }
       return loader;
@@ -356,61 +462,12 @@ public class DefaultModuleLoader implements ModuleLoader {
       return method;
    }
 
-   private <T> T loadNoLoader(Class<T> moduleType,
-         Map<String, Map<String, Object>> properties) {
-      // To load a module without a @Module annotations
-      // 1) There is a constructor with an annotation @ProvideModule
-      // 2) There is no constructor with such annotation but there is
-      // a default constructor
-
-      // Create filters to look up the constructors
-      // A constructor must be accessible by this loader
-      Filter<Constructor<?>> accessFilter = new AccessibleMemberFilter<Constructor<?>>(
-            moduleType, getClass());
-      Filter<Constructor<?>> filter = FilterUtils.and(constructorLoaderFilter,
-            accessFilter);
-
-      // Find any constructor with @ProvideModule annotation
-      // If no such constructor then find the default one
-      Set<Constructor<T>> cons = ReflectionUtils.getConstructors(moduleType,
-            filter);
-      Constructor<T> constructor = null;
-      if (!cons.isEmpty()) {
-         constructor = cons.iterator().next();
-      } else {
-         constructor = ReflectionUtils.getDefaultConstructor(moduleType);
-      }
-
-      if (constructor == null) {
-         throw new IllegalArgumentException(
-               "no annotated (@ProvideModule) or default constructor found for type "
-                     + moduleType);
-      }
-
-      // Execute the default constructor if this is the default
-      if (constructor.getParameterTypes().length == 0) {
-         try {
-            return constructor.newInstance();
-         } catch (InstantiationException | IllegalAccessException
-               | IllegalArgumentException | InvocationTargetException ex) {
-            throw new IllegalArgumentException(ex);
-         }
-      }
-
-      // Try to execute the constructor with annotation
-      // @ProvideModule
-      if (properties == null) {
-         properties = ModuleUtils.resolveModuleConfig(moduleType);
-      }
-      return executor.execute(moduleType, constructor, properties);
-   }
-
    /**
     * Resolve a parameter provider for the given type.
     * <p>
     * The parameter will be searched at the default domains using
-    * {@link ModuleUtils#getParameterProvider(Class, ConfigManager, Map)} if it
-    * was not found there, it will be created using a default parameter
+    * {@link ModulePropertyLocator#getParameterProvider(Class, ConfigManager, Map)}
+    * if it was not found there, it will be created using a default parameter
     * provider.
     * 
     * @param type
@@ -418,18 +475,23 @@ public class DefaultModuleLoader implements ModuleLoader {
     * @return
     */
    protected ParameterProvider resolveParameterProvider(Class<?> type,
-         Map<String, Map<String, Object>> properties) {
-      ParameterProvider provider = locator.getParameterProvider(type, config,
-            properties);
+         Map<String, Map<String, Object>> properties,
+         ModulePropertyLocator propertyLocator) {
+      // Locate a parameter provider for the given type
+      ParameterProvider provider = propertyLocator.getParameterProvider(type,
+            config, properties);
       // If no provider was found then create a default provider
       if (provider == null) {
-         Class<? extends ParameterProvider> pClass = locator
+         Class<? extends ParameterProvider> pClass = propertyLocator
                .getParameterProviderClassFor(type, config, properties);
-         // If there is the default parameter privder, but it is not
+         // If there is the default parameter provider, but it is not
          // resolved then try to resolve it
          if (pClass.equals(DefaultParameterProvider.class)) {
             // Try to load the cached default parameter provider instance
             if (this.parameterProvider == null) {
+               // We do not need a synchronize here because even if another
+               // thread creates another provider it will be of the same type,
+               // and it will have the same functionality
                this.parameterProvider = new DefaultParameterProvider(config,
                      this);
             }
@@ -440,7 +502,8 @@ public class DefaultModuleLoader implements ModuleLoader {
             // this custom provider by resolving a loader for
             // it
             provider = resolveLoader(pClass,
-                  ModuleUtils.resolveModuleConfig(pClass)).load(pClass);
+                  ModuleUtils.resolveModuleConfig(pClass), propertyLocator)
+                  .load(pClass, propertyLocator);
          }
       }
       return provider;
@@ -452,7 +515,8 @@ public class DefaultModuleLoader implements ModuleLoader {
     * 
     * @author Elvis
     */
-   private static class InstanceMethodLoaderFilter implements Filter<Method> {
+   private static final class InstanceMethodLoaderFilter implements
+         Filter<Method> {
 
       @Override
       public boolean accept(Method t) {
@@ -469,7 +533,7 @@ public class DefaultModuleLoader implements ModuleLoader {
     * 
     * @author Elvis
     */
-   static class StaticMethodLoaderFilter implements Filter<Method> {
+   static final class StaticMethodLoaderFilter implements Filter<Method> {
 
       @Override
       public boolean accept(Method t) {
@@ -486,7 +550,7 @@ public class DefaultModuleLoader implements ModuleLoader {
     * 
     * @author Elvis
     */
-   static class ConstructorLoaderFilter implements Filter<Constructor<?>> {
+   static final class ConstructorLoaderFilter implements Filter<Constructor<?>> {
 
       @Override
       public boolean accept(Constructor<?> t) {
@@ -504,13 +568,14 @@ public class DefaultModuleLoader implements ModuleLoader {
     * @version 0.0.1
     * @since 0.0.1
     */
-   private class Executor extends AbstractMethodConstructorExecutor {
+   private final class Executor extends AbstractMethodConstructorExecutor {
 
       @Override
       protected ParameterProvider resolveParameterProvider(Class<?> type,
-            Map<String, Map<String, Object>> properties) {
+            Map<String, Map<String, Object>> properties,
+            ModulePropertyLocator propertyLocator) {
          return DefaultModuleLoader.this.resolveParameterProvider(type,
-               properties);
+               properties, propertyLocator);
       }
    }
 
@@ -518,5 +583,5 @@ public class DefaultModuleLoader implements ModuleLoader {
     * A method and constructor executor.
     * <p>
     */
-   private Executor executor = new Executor();
+   private final Executor executor = new Executor();
 }

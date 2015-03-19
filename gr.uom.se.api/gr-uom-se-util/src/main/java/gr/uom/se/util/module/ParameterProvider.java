@@ -34,8 +34,9 @@ public interface ParameterProvider {
     *           the annotations for the given type
     * @param properties
     *           the default properties to find a value for the given type
+    * @param propertyLocator TODO
     * @return a value for the given parameter type
     */
    <T> T getParameter(Class<T> parameterType, Annotation[] annotations,
-         Map<String, Map<String, Object>> properties);
+         Map<String, Map<String, Object>> properties, ModulePropertyLocator propertyLocator);
 }

@@ -6,6 +6,7 @@ package gr.uom.se.util.manager;
 import gr.uom.se.util.manager.annotations.Activator;
 import gr.uom.se.util.module.AbstractMethodConstructorExecutor;
 import gr.uom.se.util.module.ModuleManager;
+import gr.uom.se.util.module.ModulePropertyLocator;
 import gr.uom.se.util.module.ModuleUtils;
 import gr.uom.se.util.module.ParameterProvider;
 import gr.uom.se.util.validation.ArgsCheck;
@@ -111,7 +112,7 @@ public abstract class AbstractActivatorManager implements ActivatorManager {
             this.getClass());
       if (method != null) {
          executor.execute(null, activator, method,
-               ModuleUtils.resolveModuleConfig(activator));
+               ModuleUtils.resolveModuleConfig(activator), null);
       } else {
          // Create an instance first
          Object instance = getModuleManager().getLoader(activator).load(
@@ -127,7 +128,7 @@ public abstract class AbstractActivatorManager implements ActivatorManager {
          }
          // Execute the activator method
          executor.execute(instance, instance.getClass(), method,
-               ModuleUtils.resolveModuleConfig(instance.getClass()));
+               ModuleUtils.resolveModuleConfig(instance.getClass()), null);
       }
       deps.remove(activator);
       actives.add(activator);
@@ -184,7 +185,7 @@ public abstract class AbstractActivatorManager implements ActivatorManager {
 
       @Override
       protected ParameterProvider resolveParameterProvider(Class<?> type,
-            Map<String, Map<String, Object>> properties) {
+            Map<String, Map<String, Object>> properties, ModulePropertyLocator propertyLocator) {
          return getModuleManager().getParameterProvider(type);
       }
    }

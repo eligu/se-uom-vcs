@@ -8,6 +8,7 @@ import gr.uom.se.util.manager.annotations.Stop;
 import gr.uom.se.util.module.AbstractMethodConstructorExecutor;
 import gr.uom.se.util.module.ModuleLoader;
 import gr.uom.se.util.module.ModuleManager;
+import gr.uom.se.util.module.ModulePropertyLocator;
 import gr.uom.se.util.module.ModuleUtils;
 import gr.uom.se.util.module.ParameterProvider;
 import gr.uom.se.util.reflect.ReflectionUtils;
@@ -340,7 +341,7 @@ public abstract class AbstractMainManager implements MainManager {
       if (initMethod != null) {
          executor.execute(managerInstance, managerInstance.getClass(),
                initMethod,
-               ModuleUtils.resolveModuleConfig(managerInstance.getClass()));
+               ModuleUtils.resolveModuleConfig(managerInstance.getClass()), null);
          logger.info("Starting manager: " + managerInstance);
       }
       managerKey.started = true;
@@ -391,7 +392,7 @@ public abstract class AbstractMainManager implements MainManager {
       if (stopMethod != null) {
          executor.execute(managerInstance, managerInstance.getClass(),
                stopMethod,
-               ModuleUtils.resolveModuleConfig(managerInstance.getClass()));
+               ModuleUtils.resolveModuleConfig(managerInstance.getClass()), null);
          logger.info("Stopping manager: " + managerInstance);
       }
       managerKey.started = false;
@@ -553,7 +554,7 @@ public abstract class AbstractMainManager implements MainManager {
 
       @Override
       protected ParameterProvider resolveParameterProvider(Class<?> type,
-            Map<String, Map<String, Object>> properties) {
+            Map<String, Map<String, Object>> properties, ModulePropertyLocator propertyLocator) {
          return getModuleManager().getParameterProvider(type);
       }
    }

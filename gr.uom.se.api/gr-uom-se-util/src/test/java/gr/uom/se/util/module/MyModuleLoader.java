@@ -37,4 +37,13 @@ public class MyModuleLoader implements ModuleLoader {
       return null;
    }
 
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public <T> T load(Class<T> clazz, ModulePropertyLocator propertyLocator) {
+      // TODO Auto-generated method stub
+      return null;
+   }
+
 }

@@ -43,6 +43,14 @@ public interface ModuleLoader {
    /**
     * Given a type and a properties map, get an instance of it.
     * <p>
+    * The properties given in this method will override any properties that the
+    * module loader can resolve in order to build the module with its
+    * dependencies. They will also override any properties of any dependency
+    * that should be created (should be considered a module). That is, calling
+    * this method will ensure that if a property that needs to be resolved by
+    * the loader in order to build the module and all its dependencies is found
+    * within these properties it will be used, otherwise it will use its default
+    * strategy to resolve the properties. This is called dynamic loading.
     * 
     * @param clazz
     *           the type of required instance, must not be null
@@ -52,4 +60,19 @@ public interface ModuleLoader {
     * @return an instance of type {@code clazz}
     */
    <T> T load(Class<T> clazz, Map<String, Map<String, Object>> properties);
+
+   /**
+    * Given a type and a property locator, get an instance of the type.
+    * <p>
+    * This method will use the provided property locator in order to resolve its
+    * properties (dependencies or other config properties).
+    * 
+    * @param clazz
+    *           the type of required instance, must not be null
+    * @param properties
+    *           a map of properties to be used to load the instance, may be
+    *           null.
+    * @return an instance of type {@code clazz}
+    */
+   <T> T load(Class<T> clazz, ModulePropertyLocator propertyLocator);
 }

@@ -177,9 +177,9 @@ public class DefaultManagerTest {
       // Set up the properties to be injected
       Map<String, Object> dbconfig = new HashMap<>();
       String port = "1045";
-      String username = "user";
-      String password = "123456";
-      String driver = "org.example.jdbc.Driver";
+      String username = "default";
+      String password = "userpass";
+      String driver = "com.example.jdbc.Driver";
       dbconfig.put("port", port);
       dbconfig.put("username", username);
       dbconfig.put("password", password);
@@ -197,10 +197,10 @@ public class DefaultManagerTest {
       
       ConnectionConfig cconfig = db.getConnection().getConfig();
       assertNotNull(cconfig);
-      System.out.println("Port" + cconfig.getPort() + 
-            ", Username " + cconfig.getUsername() + 
-            ", Password " + cconfig.getPassword() +
-            ", Driver " + cconfig.getJdbcDriver());
+      assertEquals(Integer.parseInt(port), cconfig.getPort());
+      assertEquals(username, cconfig.getUsername());
+      assertEquals(password, cconfig.getPassword());
+      assertEquals(driver, cconfig.getJdbcDriver());
       
    }
 

@@ -24,12 +24,13 @@ import java.util.Map;
  * <li>Based on these coordinates (domain, name) the configuration manager will
  * be queried for the parameter value. If found it will be returned.</li>
  * <li>If the value was not found on the previous step, the map provided when
- * the method {@link #getParameter(Class, Annotation[], Map)} is called will be
- * queried for the value. If found and the value is the same as type as the
- * parameter then it will be returned. If found and the value is not the same
- * type as the parameter, then its toString() method will be called and the
- * string representation of it will be converted to a value which is compatible
- * with the parameter.</li>
+ * the method
+ * {@link #getParameter(Class, Annotation[], Map, ModulePropertyLocator)} is
+ * called will be queried for the value. If found and the value is the same as
+ * type as the parameter then it will be returned. If found and the value is not
+ * the same type as the parameter, then its toString() method will be called and
+ * the string representation of it will be converted to a value which is
+ * compatible with the parameter.</li>
  * <li>If the value was not found in the previous step then the
  * {@code stringVal} value of the annotation will be analyzed. If the string
  * value is equals to {@link NULLVal#NULL_STR} a null will be returned. If it is
@@ -85,7 +86,7 @@ public class DefaultParameterProvider implements ParameterProvider {
     * This loader is a cached loader for the default loader.
     */
    protected ModuleLoader loader;
-   
+
    private final ModulePropertyLocator locator;
 
    /**
@@ -106,13 +107,21 @@ public class DefaultParameterProvider implements ParameterProvider {
     */
    @Override
    public <T> T getParameter(Class<T> parameterType, Annotation[] annotations,
-         Map<String, Map<String, Object>> properties) {
+         Map<String, Map<String, Object>> properties,
+         ModulePropertyLocator propertyLocator) {
+
+      // In case the others do not provide any locator, we should use the
+      // default one
+      if (propertyLocator == null) {
+         propertyLocator = locator;
+      }
 
       // If there are not annotations the loader will try to parse the
       // parameter metadata and to find info if it can be loaded
       // by this loader
       if (annotations == null || annotations.length == 0) {
-         return resolveLoader(parameterType, properties).load(parameterType);
+         return resolveLoader(parameterType, properties, propertyLocator).load(
+               parameterType, propertyLocator);
       }
 
       // We should check the number of @Property annotations
@@ -123,17 +132,20 @@ public class DefaultParameterProvider implements ParameterProvider {
       // In case this parameter has other annotations
       // rather than known ones
       if (propertyAnnotation == null) {
-         return resolveLoader(parameterType, properties).load(parameterType);
+         return resolveLoader(parameterType, properties, propertyLocator).load(
+               parameterType, propertyLocator);
       }
 
       // We have a @Property annotation
       // and we should extract info from there
-      return extractValue(parameterType, propertyAnnotation, properties);
+      return extractValue(parameterType, propertyAnnotation, properties,
+            propertyLocator);
    }
 
    protected ModuleLoader resolveLoader(Class<?> type,
-         Map<String, Map<String, Object>> properties) {
-      ModuleLoader loader = locator.getLoader(type, config, properties);
+         Map<String, Map<String, Object>> properties,
+         ModulePropertyLocator propertyLocator) {
+      ModuleLoader loader = propertyLocator.getLoader(type, config, properties);
       // If no loader was found then create a default module loader
       // if it is not created
       if (loader == null) {
@@ -159,51 +171,36 @@ public class DefaultParameterProvider implements ParameterProvider {
     * @return
     */
    protected <T> T extractValue(Class<T> parameterType, Property annotation,
-         Map<String, Map<String, Object>> properties) {
+         Map<String, Map<String, Object>> properties,
+         ModulePropertyLocator propertyLocator) {
       String domain = annotation.domain();
       String name = annotation.name();
       String strval = annotation.stringVal();
-      return this.extractValue(parameterType, domain, name, strval, properties);
+      return this.extractValue(parameterType, domain, name, strval, properties,
+            propertyLocator);
    }
 
    @SuppressWarnings("unchecked")
    protected <T> T extractValue(Class<T> parameterType, String domain,
-         String name, String strval, Map<String, Map<String, Object>> properties) {
+         String name, String strval,
+         Map<String, Map<String, Object>> properties,
+         ModulePropertyLocator propertyLocator) {
 
-      T val = null;
+      Object pVal = propertyLocator.getProperty(domain, name, Object.class,
+            config, properties);
 
-      // Check first if there is a value defined in config manager
-      if (config != null) {
-         val = config.getProperty(domain, name, parameterType);
-         if (val != null) {
-            return val;
+      // If the value is found,
+      // check if it is a compatible type with T, if so
+      // return the value, otherwise consider the value as
+      // a string which should be parsed and converted to
+      // a value
+      if (pVal != null) {
+         if (parameterType.isAssignableFrom(pVal.getClass())) {
+            return (T) pVal;
+         } else {
+            strval = pVal.toString();
          }
       }
-
-      // If there is not a value defined then check for a
-      // specific value within the metadata provided by the class
-      // itself
-      if (properties != null) {
-         // Check first for a value within default config
-         Map<String, Object> propDomain = properties.get(domain);
-         if (propDomain != null) {
-            Object pVal = propDomain.get(name);
-
-            // If the value is within the default config,
-            // check if it is a compatible type with T, if so
-            // return the value, otherwise consider the value as
-            // a string which should be parsed and converted to
-            // a value
-            if (pVal != null) {
-               if (parameterType.isAssignableFrom(pVal.getClass())) {
-                  return (T) pVal;
-               } else {
-                  strval = pVal.toString();
-               }
-            }
-         }
-      }
-
       // In this case the string val should have a value
       // If the value is same as NULL_STR that means we
       // should return a null value, if it is LOAD_STR then
@@ -214,14 +211,14 @@ public class DefaultParameterProvider implements ParameterProvider {
             return null;
          }
          if (strval.equals(NULLVal.LOAD_STR)) {
-            return getParameter(parameterType, null, properties);
+            return getParameter(parameterType, null, properties, null);
          }
       }
 
       // Use a mapper to map the default string value to the given type
       if (strval != null && !strval.isEmpty()) {
 
-         Mapper mapper = locator.getMapperOfType(parameterType,
+         Mapper mapper = propertyLocator.getMapperOfType(parameterType,
                String.class, parameterType, config, properties);
 
          if (mapper == null) {
