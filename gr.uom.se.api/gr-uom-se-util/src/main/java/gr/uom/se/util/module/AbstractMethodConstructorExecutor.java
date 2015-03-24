@@ -46,7 +46,8 @@ public abstract class AbstractMethodConstructorExecutor implements
 
    @Override
    public <T> T execute(Class<?> onBehalf, Constructor<T> constructor,
-         Map<String, Map<String, Object>> properties, ModulePropertyLocator propertyLocator) {
+         Map<String, Map<String, Object>> properties,
+         ModulePropertyLocator propertyLocator) {
 
       // Get the parameter types and its values in order to execute
       Class<?>[] parameterTypes = constructor.getParameterTypes();
@@ -88,12 +89,35 @@ public abstract class AbstractMethodConstructorExecutor implements
 
       Object[] parameterValues = new Object[parameterTypes.length];
       for (int i = 0; i < parameterTypes.length; i++) {
-         parameterValues[i] = resolveParameterProvider(type, properties, propertyLocator)
-               .getParameter(parameterTypes[i], annotations[i], properties, propertyLocator);
+         parameterValues[i] = resolveParameterProvider(type, properties,
+               propertyLocator).getParameter(parameterTypes[i], annotations[i],
+               properties, propertyLocator);
       }
       return parameterValues;
    }
 
+   /**
+    * Resolve a parameter provider in order to inject the values of each method
+    * or constructor when they will be executed.
+    * <p>
+    * Subclasses should always return a parameter provider, even in case there
+    * is no parameter provider for the given type.
+    * 
+    * @param type
+    *           the type to get the parameter provider for, usually the type of
+    *           the parameter of a method or a constructor.
+    * @param properties
+    *           a map of domain:property like properties where the
+    *           implementations can look for properties in order to resolve the
+    *           parameter provider.
+    * @param propertyLocator
+    *           a locator to locate properties in order to resolve the parameter
+    *           provider. Implementations should use this locator because this
+    *           is usually passed by the caller which define the strategy of how
+    *           to look for properties.
+    * @return a parameter provider for the given type.
+    */
    protected abstract ParameterProvider resolveParameterProvider(Class<?> type,
-         Map<String, Map<String, Object>> properties, ModulePropertyLocator propertyLocator);
+         Map<String, Map<String, Object>> properties,
+         ModulePropertyLocator propertyLocator);
 }

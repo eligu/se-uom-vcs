@@ -35,7 +35,7 @@ public class DefaultPropertyInjector implements PropertyInjector {
     * A provider of properties that are discovered when analyzing the fields of
     * a given instance.
     */
-   private ParameterProvider provider;
+   private volatile ParameterProvider provider;
 
    /**
     * A config manager to look for parameter provider each time a property

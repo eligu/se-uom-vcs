@@ -109,7 +109,7 @@ public class DefaultModuleLoader implements ModuleLoader {
     * method or constructor is required.
     * <p>
     */
-   private ParameterProvider parameterProvider;
+   private volatile ParameterProvider parameterProvider;
 
    @ProvideModule
    public DefaultModuleLoader(
@@ -125,7 +125,7 @@ public class DefaultModuleLoader implements ModuleLoader {
     */
    @Override
    public <T> T load(Class<T> clazz) {
-      return load(clazz, (Class<?>) null);
+      return load(clazz, locator);
    }
 
    /**
@@ -136,26 +136,17 @@ public class DefaultModuleLoader implements ModuleLoader {
       // Make the necessary checks
       ArgsCheck.notNull("clazz", clazz);
 
-      // Resolve the properties of this module (clazz). These are the
-      // static properties that are described by @Module annotation
-      Map<String, Map<String, Object>> properties = ModuleUtils
-            .resolveModuleConfig(clazz);
       // Try to load with the specified provider
       // If provider is not null or it is not a type of
       // NULLVal that means we have a provider
       if (provider != null && !provider.equals(NULLVal.class)) {
+         // Resolve the properties of this module (clazz). These are the
+         // static properties that are described by @Module annotation
+         Map<String, Map<String, Object>> properties = ModuleUtils
+               .resolveModuleConfig(clazz);
          return loadModule(clazz, provider, properties, locator);
       }
-
-      // Locate the provider (if available)
-      provider = locator.getModuleProviderClassFor(clazz, config, properties);
-      // 1 - Case where there is not a provider
-      if (provider == null) {
-         return loadNoLoader(clazz, properties, locator);
-      }
-
-      // 2 - Case where there is a provider
-      return loadModule(clazz, provider, properties, locator);
+      return load(clazz, locator);
    }
 
    /**
@@ -393,14 +384,17 @@ public class DefaultModuleLoader implements ModuleLoader {
          Class<? extends ModuleLoader> loaderClass = propertyLocator
                .getLoaderClassFor(type, config, properties);
          // No loader class was found for this type
-         // we should provide the default loader
+         // we should provide the default loader,
+         // this will ensure that we do not create
+         // each time the loader
          if (loaderClass.equals(DefaultModuleLoader.class)) {
             loader = this;
          } else {
             // The loader class for the given type is
             // not the default loader so we must load
             // this custom loader by resolving a loader for
-            // it
+            // it. This will make recursive calls which means
+            // we may have cyclic dependencies!!!
             loader = resolveLoader(loaderClass,
                   ModuleUtils.resolveModuleConfig(loaderClass), propertyLocator)
                   .load(loaderClass, propertyLocator);

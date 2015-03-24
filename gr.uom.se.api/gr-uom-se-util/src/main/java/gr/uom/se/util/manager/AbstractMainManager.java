@@ -40,11 +40,12 @@ public abstract class AbstractMainManager implements MainManager {
    /**
     * Main manager's logger.
     */
-   protected static final Logger logger = Logger.getLogger(MainManager.class.getName());
-   
+   protected static final Logger logger = Logger.getLogger(MainManager.class
+         .getName());
+
    /**
-    * A lock for synchronizing writes to managers and for allowing reads
-    * where there are no writes.
+    * A lock for synchronizing writes to managers and for allowing reads where
+    * there are no writes.
     */
    private ReentrantReadWriteLock managersLock = new ReentrantReadWriteLock();
    /**
@@ -341,7 +342,8 @@ public abstract class AbstractMainManager implements MainManager {
       if (initMethod != null) {
          executor.execute(managerInstance, managerInstance.getClass(),
                initMethod,
-               ModuleUtils.resolveModuleConfig(managerInstance.getClass()), null);
+               ModuleUtils.resolveModuleConfig(managerInstance.getClass()),
+               null);
          logger.info("Starting manager: " + managerInstance);
       }
       managerKey.started = true;
@@ -392,7 +394,8 @@ public abstract class AbstractMainManager implements MainManager {
       if (stopMethod != null) {
          executor.execute(managerInstance, managerInstance.getClass(),
                stopMethod,
-               ModuleUtils.resolveModuleConfig(managerInstance.getClass()), null);
+               ModuleUtils.resolveModuleConfig(managerInstance.getClass()),
+               null);
          logger.info("Stopping manager: " + managerInstance);
       }
       managerKey.started = false;
@@ -476,7 +479,7 @@ public abstract class AbstractMainManager implements MainManager {
          managersLock.readLock().unlock();
       }
    }
-  
+
    /**
     * Get a manager key who manager instance is a subtype of the given type or
     * is the same.
@@ -554,8 +557,16 @@ public abstract class AbstractMainManager implements MainManager {
 
       @Override
       protected ParameterProvider resolveParameterProvider(Class<?> type,
-            Map<String, Map<String, Object>> properties, ModulePropertyLocator propertyLocator) {
-         return getModuleManager().getParameterProvider(type);
+            Map<String, Map<String, Object>> properties,
+            ModulePropertyLocator propertyLocator) {
+         // Ask first the property locator if he can find the provider,
+         // if not then ask module manager
+         ParameterProvider provider = propertyLocator.getParameterProvider(
+               type, null, properties);
+         if (provider == null) {
+            provider = getModuleManager().getParameterProvider(type);
+         }
+         return provider;
       }
    }
 }

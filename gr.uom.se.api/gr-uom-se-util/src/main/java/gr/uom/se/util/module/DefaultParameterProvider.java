@@ -85,7 +85,7 @@ public class DefaultParameterProvider implements ParameterProvider {
     * <p>
     * This loader is a cached loader for the default loader.
     */
-   protected ModuleLoader loader;
+   protected volatile ModuleLoader loader;
 
    private final ModulePropertyLocator locator;
 
@@ -211,11 +211,22 @@ public class DefaultParameterProvider implements ParameterProvider {
             return null;
          }
          if (strval.equals(NULLVal.LOAD_STR)) {
-            return getParameter(parameterType, null, properties, propertyLocator);
+            // Pass null to annotations type so the provider will
+            // know about it and will load the parameter instead of
+            // passing it at this method again
+            return getParameter(parameterType, null, properties,
+                  propertyLocator);
          }
       }
 
-      // Use a mapper to map the default string value to the given type
+      // Use a mapper to map the default string value to the given type.
+      // This is the case when a string value has been specified as the
+      // default value for the property in its annotation. That means we
+      // should make a binding from string to the right type if we can.
+      // To bind a string value to a type, usually the type should be
+      // a primitive type or a primitive wrapper. However this can be
+      // changed if we specify a mapper which can maps that values
+      // accordingly.
       if (strval != null && !strval.isEmpty()) {
 
          Mapper mapper = propertyLocator.getMapperOfType(parameterType,

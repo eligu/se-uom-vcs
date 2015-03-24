@@ -28,8 +28,9 @@ public abstract class AbstractActivatorManager implements ActivatorManager {
    /**
     * The logger.
     */
-   private static final Logger logger = Logger.getLogger(ActivatorManager.class.getName()); 
-   
+   private static final Logger logger = Logger.getLogger(ActivatorManager.class
+         .getName());
+
    /**
     * Contains all activator types that has been previously activated.
     * <p>
@@ -185,8 +186,16 @@ public abstract class AbstractActivatorManager implements ActivatorManager {
 
       @Override
       protected ParameterProvider resolveParameterProvider(Class<?> type,
-            Map<String, Map<String, Object>> properties, ModulePropertyLocator propertyLocator) {
-         return getModuleManager().getParameterProvider(type);
+            Map<String, Map<String, Object>> properties,
+            ModulePropertyLocator propertyLocator) {
+         // Ask first the property locator if he can find the provider,
+         // if not then ask module manager
+         ParameterProvider provider = propertyLocator.getParameterProvider(
+               type, null, properties);
+         if(provider == null) {
+            provider = getModuleManager().getParameterProvider(type);
+         }
+         return provider;
       }
    }
 }
