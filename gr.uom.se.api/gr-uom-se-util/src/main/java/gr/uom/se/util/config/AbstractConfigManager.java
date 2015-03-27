@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package gr.uom.se.util.config;
 
@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * only its name {@link #loadDomain(String)}. If the domain should be loaded by
  * using its class, then use an implementation that is a module and can be
  * loaded by an instance of {@link ModuleLoader}.
- * 
+ *
  * @author Elvis Ligu
  * @version 0.0.1
  * @since 0.0.1
@@ -116,7 +116,7 @@ public abstract class AbstractConfigManager implements ConfigManager {
       Path folder = Paths.get(configFolder);
       if (!Files.isDirectory(folder)) {
          throw new IllegalArgumentException("Can not load domain " + domain
-               + " directory " + folder + " doesn't exist");
+                 + " directory " + folder + " doesn't exist");
       }
 
       Path file = Paths.get(configFolder, domain);
@@ -128,15 +128,15 @@ public abstract class AbstractConfigManager implements ConfigManager {
       }
       if (!Files.exists(file)) {
          throw new IllegalArgumentException("Can not load domain " + domain
-               + " default file doesn't exist in directory " + folder);
+                 + " default file doesn't exist in directory " + folder);
       }
       if (!Files.isReadable(file)) {
          throw new IllegalArgumentException("Can not load domain " + domain
-               + " file " + file + " is not readable");
+                 + " file " + file + " is not readable");
       }
       try {
          ConfigDomain cfgDomain = DefaultConfigDomain.load(domain,
-               configFolder, file.getFileName().toString());
+                 configFolder, file.getFileName().toString());
          return cfgDomain;
       } catch (IOException e) {
          throw new IllegalArgumentException(e);
@@ -164,7 +164,7 @@ public abstract class AbstractConfigManager implements ConfigManager {
       String name = domain.getName();
       if (name == null) {
          throw new IllegalArgumentException("The domain " + domain.getClass()
-               + " doesn't provide a name");
+                 + " doesn't provide a name");
       }
       this.domains.put(name, domain);
    }
@@ -179,12 +179,12 @@ public abstract class AbstractConfigManager implements ConfigManager {
     * <p>
     * Subclasses may override this method in order to provide a default location
     * for default config folder.
-    * 
+    *
     * @return
     */
    protected String getDefaultConfigFolder() {
       String configFolder = this.getProperty(
-            ConfigConstants.DEFAULT_CONFIG_FOLDER_PROPERTY, String.class);
+              ConfigConstants.DEFAULT_CONFIG_FOLDER_PROPERTY, String.class);
       if (configFolder == null) {
          configFolder = ConfigConstants.DEFAULT_CONFIG_FOLDER;
       }
@@ -201,12 +201,12 @@ public abstract class AbstractConfigManager implements ConfigManager {
     * <p>
     * Subclasses may override this method in order to provide a default location
     * for default config file.
-    * 
+    *
     * @return
     */
    protected String getDefaultConfigFile() {
       String configFolder = this.getProperty(
-            ConfigConstants.DEFAULT_CONFIG_FILE_PROPERTY, String.class);
+              ConfigConstants.DEFAULT_CONFIG_FILE_PROPERTY, String.class);
       if (configFolder == null) {
          configFolder = ConfigConstants.DEFAULT_CONFIG_FILE;
       }
@@ -223,12 +223,12 @@ public abstract class AbstractConfigManager implements ConfigManager {
     * <p>
     * Subclasses may override this method in order to provide a default config
     * name. The default config will be loaded first.
-    * 
+    *
     * @return
     */
    protected String getDefaultConfigDomain() {
       String domain = this.getProperty(
-            ConfigConstants.DEFAULT_CONFIG_DOMAIN_PROPERTY, String.class);
+              ConfigConstants.DEFAULT_CONFIG_DOMAIN_PROPERTY, String.class);
       if (domain == null) {
          domain = ConfigConstants.DEFAULT_CONFIG_DOMAIN;
       }
@@ -238,14 +238,14 @@ public abstract class AbstractConfigManager implements ConfigManager {
    /**
     * Add a domain to the list of domains.
     * <p>
-    * 
+    *
     * @param instanceDomain
     */
    private void addDomain(ConfigDomain instanceDomain) {
       String name = instanceDomain.getName();
       if (name == null) {
          throw new IllegalArgumentException("The loaded domain "
-               + instanceDomain.getClass() + " doesn't provide a name");
+                 + instanceDomain.getClass() + " doesn't provide a name");
       }
       /**
        * This will copy the default locations to the new domain because they can
@@ -257,9 +257,9 @@ public abstract class AbstractConfigManager implements ConfigManager {
          String configFile = getDefaultConfigFile();
 
          instanceDomain.setProperty(
-               ConfigConstants.DEFAULT_CONFIG_FOLDER_PROPERTY, configFolder);
+                 ConfigConstants.DEFAULT_CONFIG_FOLDER_PROPERTY, configFolder);
          instanceDomain.setProperty(
-               ConfigConstants.DEFAULT_CONFIG_FILE_PROPERTY, configFile);
+                 ConfigConstants.DEFAULT_CONFIG_FILE_PROPERTY, configFile);
       }
       this.domains.put(name, instanceDomain);
    }
@@ -267,19 +267,19 @@ public abstract class AbstractConfigManager implements ConfigManager {
    /**
     * Create a domain if there is not already a domain with the same name or
     * throw an exception.
-    * 
+    *
     * @param domain
     */
    private void createDomain(String domain) {
       if (domains.containsKey(domain)) {
          throw new IllegalArgumentException("domain " + domain
-               + " can not be created as it already exists");
+                 + " can not be created as it already exists");
       }
       DefaultConfigDomain cfgDomain = new DefaultConfigDomain(domain);
       ConfigDomain previous = domains.putIfAbsent(domain, cfgDomain);
       if (previous != null) {
          throw new IllegalArgumentException("Can not create domain " + domain
-               + " it already exists");
+                 + " it already exists");
       }
    }
 
@@ -298,7 +298,7 @@ public abstract class AbstractConfigManager implements ConfigManager {
    @Override
    public <T> T getProperty(String name, Class<T> propertyType) {
       return getProperty(ConfigConstants.DEFAULT_CONFIG_DOMAIN, name,
-            propertyType);
+              propertyType);
    }
 
    /**
@@ -306,10 +306,10 @@ public abstract class AbstractConfigManager implements ConfigManager {
     * <p>
     * The factory will be looked up at at default config domain. If a factory
     * the default factory instance will be returned.
-    * 
-    * @return
+    *
+    * @return the mapper factory
     */
-   private MapperFactory getMapperFactory() {
+   protected MapperFactory getMapperFactory() {
 
       // Look for the default mapper factory under the default
       // domain
@@ -331,6 +331,23 @@ public abstract class AbstractConfigManager implements ConfigManager {
    }
 
    /**
+    * Get a mapper that convert a value of type source to a value of type
+    * target.
+    * <p>
+    *
+    * @param source the source type of value to be converted
+    * @param target the target type of value to be returned after conversion
+    * @return a mapper to map values from source to target
+    */
+   protected Mapper getMapper(Class<?> source, Class<?> target) {
+      MapperFactory factory = getMapperFactory();
+      if (factory != null) {
+         return factory.getMapper(source, target);
+      }
+      return null;
+   }
+
+   /**
     * {@inheritDoc}
     */
    @SuppressWarnings("unchecked")
@@ -345,12 +362,11 @@ public abstract class AbstractConfigManager implements ConfigManager {
       }
       // If the value is not of the same type we need
       // to make a conversion if it is possible
-      MapperFactory factory = getMapperFactory();
-      Mapper mapper = factory.getMapper(val.getClass(), propertyType);
+      Mapper mapper = getMapper(val.getClass(), propertyType);
       if (mapper == null) {
          throw new IllegalArgumentException("The property at domain " + domain
-               + " named " + name + " with a type of " + val.getClass()
-               + " can not be converted to " + propertyType);
+                 + " named " + name + " with a type of " + val.getClass()
+                 + " can not be converted to " + propertyType);
       }
       return mapper.map(val, propertyType);
    }

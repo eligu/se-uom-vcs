@@ -25,7 +25,7 @@ import net.minidev.json.parser.ParseException;
 public class PrimitiveToStringMapper extends AbstractPrimitiveToStringMapper {
 
    
-
+   @Override
    protected boolean isPrimitive(Class<?> type) {
       return primitivesToWrappers.containsKey(type)
             || primitivesToWrappers.containsValue(type);

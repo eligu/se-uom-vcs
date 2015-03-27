@@ -41,8 +41,12 @@ public class MapperFactory {
     * The registered mappers.
     * <p>
     */
-   private Map<Class<?>, Map<Class<?>, Mapper>> mappers = null;
+   private ConcurrentHashMap<Class<?>, Map<Class<?>, Mapper>> mappers = null;
 
+   /**
+    * Intentionally left public. DO NOT create instances with this
+    * constructor. Instead use singleton method to get the instance.
+    */
    public MapperFactory() {
       mappers = new ConcurrentHashMap<>();
    }
@@ -63,6 +67,10 @@ public class MapperFactory {
    public <T, S> Mapper getMapper(Class<S> from, Class<T> to) {
       ArgsCheck.notNull("from", from);
       ArgsCheck.notNull("to", to);
+      // We do not need synchronization here, the reason is that
+      // we assume the mapper is checked for its presence at the
+      // beginning so if the map fromConverters is not found this
+      // is the same as the mapper is not found.
       Map<Class<?>, Mapper> fromConverters = mappers.get(from);
       Mapper mapper = null;
       if (fromConverters != null) {
@@ -91,7 +99,7 @@ public class MapperFactory {
       ArgsCheck.notNull("to", to);
       if (fromConverters == null) {
          fromConverters = new ConcurrentHashMap<>();
-         mappers.put(from, fromConverters);
+         fromConverters = mappers.putIfAbsent(from, fromConverters);
       }
       fromConverters.put(to, converter);
    }

@@ -124,8 +124,9 @@ public final class Maps {
     * Get a new instance of an ordered bi directional map.
     * <p>
     * 
-    * @param keyComp
+    * @param keyCom
     *           key comparator.
+     * @param valueComp the value comparator.
     * @return a new instance of an ordered bi map.
     */
    public static <K, V> OrderedBiMap<K, V> newOrderedBiMap(
