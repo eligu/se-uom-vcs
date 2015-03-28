@@ -38,8 +38,8 @@ import java.util.Map;
  */
 public class ManagerProvider implements ParameterProvider {
 
-   private ParameterProvider defaultProvider;
-   private MainManager manager;
+   private final ParameterProvider defaultProvider;
+   private final MainManager manager;
 
    @ProvideModule
    public ManagerProvider(

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -47,23 +48,23 @@ public abstract class AbstractMainManager implements MainManager {
     * A lock for synchronizing writes to managers and for allowing reads where
     * there are no writes.
     */
-   private ReentrantReadWriteLock managersLock = new ReentrantReadWriteLock();
+   private final ReentrantReadWriteLock managersLock = new ReentrantReadWriteLock();
    /**
     * The set of loaded managers.
     * <p>
     */
-   private List<Key> managers = new ArrayList<Key>();
+   private final List<Key> managers = new ArrayList<>();
 
    /**
     * The set of registered manager classes.
     * <p>
     */
-   private Set<Class<?>> registeredManagers = new HashSet<>();
+   private final Set<Class<?>> registeredManagers = new HashSet<>();
 
    /**
     * Used to execute init and stop methods.
     */
-   private Executor executor = new Executor();
+   private final Executor executor = new Executor();
 
    public AbstractMainManager() {
    }
@@ -344,7 +345,7 @@ public abstract class AbstractMainManager implements MainManager {
                initMethod,
                ModuleUtils.resolveModuleConfig(managerInstance.getClass()),
                null);
-         logger.info("Starting manager: " + managerInstance);
+         logger.log(Level.INFO, "Manager started: {0}", managerInstance);
       }
       managerKey.started = true;
       return (T) managerKey.manager;
@@ -396,7 +397,7 @@ public abstract class AbstractMainManager implements MainManager {
                stopMethod,
                ModuleUtils.resolveModuleConfig(managerInstance.getClass()),
                null);
-         logger.info("Stopping manager: " + managerInstance);
+         logger.log(Level.INFO, "Manager stopped: {0}", managerInstance);
       }
       managerKey.started = false;
       return (T) managerKey.manager;
@@ -436,7 +437,8 @@ public abstract class AbstractMainManager implements MainManager {
    }
 
    /**
-    * {@inheritDoc)
+    * {@inheritDoc)
+
     */
    @Override
    public boolean isLoaded(Class<?> manager) {

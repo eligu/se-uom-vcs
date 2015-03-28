@@ -20,9 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * This manager is based an configuration domains, however it doesn't rely on a
  * specific {@link ConfigDomain} implementation. The only case when this manager
  * would use a {@link DefaultConfigDomain} is when it loads a domain provided
- * only its name {@link #loadDomain(String)}. If the domain should be loaded by
- * using its class, then use an implementation that is a module and can be
- * loaded by an instance of {@link ModuleLoader}.
+ * only its name {@link #loadDomain(String)}.
  *
  * @author Elvis Ligu
  * @version 0.0.1

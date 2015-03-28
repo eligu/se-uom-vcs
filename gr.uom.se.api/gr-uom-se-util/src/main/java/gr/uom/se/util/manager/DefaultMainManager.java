@@ -13,6 +13,7 @@ import gr.uom.se.util.module.annotations.Property;
 import gr.uom.se.util.reflect.ReflectionUtils;
 
 import java.util.Map;
+import java.util.logging.Level;
 
 /**
  * The default manager implementation usually used in a non container
@@ -51,12 +52,12 @@ public class DefaultMainManager extends AbstractMainManager {
     * managers.
     * <p>
     */
-   private ModuleManager moduleManager;
+   private final ModuleManager moduleManager;
 
    /**
     * Used as a cache when initializing this manager.
     */
-   private ConfigManager config;
+   private final ConfigManager config;
 
    /**
     * Create an instance given the two managers it requires.
@@ -116,8 +117,9 @@ public class DefaultMainManager extends AbstractMainManager {
          // some other may have loaded it, otherwise load it
          config.loadAndMergeDomain(domain);
       } catch (Exception e) {
-         logger.warning("Default domain " + domain
-               + " could not be loaded. Reason: " + e.getMessage());
+         logger.log(Level.WARNING, 
+                 "Default domain {0} could not be loaded. Reason: {1}", 
+                 new Object[]{domain, e.getMessage()});
       }
    }
 

@@ -96,7 +96,7 @@ public class DefaultModuleLoader implements ModuleLoader {
     * Values of properties are required at method arguments when a method is
     * annotated using @ProvideModule.
     */
-   private ConfigManager config;
+   private final ConfigManager config;
 
    /**
     * The locator strategy to locate module's properties. This will first locate
