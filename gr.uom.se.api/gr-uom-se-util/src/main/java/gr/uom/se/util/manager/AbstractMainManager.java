@@ -483,7 +483,7 @@ public abstract class AbstractMainManager implements MainManager {
    }
 
    /**
-    * Get a manager key who manager instance is a subtype of the given type or
+    * Get a manager key whose manager instance is a subtype of the given type or
     * is the same.
     * <p>
     * If the same instance was found it will be returned, otherwise a subtype
@@ -497,9 +497,10 @@ public abstract class AbstractMainManager implements MainManager {
       Iterator<Key> it = managers.iterator();
       while (it.hasNext()) {
          Key current = it.next();
-         if (current.manager.getClass().equals(manager)) {
+         Class<?> mclass = current.manager.getClass();
+         if (mclass.equals(manager)) {
             return current;
-         } else if (manager.isAssignableFrom(current.manager.getClass())) {
+         } else if (manager.isAssignableFrom(mclass)) {
             assignable = current;
          }
       }
@@ -522,7 +523,7 @@ public abstract class AbstractMainManager implements MainManager {
       Iterator<Class<?>> it = registeredManagers.iterator();
       while (it.hasNext()) {
          Class<?> current = it.next();
-         if (current.getClass().equals(manager)) {
+         if (current.equals(manager)) {
             return manager;
          } else if (manager.isAssignableFrom(current)) {
             assignable = current;

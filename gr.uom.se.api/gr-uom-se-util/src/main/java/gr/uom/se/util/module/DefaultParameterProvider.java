@@ -3,10 +3,10 @@
  */
 package gr.uom.se.util.module;
 
-import gr.uom.se.util.config.ConfigManager;
 import gr.uom.se.util.mapper.Mapper;
 import gr.uom.se.util.module.annotations.NULLVal;
 import gr.uom.se.util.module.annotations.Property;
+import gr.uom.se.util.property.DomainPropertyProvider;
 
 import java.lang.annotation.Annotation;
 import java.util.Map;
@@ -77,7 +77,7 @@ public class DefaultParameterProvider implements ParameterProvider {
     * Used to check for properties if we can load them from here.
     * <p>
     */
-   private ConfigManager config;
+   private final DomainPropertyProvider config;
 
    /**
     * Used in case a parameter has no annotation, so we can not find it within
@@ -87,6 +87,9 @@ public class DefaultParameterProvider implements ParameterProvider {
     */
    protected volatile ModuleLoader loader;
 
+   /**
+    * A locator to look up module's properties.
+    */
    private final ModulePropertyLocator locator;
 
    /**
@@ -94,12 +97,24 @@ public class DefaultParameterProvider implements ParameterProvider {
     * <p>
     * Both parameters can be null.
     */
-   public DefaultParameterProvider(
-         @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.CONFIG_MANAGER_PROPERTY) ConfigManager config,
-         @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.LOADER_PROPERTY) ModuleLoader loader) {
+   public DefaultParameterProvider(DomainPropertyProvider config,
+         ModuleLoader loader, ModulePropertyLocator locator) {
       this.config = config;
       this.loader = loader;
-      this.locator = new DefaultModulePropertyLocator();
+      if (locator == null) {
+         locator = new DefaultModulePropertyLocator();
+      }
+      this.locator = locator;
+   }
+
+   /**
+    * Create a parameter provider with the given config, and loader.
+    * <p>
+    * Both parameters can be null.
+    */
+   public DefaultParameterProvider(DomainPropertyProvider config,
+         ModuleLoader loader) {
+      this(config, loader, null);
    }
 
    /**

@@ -3,6 +3,8 @@
  */
 package gr.uom.se.util.module;
 
+import java.util.logging.Logger;
+
 import gr.uom.se.util.config.AbstractConfigManager;
 import gr.uom.se.util.config.ConfigManager;
 import gr.uom.se.util.config.DefaultConfigManager;
@@ -27,6 +29,7 @@ import gr.uom.se.util.module.annotations.Property;
 @Property(domain = ManagerConstants.DEFAULT_DOMAIN, name = ModuleConstants.DEFAULT_MODULE_MANAGER_PROPERTY)
 public class DefaultModuleManager extends AbstractModuleManager {
 
+   private static final Logger logger = Logger.getLogger(DefaultModuleManager.class.getName());
    /**
     * The config manager that should be used by this manager.
     */
@@ -91,10 +94,8 @@ public class DefaultModuleManager extends AbstractModuleManager {
       try {
          manager.loadAndMergeDomain(domain);
       } catch (Exception e) {
-         // TODO this line must be checked for consistency
-         // Probably a logger would be a better idea
-         System.err.println("Default domain " + domain
-               + " could not be loaded. Reason: " + e.getMessage());
+         logger.warning("Default domain '" + domain
+               + "' could not be loaded. Reason: " + e.getMessage());
       }
    }
 

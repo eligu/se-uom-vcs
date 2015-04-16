@@ -1,10 +1,6 @@
-/**
- * 
- */
 package gr.uom.se.util.module;
 
 import gr.uom.se.util.module.annotations.Property;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -13,11 +9,13 @@ import java.util.Map;
 
 /**
  * The default method executor that is based on a module manager which will
- * provide this method a parameter provider for the
+ * provide this method a parameter provider to resolve the parameters needed for
+ * execution of a method and or constructor.
+ * <p>
  * 
  * @author Elvis Ligu
- * @version 0.0.1
- * @since 0.0.1
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public abstract class AbstractMethodConstructorExecutor implements
       MethodExecutor, ConstructorExecutor {
@@ -31,12 +29,15 @@ public abstract class AbstractMethodConstructorExecutor implements
          Map<String, Map<String, Object>> properties,
          ModulePropertyLocator propertyLocator) {
 
-      // Try to execute the method with annotation
+      // Try to execute the method
+      // Read parameter metadata
       Class<?>[] parameterTypes = method.getParameterTypes();
       Annotation[][] annotations = method.getParameterAnnotations();
+      // Get parameter values
       Object[] args = getParameters(onBehalf, parameterTypes, annotations,
             properties, propertyLocator);
       try {
+         // Execute the method and return a type
          return (T) method.invoke(instance, args);
       } catch (IllegalAccessException | IllegalArgumentException
             | InvocationTargetException ex) {
@@ -73,13 +74,18 @@ public abstract class AbstractMethodConstructorExecutor implements
     * there, it will load it from its stringval property. If the parameter is
     * not annotated it will be considered a module and will try to load it with
     * {@link #load(Class)} method.
-    * 
+    *
+    * @param type
+    *           of the parameter to be resolved
     * @param parameterTypes
     *           the types of method parameters
     * @param annotations
     *           annotations of parameters
     * @param properties
     *           the default config created from @Module annotation
+    * @param propertyLocator
+    *           to locate a parameter provider and then a value for the given
+    *           parameter
     * @return parameter values
     */
    protected Object[] getParameters(Class<?> type, Class<?>[] parameterTypes,
@@ -102,7 +108,7 @@ public abstract class AbstractMethodConstructorExecutor implements
     * <p>
     * Subclasses should always return a parameter provider, even in case there
     * is no parameter provider for the given type.
-    * 
+    *
     * @param type
     *           the type to get the parameter provider for, usually the type of
     *           the parameter of a method or a constructor.

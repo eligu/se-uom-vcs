@@ -117,9 +117,9 @@ public class DefaultMainManager extends AbstractMainManager {
          // some other may have loaded it, otherwise load it
          config.loadAndMergeDomain(domain);
       } catch (Exception e) {
-         logger.log(Level.WARNING, 
-                 "Default domain {0} could not be loaded. Reason: {1}", 
-                 new Object[]{domain, e.getMessage()});
+         logger.log(Level.WARNING,
+               "Default domain {0} could not be loaded. Reason: {1}",
+               new Object[] { domain, e.getMessage() });
       }
    }
 
@@ -164,7 +164,7 @@ public class DefaultMainManager extends AbstractMainManager {
          // (provider, parameter provider, loader, property injector)
          // however do not override any of the default if they
          // are already specified. I.e if there are defined defaults
-         // in module's domain then it takes precedence
+         // in module's domain then they take precedence
          moduleManager.registerDefaultsForModule(className,
                domain.getProperties());
 
@@ -192,7 +192,11 @@ public class DefaultMainManager extends AbstractMainManager {
    @Init
    public void init() {
 
-      // Start the config manager to load the default config if any
+      // Start the config manager to load the default config if any.
+      // Note that the config manager was previously registered as loaded
+      // when this instance was created so a call to start the manager
+      // will just invoke the init() method of config manager. The same
+      // is true for module manager.
       startManager(ConfigManager.class);
       // Start the module manager to load manager defaults
       startManager(ModuleManager.class);

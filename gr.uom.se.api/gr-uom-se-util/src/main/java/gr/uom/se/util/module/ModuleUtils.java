@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package gr.uom.se.util.module;
 
@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * A class of utilities for the module API.
  * <p>
- * 
+ *
  * @author Elvis Ligu
  * @version 0.0.1
  * @since 0.0.1
@@ -39,16 +39,18 @@ public class ModuleUtils {
     * <p>
     * It will check for it if it is available in a cache within this class
     * first.
-    * 
+    *
     * @param module
     * @return
     */
    public static Map<String, Map<String, Object>> resolveModuleConfig(
-         Class<?> module) {
+           Class<?> module) {
       Map<String, Map<String, Object>> config = moduleConfigCache.get(module);
       if (config == null) {
          config = ModuleUtils.getModuleConfig(module);
-         moduleConfigCache.put(module, config);
+         if (config != null) {
+            moduleConfigCache.put(module, config);
+         }
       }
       return config;
    }
@@ -60,24 +62,24 @@ public class ModuleUtils {
     * pairs of properties. Values are the default stringVal defined at
     * {@link Property} annotation. If the module annotation is null, it will
     * return a null config.
-    * 
-    * @param module
-    *           the annotation with properties
+    *
+    * @param module the annotation with properties
     * @return a configuration based on module properties
     */
    private static Map<String, Map<String, Object>> getModuleConfig(Module module) {
-      Map<String, Map<String, Object>> properties = new HashMap<>();
-      if (module != null) {
-         for (Property p : module.properties()) {
-            Map<String, Object> domain = properties.get(p.domain());
-            if (domain == null) {
-               domain = new HashMap<>();
-               properties.put(p.domain(), domain);
-            }
-            domain.put(p.name(), p.stringVal());
-         }
+      if (module == null) {
+         return null;
       }
+      Map<String, Map<String, Object>> properties = new HashMap<>();
 
+      for (Property p : module.properties()) {
+         Map<String, Object> domain = properties.get(p.domain());
+         if (domain == null) {
+            domain = new HashMap<>();
+            properties.put(p.domain(), domain);
+         }
+         domain.put(p.name(), p.stringVal());
+      }
       return properties;
    }
 
@@ -88,28 +90,26 @@ public class ModuleUtils {
     * pairs of properties. Values are the default stringVal defined at
     * {@link Property} annotation. If the module annotation is null, it will
     * return a null config. Also the module provider will be stored at one of
-    * the default locations in order to be queries later. If there is a
-    * {@linkplain ModuleConstants#getDefaultConfigFor(Class) module config
+    * the default locations in order to be queries later. If there is a null    {@linkplain ModuleConstants#getDefaultConfigFor(Class) module config
     * domain} it will store the provider (if specified) there, if not, and there
     * is a {@linkplain ModuleConstants#DEFAULT_MODULE_CONFIG_DOMAIN default
     * module's config domain} it will store it there. If none of the above is
     * present, it will create a module config domain and store it there.
-    * 
-    * @param module
-    *           the annotation with properties
+    *
+    * @param module the annotation with properties
     * @return a configuration based on module properties
     */
    private static Map<String, Map<String, Object>> getModuleConfig(
-         Class<?> module) {
+           Class<?> module) {
       ArgsCheck.notNull("module", module);
       Module annotation = module.getAnnotation(Module.class);
       Map<String, Map<String, Object>> properties = getModuleConfig(annotation);
-      if (annotation == null) {
-         return properties;
+      if (properties == null) {
+         return null;
       }
       Class<?> providerClass = annotation.provider();
       if (providerClass != null
-            && !providerClass.isAssignableFrom(NULLVal.class)) {
+              && !providerClass.isAssignableFrom(NULLVal.class)) {
          // If a provider class is defined then set it
          // to the properties
          String domain = ModuleConstants.getDefaultConfigFor(module);
@@ -133,18 +133,14 @@ public class ModuleUtils {
    /**
     * Set the given property in the domain:name like properties map.
     * <p>
-    * 
-    * @param domain
-    *           the first key
-    * @param name
-    *           the second key
-    * @param val
-    *           the object value
-    * @param properties
-    *           the map
+    *
+    * @param domain the first key
+    * @param name the second key
+    * @param val the object value
+    * @param properties the map
     */
    static void setProperty(String domain, String name, Object val,
-         Map<String, Map<String, Object>> properties) {
+           Map<String, Map<String, Object>> properties) {
       Map<String, Object> map = properties.get(domain);
       if (map == null) {
          if (val != null) {
@@ -168,16 +164,13 @@ public class ModuleUtils {
     * Override the domain with the given name, in domain:name like properties
     * map, with the one provided.
     * <p>
-    * 
-    * @param dname
-    *           domain name
-    * @param domain
-    *           the domain values
-    * @param properties
-    *           the properties
+    *
+    * @param dname domain name
+    * @param domain the domain values
+    * @param properties the properties
     */
    static void overrideDomain(String dname, Map<String, Object> domain,
-         Map<String, Map<String, Object>> properties) {
+           Map<String, Map<String, Object>> properties) {
       if (domain == null || domain.isEmpty()) {
          properties.remove(dname);
       } else {
@@ -192,16 +185,14 @@ public class ModuleUtils {
     * Override the properties from source to target in a domain:properties like
     * map.
     * <p>
-    * 
-    * @param source
-    *           the source of properties
-    * @param target
-    *           the target of properties to be overridden
-    * @return the overridden map 
+    *
+    * @param source the source of properties
+    * @param target the target of properties to be overridden
+    * @return the overridden map
     */
    static Map<String, Map<String, Object>> override(
-         Map<String, Map<String, Object>> source,
-         Map<String, Map<String, Object>> target) {
+           Map<String, Map<String, Object>> source,
+           Map<String, Map<String, Object>> target) {
       if (target == null || target.isEmpty()) {
          target = source;
       }
@@ -221,9 +212,8 @@ public class ModuleUtils {
     * <p>
     * This method will throw an exception if there are more than one property
     * annotations.
-    * 
-    * @param annotations
-    *           to check for the property annotation
+    *
+    * @param annotations to check for the property annotation
     * @return a property annotation or null if there is not any
     */
    static Property getPropertyAnnotation(Annotation... annotations) {
@@ -244,7 +234,7 @@ public class ModuleUtils {
       // Check for more than one property annotation
       if (count > 1) {
          throw new IllegalArgumentException(
-               "found more than 1 annotation @Property for parameter");
+                 "found more than 1 annotation @Property for parameter");
       }
       return propertyAnnotation;
    }

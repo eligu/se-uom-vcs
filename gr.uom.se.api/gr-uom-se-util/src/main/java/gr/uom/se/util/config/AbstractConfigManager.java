@@ -5,7 +5,6 @@ package gr.uom.se.util.config;
 
 import gr.uom.se.util.mapper.Mapper;
 import gr.uom.se.util.mapper.MapperFactory;
-import gr.uom.se.util.module.ModuleLoader;
 import gr.uom.se.util.validation.ArgsCheck;
 
 import java.io.IOException;

@@ -54,10 +54,14 @@ public class ManagerProvider implements ParameterProvider {
    /**
     * {@inheritDoc}
     */
+   @SuppressWarnings("unchecked")
    @Override
    public <T> T getParameter(Class<T> parameterType, Annotation[] annotations,
          Map<String, Map<String, Object>> properties,
          ModulePropertyLocator propertyLocator) {
+      if(MainManager.class.equals(parameterType)) {
+         return (T) manager;
+      }
       if (manager.isRegistered(parameterType)) {
          return manager.getManager(parameterType);
       }

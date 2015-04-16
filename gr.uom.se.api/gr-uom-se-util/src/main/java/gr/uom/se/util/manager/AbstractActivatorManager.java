@@ -1,6 +1,4 @@
-/**
- * 
- */
+
 package gr.uom.se.util.manager;
 
 import gr.uom.se.util.manager.annotations.Activator;
@@ -16,6 +14,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -29,7 +28,7 @@ public abstract class AbstractActivatorManager implements ActivatorManager {
     * The logger.
     */
    private static final Logger logger = Logger.getLogger(ActivatorManager.class
-         .getName());
+           .getName());
 
    /**
     * Contains all activator types that has been previously activated.
@@ -70,10 +69,9 @@ public abstract class AbstractActivatorManager implements ActivatorManager {
     * Given a fully qualified name for a given activator class it will try to
     * resolve it first and then to activate it.
     * <p>
-    * 
-    * @param activatorClassName
-    *           the fully qualified name of the activator class, must not be
-    *           null
+    *
+    * @param activatorClassName the fully qualified name of the activator class,
+    * must not be null
     */
    public void activate(String activatorClassName) {
       ArgsCheck.notNull("activatorClassName", activatorClassName);
@@ -93,47 +91,49 @@ public abstract class AbstractActivatorManager implements ActivatorManager {
       // in the list of non activated dependencies
       if (deps.contains(activator)) {
          throw new IllegalArgumentException(
-               "Cyclic dependencies dedected for activator: " + activator);
+                 "Cyclic dependencies dedected for activator: " + activator);
       } else {
          deps.add(activator);
       }
       // Activate each dependency first
       Class<?>[] adeps = getDependencies(activator);
-      for (Class<?> dep : adeps) {
-         if (dep.equals(activator)) {
-            throw new IllegalArgumentException(
-                  "Can not set a dependency for its self, activator: "
-                        + activator);
+      if (adeps != null) {
+         for (Class<?> dep : adeps) {
+            if (dep.equals(activator)) {
+               throw new IllegalArgumentException(
+                       "Can not set a dependency for its self, activator: "
+                       + activator);
+            }
+            activate0(dep, deps);
          }
-         activate0(dep, deps);
       }
-
+      
       // Activate now the activator
       Method method = ManagerUtils.findStaticInitMethod(activator,
-            this.getClass());
+              this.getClass());
       if (method != null) {
          executor.execute(null, activator, method,
-               ModuleUtils.resolveModuleConfig(activator), null);
+                 ModuleUtils.resolveModuleConfig(activator), null);
       } else {
          // Create an instance first
          Object instance = getModuleManager().getLoader(activator).load(
-               activator);
+                 activator);
          // Find the init method of this class
          method = ManagerUtils.findInstanceInitMethod(instance.getClass(),
-               getClass());
+                 getClass());
 
          if (method == null) {
             throw new IllegalArgumentException(
-                  "A method annotated with @Init is required for activator "
-                        + activator);
+                    "A method annotated with @Init is required for activator "
+                    + activator);
          }
          // Execute the activator method
          executor.execute(instance, instance.getClass(), method,
-               ModuleUtils.resolveModuleConfig(instance.getClass()), null);
+                 ModuleUtils.resolveModuleConfig(instance.getClass()), null);
       }
       deps.remove(activator);
       actives.add(activator);
-      logger.info("Activated: " + activator.getName());
+      logger.log(Level.INFO, "Activated: {0}", activator.getName());
    }
 
    private boolean isActive(Class<?> activator) {
@@ -146,19 +146,14 @@ public abstract class AbstractActivatorManager implements ActivatorManager {
    }
 
    private boolean isActive0(Class<?> activator) {
-      if (!isActivator(activator)) {
-         throw new IllegalArgumentException("Type is not an activator "
-               + activator);
-      }
       return this.actives.contains(activator);
-   }
-
-   private boolean isActivator(Class<?> type) {
-      return type.getAnnotation(Activator.class) != null;
    }
 
    private Class<?>[] getDependencies(Class<?> activator) {
       Activator an = activator.getAnnotation(Activator.class);
+      if (an == null) {
+         return null;
+      }
       return an.dependencies();
    }
 
@@ -166,7 +161,7 @@ public abstract class AbstractActivatorManager implements ActivatorManager {
     * Subclass should provide access to a {@link MainManager}. This method
     * should never return null.
     * <p>
-    * 
+    *
     * @return the main manager
     */
    protected abstract MainManager getMainManager();
@@ -177,7 +172,7 @@ public abstract class AbstractActivatorManager implements ActivatorManager {
 
    /**
     * An executor to execute init and stop methods.
-    * 
+    *
     * @author Elvis Ligu
     * @version 0.0.1
     * @since 0.0.1
@@ -186,13 +181,13 @@ public abstract class AbstractActivatorManager implements ActivatorManager {
 
       @Override
       protected ParameterProvider resolveParameterProvider(Class<?> type,
-            Map<String, Map<String, Object>> properties,
-            ModulePropertyLocator propertyLocator) {
+              Map<String, Map<String, Object>> properties,
+              ModulePropertyLocator propertyLocator) {
          // Ask first the property locator if he can find the provider,
          // if not then ask module manager
          ParameterProvider provider = propertyLocator.getParameterProvider(
-               type, null, properties);
-         if(provider == null) {
+                 type, null, properties);
+         if (provider == null) {
             provider = getModuleManager().getParameterProvider(type);
          }
          return provider;

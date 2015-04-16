@@ -80,10 +80,16 @@ public class PersonMock1 {
                domain = PersonDefaults.PERSON_DOMAIN, 
                name = "age", 
                stringVal = PersonDefaults.PERSON_AGE_STATIC_METHOD) 
-         int age) {
+         int age,
+         @Property(
+               domain = PersonDefaults.PERSON_DOMAIN, 
+               name = "address", 
+               stringVal = PersonDefaults.PERSON_NAME_STATIC_METHOD) 
+         String address) {
       PersonMock1 person = new PersonMock1();
       person.name = name;
       person.age = age;
+      person.address = address;
       return person;
    }
 

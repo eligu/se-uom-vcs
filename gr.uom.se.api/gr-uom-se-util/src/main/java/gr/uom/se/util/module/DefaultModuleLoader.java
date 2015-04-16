@@ -1,12 +1,12 @@
 package gr.uom.se.util.module;
 
-import gr.uom.se.util.config.ConfigManager;
 import gr.uom.se.util.filter.Filter;
 import gr.uom.se.util.filter.FilterUtils;
 import gr.uom.se.util.module.annotations.Module;
 import gr.uom.se.util.module.annotations.NULLVal;
 import gr.uom.se.util.module.annotations.Property;
 import gr.uom.se.util.module.annotations.ProvideModule;
+import gr.uom.se.util.property.DomainPropertyProvider;
 import gr.uom.se.util.reflect.AccessibleMemberFilter;
 import gr.uom.se.util.reflect.ReflectionUtils;
 import gr.uom.se.util.validation.ArgsCheck;
@@ -96,7 +96,7 @@ public class DefaultModuleLoader implements ModuleLoader {
     * Values of properties are required at method arguments when a method is
     * annotated using @ProvideModule.
     */
-   private final ConfigManager config;
+   private final DomainPropertyProvider config;
 
    /**
     * The locator strategy to locate module's properties. This will first locate
@@ -111,13 +111,19 @@ public class DefaultModuleLoader implements ModuleLoader {
     */
    private volatile ParameterProvider parameterProvider;
 
-   @ProvideModule
-   public DefaultModuleLoader(
-         @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.CONFIG_MANAGER_PROPERTY) ConfigManager config,
-         @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.PARAMETER_PROVIDER_PROPERTY) ParameterProvider provider) {
+   public DefaultModuleLoader(DomainPropertyProvider config,
+         ParameterProvider provider, ModulePropertyLocator locator) {
       this.config = config;
       this.parameterProvider = provider;
-      this.locator = new DefaultModulePropertyLocator();
+      if (locator == null) {
+         locator = new DefaultModulePropertyLocator();
+      }
+      this.locator = locator;
+   }
+
+   public DefaultModuleLoader(DomainPropertyProvider config,
+         ParameterProvider provider) {
+      this(config, provider, null);
    }
 
    /**
@@ -161,7 +167,7 @@ public class DefaultModuleLoader implements ModuleLoader {
       // If there are provided properties then just set this
       // module to be loaded with dynamic properties
       if (properties != null) {
-         thisLocator = new DynamicModulePropertyLocator(properties);
+         thisLocator = new FastDynamicModulePropertyLocator(properties);
       } else {
          // Use default locating strategy if there are not dynamic properties
          thisLocator = locator;

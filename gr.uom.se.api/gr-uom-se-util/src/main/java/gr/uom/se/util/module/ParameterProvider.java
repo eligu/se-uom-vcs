@@ -12,8 +12,8 @@ import java.util.Map;
  * <p>
  * 
  * @author Elvis Ligu
- * @version 0.0.1
- * @since 0.0.1
+ * @version 1.0.0
+ * @since 1.0.0
  * @see DefaultParameterProvider
  */
 public interface ParameterProvider {
@@ -34,9 +34,13 @@ public interface ParameterProvider {
     *           the annotations for the given type
     * @param properties
     *           the default properties to find a value for the given type
-    * @param propertyLocator TODO
+    * @param propertyLocator
+    *           the locator of modules properties that are essential to resolve
+    *           the value of the given parameter (either by loading it or by
+    *           injecting a value from a property source).
     * @return a value for the given parameter type
     */
    <T> T getParameter(Class<T> parameterType, Annotation[] annotations,
-         Map<String, Map<String, Object>> properties, ModulePropertyLocator propertyLocator);
+         Map<String, Map<String, Object>> properties,
+         ModulePropertyLocator propertyLocator);
 }

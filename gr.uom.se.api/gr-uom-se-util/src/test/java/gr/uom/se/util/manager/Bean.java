@@ -25,4 +25,15 @@ public class Bean {
          this.moduleManager = moduleManager;
          this.configManager = configManager;
       }
+      
+      public static class BeanContext implements gr.uom.se.util.context.Context {
+
+         /**
+          * {@inheritDoc}
+          */
+         @Override
+         public Class<?> getType() {
+            return Bean.class;
+         }
+      }
    }

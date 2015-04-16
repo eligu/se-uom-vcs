@@ -3,8 +3,10 @@
  */
 package gr.uom.se.util.module;
 
-import gr.uom.se.util.config.ConfigManager;
 import gr.uom.se.util.module.annotations.Property;
+import gr.uom.se.util.property.DomainPropertyHandler;
+import gr.uom.se.util.property.DomainPropertyProvider;
+import gr.uom.se.util.property.PropertyUtils;
 import gr.uom.se.util.validation.ArgsCheck;
 
 import java.util.HashMap;
@@ -17,8 +19,8 @@ import java.util.Map;
  * module API.
  * 
  * @author Elvis Ligu
- * @version 0.0.1
- * @since 0.0.1
+ * @version 1.0.0
+ * @since 1.0.0
  * @see DefaultModuleLoader
  * @see DefaultParameterProvider
  * @see DefaultPropertyInjector
@@ -26,12 +28,23 @@ import java.util.Map;
  */
 public abstract class AbstractModuleManager implements ModuleManager {
 
+   /**
+    * The property locator to locate different properties for modules, such as
+    * loaders injectors etc.
+    *
+    */
    private final ModulePropertyLocator locator;
 
    /**
+    * Create an instance of this type by specifying the locator.
     * 
+    * @param locator
+    *           to locate modules' config properties.
     */
    protected AbstractModuleManager(ModulePropertyLocator locator) {
+      if(locator == null) {
+         locator = new DefaultModulePropertyLocator();
+      }
       this.locator = locator;
    }
 
@@ -69,7 +82,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
       Map<String, Map<String, Object>> props = new HashMap<>();
       String domain = ModuleConstants.getDefaultConfigFor(moduleClass);
 
-      // Correct the property names so the comply with the
+      // Correct the property names so they comply with the
       // module manager implementation
       properties = correctProperties(properties, moduleClass);
       props.put(domain, properties);
@@ -230,8 +243,8 @@ public abstract class AbstractModuleManager implements ModuleManager {
          // If provider class was not defined in config then check at the given
          // properties
          if (providerClass == null) {
-            providerClass = locator.getParameterProviderClassFor(
-                  moduleClass, null, props);
+            providerClass = locator.getParameterProviderClassFor(moduleClass,
+                  null, props);
          } else {
             // A provider class is found at this manager so no need to
             // register it again
@@ -287,8 +300,8 @@ public abstract class AbstractModuleManager implements ModuleManager {
          // If injector class was not defined in config then check at the given
          // properties
          if (injectorClass == null) {
-            injectorClass = locator.getPropertyInjectorClassFor(
-                  moduleClass, null, props);
+            injectorClass = locator.getPropertyInjectorClassFor(moduleClass,
+                  null, props);
          } else {
             // A provider class is found at this manager so no need to
             // register it again
@@ -338,14 +351,13 @@ public abstract class AbstractModuleManager implements ModuleManager {
       // So we must register the loader class if any
       if (loader == null) {
          // Get first the loader class from this manager if any
-         Class<? extends ModuleLoader> loaderClass = locator
-               .getLoaderClassFor(moduleClass, resolveConfig(), null);
+         Class<? extends ModuleLoader> loaderClass = locator.getLoaderClassFor(
+               moduleClass, resolveConfig(), null);
 
          // If loader class was not defined in config then check at the given
          // properties
          if (loaderClass == null) {
-            loaderClass = locator.getLoaderClassFor(moduleClass, null,
-                  props);
+            loaderClass = locator.getLoaderClassFor(moduleClass, null, props);
          } else {
             // A loader class is found at this manager so no need to
             // register it again
@@ -376,8 +388,7 @@ public abstract class AbstractModuleManager implements ModuleManager {
     */
    @Override
    public Class<? extends ParameterProvider> getDefaultParameterProviderClass() {
-      return locator
-            .getDefaultParameterProviderClass(resolveConfig(), null);
+      return locator.getDefaultParameterProviderClass(resolveConfig(), null);
    }
 
    /**
@@ -880,8 +891,8 @@ public abstract class AbstractModuleManager implements ModuleManager {
     */
    @Override
    public <T> T getProvider(Class<?> forClass, Class<T> providerType) {
-      return locator.getModuleProvider(forClass, providerType,
-            resolveConfig(), ModuleUtils.resolveModuleConfig(forClass));
+      return locator.getModuleProvider(forClass, providerType, resolveConfig(),
+            ModuleUtils.resolveModuleConfig(forClass));
    }
 
    /**
@@ -908,8 +919,8 @@ public abstract class AbstractModuleManager implements ModuleManager {
    @Override
    public Class<? extends ParameterProvider> getParameterProviderClass(
          Class<?> forClass) {
-      return locator.getParameterProviderClassFor(forClass,
-            resolveConfig(), ModuleUtils.resolveModuleConfig(forClass));
+      return locator.getParameterProviderClassFor(forClass, resolveConfig(),
+            ModuleUtils.resolveModuleConfig(forClass));
    }
 
    /**
@@ -940,6 +951,50 @@ public abstract class AbstractModuleManager implements ModuleManager {
    }
 
    /**
+    * {@inheritDoc}
+    */
+   @Override
+   public ModuleContext newDynamicContext(Class<?> type,
+         DomainPropertyHandler handler) {
+      DomainPropertyHandler mainHandler = this.getConfig();
+      ModulePropertyLocator contextLocator = this.locator;
+      if (handler == null) {
+         handler = mainHandler;
+      } else {
+         if (handler != mainHandler) {
+            // Here we should create a dynamic locator that will look first the
+            // properties at the specified handler
+            if (contextLocator.getClass().equals(
+                  DefaultModulePropertyLocator.class)) {
+               // This check is made only to improve the overall performance of
+               // modules API when we know that the locator is the default one.
+               // The fast locator can skip a lot of on the fly object creations
+               // that are used by the normal dynamic locator when looking up
+               // properties.
+               // Read the properties from the specified handler first
+               contextLocator = new FastDynamicModulePropertyLocator(handler);
+            } else {
+               // We do not know the type of the locator so we create
+               // a generic dynamic locator 
+               contextLocator = new DynamicModulePropertyLocator(
+                     contextLocator, handler);
+            }
+            // Create a provider that will first look for a property
+            // in the handler parameter and then in the main handler
+            // of modules
+            DomainPropertyProvider provider = PropertyUtils.newProvider(
+                  handler, mainHandler);
+            // The handler will be a new handler that will write all
+            // properties to the provided handler and will read from
+            // the provided handler properties and if they are not
+            // found from the main handler.
+            handler = PropertyUtils.newHandler(provider, handler);
+         }
+      }
+      return new DefaultModuleContext(handler, contextLocator, null, type);
+   }
+
+   /**
     * Set a configuration to a config manager.
     * <p>
     * 
@@ -951,8 +1006,8 @@ public abstract class AbstractModuleManager implements ModuleManager {
       resolveConfig().setProperty(domain, name, value);
    }
 
-   private ConfigManager resolveConfig() {
-      ConfigManager config = getConfig();
+   private DomainPropertyHandler resolveConfig() {
+      DomainPropertyHandler config = getConfig();
       if (config == null) {
          throw new RuntimeException("Config manager is not available");
       }
@@ -967,5 +1022,5 @@ public abstract class AbstractModuleManager implements ModuleManager {
     * 
     * @return
     */
-   protected abstract ConfigManager getConfig();
+   protected abstract DomainPropertyHandler getConfig();
 }

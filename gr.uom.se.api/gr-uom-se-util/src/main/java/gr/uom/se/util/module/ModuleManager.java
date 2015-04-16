@@ -3,7 +3,9 @@
  */
 package gr.uom.se.util.module;
 
+import gr.uom.se.util.context.Context;
 import gr.uom.se.util.module.annotations.Property;
+import gr.uom.se.util.property.DomainPropertyHandler;
 
 import java.util.Map;
 
@@ -128,7 +130,7 @@ public interface ModuleManager {
     * default implementation.
     * 
     * @param forClass
-    *           the class to register the loader for.
+    *           the class to get the loader for.
     * @return a loader to load the given class
     * @see #registerLoader(ModuleLoader, Class)
     */
@@ -462,7 +464,7 @@ public interface ModuleManager {
     * if a module is requesting a class implementation for an operation it can
     * be retrieved only if it was registered with this method.
     * 
-    * @param property
+    * @param clazz
     *           to be registered. Must not be null.
     * @see #registerAsProperty(Object)
     */
@@ -715,4 +717,33 @@ public interface ModuleManager {
     */
    void registerDefaultsForModule(String moduleClassName,
          Map<String, Object> properties);
+
+   /**
+    * Get a dynamic module context.
+    * <p>
+    * This method will return a new dynamic module context. However all modules'
+    * config properties will be inherited by this context, that is loaders,
+    * providers, injectors and so on. If you specify a null handler then any
+    * change you make to the context will be reflected to this manager and
+    * generally to all modules, for example setting a loader using the context
+    * is the same as setting the loader using this manager. However if you
+    * specify another handler rather than the one used by modules API any change
+    * you make to the context will be reflected only to the context itself and
+    * it will affect only the modules that use the context. Also for any
+    * property that is not within the specified handler will be looked for into
+    * the main properties of the modules' API.
+    * 
+    * @param type
+    *           the type the context is using (used usually for information
+    *           returned by {@link Context#getType()}. If null then an
+    *           Object.class will be used.
+    * @param handler
+    *           the source of properties from where to read properties and where
+    *           to write them. If null then the source will be the default
+    *           modules' source, that is any change to the context will be
+    *           reflected to all modules that use directly this manager.
+    * 
+    * @return dynamic modules context.
+    */
+   ModuleContext newDynamicContext(Class<?> type, DomainPropertyHandler handler);
 }

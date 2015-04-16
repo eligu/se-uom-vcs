@@ -21,7 +21,6 @@ import org.junit.Test;
 public class DefaultModulePropertyLocatorTest {
 
    static ModulePropertyLocator locator = new DefaultModulePropertyLocator();
-   //static DynamicModulePropertyLocator revertedLocator = new DynamicModulePropertyLocator();
 
    @Test
    public void testGetLoader() {
@@ -147,26 +146,28 @@ public class DefaultModulePropertyLocatorTest {
       assertEquals(otherLoader, locatedLoader);
    }
 
-//   @Test
-//   public void getLoaderReverted() {
-//      ConfigManager config = new DefaultConfigManager();
-//      MyModuleLoader configLoader = new MyModuleLoader();
-//      DefaultModuleLoader mapLoader = new DefaultModuleLoader(null, null);
-//      String defaultDomain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
-//      String defaultName = ModuleConstants.LOADER_PROPERTY;
-//      config.setProperty(defaultDomain, defaultName, configLoader);
-//      ModuleLoader locatedLoader = locator
-//            .getLoader(Object.class, config, null);
-//      assertNotNull(locatedLoader);
-//      assertEquals(configLoader, locatedLoader);
-//      Map<String, Map<String, Object>> properties = new HashMap<>();
-//      Map<String, Object> map = config.getDomain(defaultDomain).getProperties();
-//      properties.put(defaultDomain, map);
-//      map.put(defaultName, mapLoader);
-//      
-//      locatedLoader = revertedLocator.getLoader(Object.class, config, properties);
-//      assertEquals(mapLoader, locatedLoader);
-//   }
+   @Test
+   public void getLoaderReverted() {
+      ConfigManager config = new DefaultConfigManager();
+      MyModuleLoader configLoader = new MyModuleLoader();
+      DefaultModuleLoader mapLoader = new DefaultModuleLoader(null, null);
+      String defaultDomain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+      String defaultName = ModuleConstants.LOADER_PROPERTY;
+      config.setProperty(defaultDomain, defaultName, configLoader);
+      ModuleLoader locatedLoader = locator
+            .getLoader(Object.class, config, null);
+      assertNotNull(locatedLoader);
+      assertEquals(configLoader, locatedLoader);
+      Map<String, Map<String, Object>> properties = new HashMap<>();
+      Map<String, Object> map = config.getDomain(defaultDomain).getProperties();
+      properties.put(defaultDomain, map);
+      map.put(defaultName, mapLoader);
+      FastDynamicModulePropertyLocator revertedLocator = new FastDynamicModulePropertyLocator(
+            properties);
+      locatedLoader = revertedLocator.getLoader(Object.class, config,
+            properties);
+      assertEquals(mapLoader, locatedLoader);
+   }
 
    @Test
    public void testGetParameterProvider() {
@@ -593,7 +594,8 @@ public class DefaultModulePropertyLocatorTest {
          @Override
          public <T> T getParameter(Class<T> parameterType,
                Annotation[] annotations,
-               Map<String, Map<String, Object>> properties, ModulePropertyLocator propertyLocator) {
+               Map<String, Map<String, Object>> properties,
+               ModulePropertyLocator propertyLocator) {
             // TODO Auto-generated method stub
             return null;
          }
@@ -726,34 +728,36 @@ public class DefaultModulePropertyLocatorTest {
       assertEquals(otherClass, locatedClass);
    }
 
-//   @Test
-//   public void testGetParameterProviderClassReverted() {
-//      ConfigManager config = new DefaultConfigManager();
-//      Class<? extends ParameterProvider> configClass = DefaultParameterProvider.class;
-//      Class<? extends ParameterProvider> mapClass = MyParameterProvider.class;
-//      
-//      String defaultDomain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
-//      String defaultName = ModuleConstants
-//            .getPropertyNameForConfigClass(ModuleConstants.PARAMETER_PROVIDER_PROPERTY);
-//      
-//      Class<?> clazz = Object.class;
-//      
-//      // Get the default loader class
-//      config.setProperty(defaultDomain, defaultName, configClass);
-//      Class<? extends ParameterProvider> locatedClass = locator
-//            .getParameterProviderClassFor(clazz, config, null);
-//      assertNotNull(locatedClass);
-//      assertEquals(configClass, locatedClass);
-//
-//      Map<String, Map<String, Object>> properties = new HashMap<>();
-//      Map<String, Object> map = config.getDomain(defaultDomain).getProperties();
-//      properties.put(defaultDomain, map);
-//      map.put(defaultName, mapClass);
-//      
-//      locatedClass = revertedLocator.getParameterProviderClassFor(Object.class, config, properties);
-//      assertEquals(mapClass, locatedClass);
-//   }
-   
+   @Test
+   public void testGetParameterProviderClassReverted() {
+      ConfigManager config = new DefaultConfigManager();
+      Class<? extends ParameterProvider> configClass = DefaultParameterProvider.class;
+      Class<? extends ParameterProvider> mapClass = MyParameterProvider.class;
+
+      String defaultDomain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
+      String defaultName = ModuleConstants
+            .getPropertyNameForConfigClass(ModuleConstants.PARAMETER_PROVIDER_PROPERTY);
+
+      Class<?> clazz = Object.class;
+
+      // Get the default loader class
+      config.setProperty(defaultDomain, defaultName, configClass);
+      Class<? extends ParameterProvider> locatedClass = locator
+            .getParameterProviderClassFor(clazz, config, null);
+      assertNotNull(locatedClass);
+      assertEquals(configClass, locatedClass);
+
+      Map<String, Map<String, Object>> properties = new HashMap<>();
+      Map<String, Object> map = config.getDomain(defaultDomain).getProperties();
+      properties.put(defaultDomain, map);
+      map.put(defaultName, mapClass);
+      FastDynamicModulePropertyLocator revertedLocator = new FastDynamicModulePropertyLocator(
+            properties);
+      locatedClass = revertedLocator.getParameterProviderClassFor(Object.class,
+            config, properties);
+      assertEquals(mapClass, locatedClass);
+   }
+
    @Test
    public void testGetPropertyInjectorClass() {
       ConfigManager config = new DefaultConfigManager();
@@ -778,14 +782,14 @@ public class DefaultModulePropertyLocatorTest {
          public void injectProperties(Object bean,
                Map<String, Map<String, Object>> properties) {
             // TODO Auto-generated method stub
-            
+
          }
 
          @Override
          public void injectProperties(Object bean,
                ModulePropertyLocator propertyLocator) {
             // TODO Auto-generated method stub
-            
+
          }
       }.getClass();
 

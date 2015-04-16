@@ -1,5 +1,6 @@
 package gr.uom.se.util.module.annotations;
 
+import gr.uom.se.util.module.ModuleConstants;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
@@ -20,10 +21,10 @@ import java.lang.annotation.Target;
  * using a string representation. Generally speaking a string value should be
  * applicable when the annotated type is a primitive type or a date type, as it
  * can be easily represented by a string.
- * 
+ *
  * @author Elvis Ligu
  */
-@Target(value = { ElementType.TYPE, ElementType.PARAMETER, ElementType.FIELD })
+@Target(value = {ElementType.TYPE, ElementType.PARAMETER, ElementType.FIELD})
 @Retention(value = RetentionPolicy.RUNTIME)
 @Inherited
 public @interface Property {
@@ -31,7 +32,7 @@ public @interface Property {
    /**
     * The name of the property, stored in a configuration or in any other place.
     * <p>
-    * 
+    *
     * @return the name of the property
     */
    String name();
@@ -40,18 +41,19 @@ public @interface Property {
     * The domain of the property where the property with the name provided by
     * this annotation is stored.
     * <p>
-    * The default value is {@code default}
-    * 
+    * The default value is
+    * {@link ModuleConstants#DEFAULT_PROPERTY_ANNOTATION_DOMAIN default}
+    *
     * @return the domain of this property
     */
-   String domain() default "default";
+   String domain() default ModuleConstants.DEFAULT_PROPERTY_ANNOTATION_DOMAIN;
 
    /**
     * The string representation of this property, usually used as a default
     * value if the property can not be resolved from the annotation processor.
     * <p>
     * The default value is {@link NULLVal#NULL_STR}.
-    * 
+    *
     * @return the string representation of this property
     */
    String stringVal() default NULLVal.NULL_STR;

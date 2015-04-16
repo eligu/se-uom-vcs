@@ -11,8 +11,8 @@ import java.util.Map;
  * <p>
  * 
  * @author Elvis Ligu
- * @version 0.0.1
- * @since 0.0.1
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface MethodExecutor {
 
@@ -30,10 +30,14 @@ public interface MethodExecutor {
     *           the method to execute, must not be null.
     * @param properties
     *           that may be useful to resolve parameter values and other
-    * @param propertyLocator TODO
+    * @param propertyLocator used by implementations to locate different
+    * properties in a context of modules API. That is, implementations may need
+    * to resolve a parameter provider in order to get all parameter values for
+    * a method to execute.
     * 
     * @return the result of the method after executing it.
     */
    <T> T execute(Object instance, Class<?> onBehalf, Method method,
-         Map<String, Map<String, Object>> properties, ModulePropertyLocator propertyLocator);
+         Map<String, Map<String, Object>> properties, 
+         ModulePropertyLocator propertyLocator);
 }

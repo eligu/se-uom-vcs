@@ -3,9 +3,11 @@
  */
 package gr.uom.se.util.module;
 
-import gr.uom.se.util.config.ConfigManager;
 import gr.uom.se.util.mapper.Mapper;
 import gr.uom.se.util.mapper.MapperFactory;
+import gr.uom.se.util.module.annotations.Module;
+import gr.uom.se.util.module.annotations.Property;
+import gr.uom.se.util.property.DomainPropertyProvider;
 import gr.uom.se.util.validation.ArgsCheck;
 
 import java.util.Map;
@@ -28,6 +30,7 @@ import java.util.Map;
  * 
  * @author Elvis Ligu
  */
+@Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.PROPERTY_LOCATOR_PROPERTY)
 public class DefaultModulePropertyLocator implements ModulePropertyLocator {
 
    /**
@@ -62,7 +65,8 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
    @Override
    @SuppressWarnings("unchecked")
    public <T> T getProperty(String domain, String name, Class<T> type,
-         ConfigManager config, Map<String, Map<String, Object>> properties) {
+         DomainPropertyProvider config,
+         Map<String, Map<String, Object>> properties) {
 
       T val = null;
       // The first check is at configuration manager
@@ -133,7 +137,7 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     */
    @Override
    public <T> T getConfigPropertyObject(String name, Class<?> type,
-         Class<T> objectType, ConfigManager config,
+         Class<T> objectType, DomainPropertyProvider config,
          Map<String, Map<String, Object>> properties) {
 
       // We should repeat the algorithm two times,
@@ -222,7 +226,7 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     *         not provided or sources are null.
     */
    public <T> T getConfigPropertyObjectWithDefault(String name, Class<?> type,
-         Class<T> objectType, ConfigManager config,
+         Class<T> objectType, DomainPropertyProvider config,
          Map<String, Map<String, Object>> properties) {
 
       T configObject = null;
@@ -292,7 +296,7 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
    @Override
    @SuppressWarnings("unchecked")
    public <T> Class<? extends T> getConfigPropertyClassForDomain(String domain,
-         String name, Class<T> classType, ConfigManager config,
+         String name, Class<T> classType, DomainPropertyProvider config,
          Map<String, Map<String, Object>> properties) {
 
       // We should repeat the algorithm two times,
@@ -440,7 +444,7 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     */
    public <T> Class<? extends T> getConfigPropertyClassWithDefaultForDomain(
          String domain, String name, Class<T> classType,
-         Class<? extends T> defaultType, ConfigManager config,
+         Class<? extends T> defaultType, DomainPropertyProvider config,
          Map<String, Map<String, Object>> properties) {
 
       // Check for the property under the default domain
@@ -477,7 +481,7 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     */
    @Override
    public <T> Class<? extends T> getConfigPropertyClass(String name,
-         Class<?> type, Class<T> classType, ConfigManager config,
+         Class<?> type, Class<T> classType, DomainPropertyProvider config,
          Map<String, Map<String, Object>> properties) {
 
       // Check first under the default domain of the given class
@@ -540,6 +544,8 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     *           the type to look for the classType
     * @param classType
     *           the type of the class to look for
+    * @param defaultType
+    *           the type to be returned if no type was found
     * @param config
     *           to look for class
     * @param properties
@@ -548,7 +554,8 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     */
    public <T> Class<? extends T> getConfigPropertyClassWithDefault(String name,
          Class<?> type, Class<T> classType, Class<? extends T> defaultType,
-         ConfigManager config, Map<String, Map<String, Object>> properties) {
+         DomainPropertyProvider config,
+         Map<String, Map<String, Object>> properties) {
 
       Class<? extends T> pClass = null;
 
@@ -628,7 +635,8 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     */
    @Override
    public <T> T getModuleProvider(Class<?> type, Class<T> provider,
-         ConfigManager config, Map<String, Map<String, Object>> properties) {
+         DomainPropertyProvider config,
+         Map<String, Map<String, Object>> properties) {
       String name = ModuleConstants.PROVIDER_PROPERTY;
       return getConfigPropertyObject(name, type, provider, config, properties);
    }
@@ -663,7 +671,8 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     */
    @Override
    public Class<?> getModuleProviderClassFor(Class<?> clazz,
-         ConfigManager config, Map<String, Map<String, Object>> properties) {
+         DomainPropertyProvider config,
+         Map<String, Map<String, Object>> properties) {
 
       // Check first for the provider class within the module domain
       String name = ModuleConstants.PROVIDER_PROPERTY;
@@ -711,7 +720,8 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     */
    @Override
    public ParameterProvider getParameterProvider(Class<?> type,
-         ConfigManager config, Map<String, Map<String, Object>> properties) {
+         DomainPropertyProvider config,
+         Map<String, Map<String, Object>> properties) {
 
       // Check first under the domain of the given class
       // if there is any parameter provider available
@@ -736,7 +746,8 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     */
    @Override
    public Class<? extends ParameterProvider> getDefaultParameterProviderClass(
-         ConfigManager config, Map<String, Map<String, Object>> properties) {
+         DomainPropertyProvider config,
+         Map<String, Map<String, Object>> properties) {
 
       String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
       // Check for the property under the default domain
@@ -768,7 +779,7 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     */
    @Override
    public Class<? extends ParameterProvider> getParameterProviderClassFor(
-         Class<?> clazz, ConfigManager config,
+         Class<?> clazz, DomainPropertyProvider config,
          Map<String, Map<String, Object>> properties) {
 
       // Check first for the provider class within the module domain
@@ -799,7 +810,8 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     */
    @Override
    public ParameterProvider resolveParameterProvider(Class<?> type,
-         ConfigManager config, Map<String, Map<String, Object>> properties) {
+         DomainPropertyProvider config,
+         Map<String, Map<String, Object>> properties) {
 
       ParameterProvider provider = getParameterProvider(type, config,
             properties);
@@ -846,7 +858,8 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     */
    @Override
    public Class<? extends ModuleLoader> getLoaderClassFor(Class<?> clazz,
-         ConfigManager config, Map<String, Map<String, Object>> properties) {
+         DomainPropertyProvider config,
+         Map<String, Map<String, Object>> properties) {
 
       // Check first for the provider class within the module domain
       String name = ModuleConstants.LOADER_PROPERTY;
@@ -872,7 +885,8 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     */
    @Override
    public Class<? extends ModuleLoader> getDefaultLoaderClass(
-         ConfigManager config, Map<String, Map<String, Object>> properties) {
+         DomainPropertyProvider config,
+         Map<String, Map<String, Object>> properties) {
 
       String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
 
@@ -906,7 +920,7 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     * @return a cachedLoader for the given type
     */
    @Override
-   public ModuleLoader getLoader(Class<?> type, ConfigManager config,
+   public ModuleLoader getLoader(Class<?> type, DomainPropertyProvider config,
          Map<String, Map<String, Object>> properties) {
 
       // Check first under the domain of the given class
@@ -934,7 +948,8 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     * @return a loader for the given type
     */
    @Override
-   public ModuleLoader resolveLoader(Class<?> type, ConfigManager config,
+   public ModuleLoader resolveLoader(Class<?> type,
+         DomainPropertyProvider config,
          Map<String, Map<String, Object>> properties) {
       ModuleLoader loader = getLoader(type, config, properties);
       // If no loader was found then try to find a loader class
@@ -984,7 +999,8 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     */
    @Override
    public PropertyInjector getPropertyInjector(Class<?> type,
-         ConfigManager config, Map<String, Map<String, Object>> properties) {
+         DomainPropertyProvider config,
+         Map<String, Map<String, Object>> properties) {
 
       // Check first under the domain of the given class
       // if there is any injector available
@@ -1010,7 +1026,8 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     */
    @Override
    public Class<? extends PropertyInjector> getDefaultPropertyInjectorClass(
-         ConfigManager config, Map<String, Map<String, Object>> properties) {
+         DomainPropertyProvider config,
+         Map<String, Map<String, Object>> properties) {
 
       String domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN;
 
@@ -1043,7 +1060,7 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     */
    @Override
    public Class<? extends PropertyInjector> getPropertyInjectorClassFor(
-         Class<?> clazz, ConfigManager config,
+         Class<?> clazz, DomainPropertyProvider config,
          Map<String, Map<String, Object>> properties) {
 
       // Check first for the injector class within the module domain
@@ -1074,7 +1091,8 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     */
    @Override
    public PropertyInjector resolvePropertyInjector(Class<?> type,
-         ConfigManager config, Map<String, Map<String, Object>> properties) {
+         DomainPropertyProvider config,
+         Map<String, Map<String, Object>> properties) {
       PropertyInjector injector = getPropertyInjector(type, config, properties);
       // If no injector was found then try to find a injector class
       // for the given type
@@ -1129,7 +1147,8 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     */
    @Override
    public Mapper getMapperOfType(Class<?> type, Class<?> from, Class<?> to,
-         ConfigManager config, Map<String, Map<String, Object>> properties) {
+         DomainPropertyProvider config,
+         Map<String, Map<String, Object>> properties) {
 
       // Try to resolve a mapper object first from both sources
       String property = ModuleConstants.getMapperNameFor(from, to);
@@ -1174,7 +1193,7 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     * @return
     */
    private MapperFactory getMapperFactory(Class<?> type, Class<?> from,
-         Class<?> to, ConfigManager config,
+         Class<?> to, DomainPropertyProvider config,
          Map<String, Map<String, Object>> properties) {
 
       // Try to resolve a mapper object first from both sources
@@ -1210,14 +1229,13 @@ public class DefaultModulePropertyLocator implements ModulePropertyLocator {
     * @return
     */
    private Class<? extends Mapper> getMapperClass(Class<?> type, Class<?> from,
-         Class<?> to, ConfigManager config,
+         Class<?> to, DomainPropertyProvider config,
          Map<String, Map<String, Object>> properties) {
 
       String name = ModuleConstants.getMapperNameFor(from, to);
-      Class<? extends Mapper> mapperClass = null;
 
-      mapperClass = getConfigPropertyClassWithDefault(name, type, Mapper.class,
-            null, config, properties);
+      Class<? extends Mapper> mapperClass = getConfigPropertyClassWithDefault(
+            name, type, Mapper.class, null, config, properties);
       return mapperClass;
    }
 }

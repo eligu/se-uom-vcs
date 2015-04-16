@@ -3,8 +3,8 @@
  */
 package gr.uom.se.util.module;
 
-import gr.uom.se.util.config.ConfigManager;
 import gr.uom.se.util.module.annotations.Property;
+import gr.uom.se.util.property.DomainPropertyProvider;
 import gr.uom.se.util.validation.ArgsCheck;
 
 import java.lang.reflect.Field;
@@ -42,8 +42,11 @@ public class DefaultPropertyInjector implements PropertyInjector {
     * should be injected.
     * <p>
     */
-   private ConfigManager config;
+   private final DomainPropertyProvider config;
 
+   /**
+    * A locator to look up module's properties.
+    */
    private final ModulePropertyLocator locator;
 
    /**
@@ -53,12 +56,26 @@ public class DefaultPropertyInjector implements PropertyInjector {
     * @param provider
     *           used by this injector to retrieve annotated values
     */
-   public DefaultPropertyInjector(
-         ConfigManager config,
-         @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.PARAMETER_PROVIDER_PROPERTY) ParameterProvider provider) {
+   public DefaultPropertyInjector(DomainPropertyProvider config,
+         ParameterProvider provider, ModulePropertyLocator locator) {
       this.config = config;
       this.provider = provider;
-      this.locator = new DefaultModulePropertyLocator();
+      if(locator == null) {
+         locator = new DefaultModulePropertyLocator();
+      }
+      this.locator = locator;
+   }
+   
+   /**
+    * Create a new injector given the property provider.
+    * <p>
+    * 
+    * @param provider
+    *           used by this injector to retrieve annotated values
+    */
+   public DefaultPropertyInjector(DomainPropertyProvider config,
+         ParameterProvider provider) {
+      this(config, provider, null);
    }
 
    /**
@@ -70,6 +87,7 @@ public class DefaultPropertyInjector implements PropertyInjector {
     * @param bean
     *           the instance to where properties should be inserted
     */
+   @Override
    public void injectProperties(Object bean) {
       injectProperties(bean, locator);
    }
@@ -82,10 +100,10 @@ public class DefaultPropertyInjector implements PropertyInjector {
          Map<String, Map<String, Object>> properties) {
       ArgsCheck.notNull("bean", bean);
       ModulePropertyLocator thisLocator;
-      if(properties == null || properties.isEmpty()) {
+      if (properties == null || properties.isEmpty()) {
          thisLocator = locator;
       } else {
-         thisLocator = new DynamicModulePropertyLocator(properties);
+         thisLocator = new FastDynamicModulePropertyLocator(properties);
       }
       injectProperties(bean, thisLocator);
    }

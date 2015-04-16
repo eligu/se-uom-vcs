@@ -14,6 +14,12 @@ package gr.uom.se.util.module;
 public class ModuleConstants {
 
    /**
+    * This is the default domain name of a {@link Property} annotation.
+    * <p>
+    */
+   public static final String DEFAULT_PROPERTY_ANNOTATION_DOMAIN = "default";
+
+   /**
     * The name for the default module config.
     * <p>
     */
@@ -101,6 +107,16 @@ public class ModuleConstants {
     * <p>
     */
    public static final String MAPPER_PROPERTY = "-mapper-";
+
+   /**
+    * The default property locator property.
+    */
+   public static final String PROPERTY_LOCATOR_PROPERTY = "propertyLocator";
+   
+   /**
+    * The default property locator class property.
+    */
+   public static final String PROPERTY_LOCATOR_CLASS_PROPERTY = "propertyLocator.class";
 
    /**
     * Get the default config domain for the given class.

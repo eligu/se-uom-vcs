@@ -1,5 +1,8 @@
 package gr.uom.se.util.config;
 
+import gr.uom.se.util.property.DomainPropertyHandler;
+import gr.uom.se.util.property.PropertyHandler;
+
 /**
  * A manager that deal with different configuration domains.
  * <p>
@@ -10,7 +13,7 @@ package gr.uom.se.util.config;
  * 
  * @author Elvis Ligu
  */
-public interface ConfigManager {
+public interface ConfigManager extends PropertyHandler, DomainPropertyHandler {
 
    /**
     * Return the value of the property at the default configuration domain.
@@ -22,6 +25,7 @@ public interface ConfigManager {
     *           the name of the property
     * @return the value of the property
     */
+   @Override
    public Object getProperty(String name);
 
    /**
@@ -43,6 +47,7 @@ public interface ConfigManager {
     *           the type of the requested property
     * @return the value of the property
     */
+   @Override
    public <T> T getProperty(String name, Class<T> propertyType);
 
    /**
@@ -56,6 +61,7 @@ public interface ConfigManager {
     * @param value
     *           the value of the property
     */
+   @Override
    public void setProperty(String name, Object value);
 
    /**
@@ -68,6 +74,7 @@ public interface ConfigManager {
     *           the name of the property
     * @return the value of the property
     */
+   @Override
    public Object getProperty(String domain, String name);
 
    /**
@@ -76,7 +83,7 @@ public interface ConfigManager {
     * The type of the returned property should be of that of the given
     * {@code propertyType}. The manager may make conversion of properties on the
     * fly, if it is possible. For example if the requested type is int and the
-    * property type within this manager is String it may try to convert the the
+    * property type within this manager is String it may try to convert the
     * value to int. Keep in mind, though, that if a property is available and
     * can not be converted then it this method may throw an exception.
     * 
@@ -88,7 +95,8 @@ public interface ConfigManager {
     *           the type of the requested property
     * @return the value of the property
     */
-   public <T> T getProperty(String doman, String name, Class<T> propertyType);
+   @Override
+   public <T> T getProperty(String domain, String name, Class<T> propertyType);
 
    /**
     * Set the property in the specified domain, with the given value.
@@ -101,6 +109,7 @@ public interface ConfigManager {
     * @param value
     *           the value of the property
     */
+   @Override
    public void setProperty(String domain, String name, Object value);
 
    /**
