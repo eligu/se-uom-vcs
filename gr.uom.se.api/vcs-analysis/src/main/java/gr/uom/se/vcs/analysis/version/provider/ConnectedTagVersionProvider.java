@@ -87,7 +87,7 @@ public class ConnectedTagVersionProvider implements ConnectedVersionProvider {
       }
       Collection<VCSCommit> commits = this.provider.getCommits();
       vsize = commits.size();
-      if (vsize == 0) {
+      if (vsize > 0) {
          first = commits.iterator().next();
       } else {
          first = null;
@@ -111,7 +111,7 @@ public class ConnectedTagVersionProvider implements ConnectedVersionProvider {
 
       Collection<VCSCommit> commits = this.provider.getCommits();
       vsize = commits.size();
-      if (vsize == 0) {
+      if (vsize > 0) {
          first = commits.iterator().next();
       } else {
          first = null;
