@@ -3,11 +3,8 @@
  */
 package gr.uom.se.util.manager;
 
-import gr.uom.se.util.module.ModuleConstants;
 import gr.uom.se.util.module.ModulePropertyLocator;
 import gr.uom.se.util.module.ParameterProvider;
-import gr.uom.se.util.module.annotations.Property;
-import gr.uom.se.util.module.annotations.ProvideModule;
 import gr.uom.se.util.validation.ArgsCheck;
 
 import java.lang.annotation.Annotation;
@@ -41,10 +38,9 @@ public class ManagerProvider implements ParameterProvider {
    private final ParameterProvider defaultProvider;
    private final MainManager manager;
 
-   @ProvideModule
    public ManagerProvider(
-         @Property(domain = ModuleConstants.DEFAULT_MODULE_CONFIG_DOMAIN, name = ModuleConstants.PARAMETER_PROVIDER_PROPERTY) ParameterProvider defaultProvider,
-         @Property(domain = ManagerConstants.DEFAULT_DOMAIN, name = ManagerConstants.DEFAULT_MANAGER_PROPERTY) MainManager manager) {
+         ParameterProvider defaultProvider,
+         MainManager manager) {
       ArgsCheck.notNull("defaultProvider", defaultProvider);
       ArgsCheck.notNull("manager", manager);
       this.defaultProvider = defaultProvider;
