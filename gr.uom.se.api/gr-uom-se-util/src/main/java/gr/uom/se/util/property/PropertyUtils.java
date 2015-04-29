@@ -5,6 +5,7 @@ package gr.uom.se.util.property;
 
 import gr.uom.se.util.validation.ArgsCheck;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -51,6 +52,16 @@ public class PropertyUtils {
    }
 
    /**
+    * Create a property handler based on an HashMap.
+    * <p>
+    * 
+    * @return
+    */
+   public static DomainPropertyHandler newHandler() {
+      return newHandler(new HashMap<String, Map<String, Object>>());
+   }
+
+   /**
     * Given a map of properties and a list of alternative property providers
     * return a property handler that will write properties to the given map, but
     * will read properties from the given map and if not found from the given
@@ -93,8 +104,8 @@ public class PropertyUtils {
     *           the writer of properties
     * @return a domain property provider
     */
-   public static DomainPropertyHandler newHandler(DomainPropertyProvider provider,
-         DomainPropertyWriter writer) {
+   public static DomainPropertyHandler newHandler(
+         DomainPropertyProvider provider, DomainPropertyWriter writer) {
       return new DefaultDomainPropertyHandler(provider, writer);
    }
 

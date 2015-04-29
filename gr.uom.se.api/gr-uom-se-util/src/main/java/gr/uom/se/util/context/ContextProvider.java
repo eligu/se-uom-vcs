@@ -101,5 +101,5 @@ public interface ContextProvider {
     * 
     * @return context type this provides.
     */
-   <C extends Context> Set<Class<C>> getContextTypes();
+   Set<Class<? extends Context>> getContextTypes();
 }

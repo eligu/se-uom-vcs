@@ -25,7 +25,7 @@ public abstract class AbstractContextManager implements ContextManager {
     * Providers lock.
     */
    private final ReadWriteLock lock = new ReentrantReadWriteLock();
-   
+
    /**
     * {@inheritDoc}
     */
@@ -34,7 +34,16 @@ public abstract class AbstractContextManager implements ContextManager {
       ArgsCheck.notNull("type", type);
       lock.readLock().lock();
       try {
-         return providers.get(type);
+         ContextProvider provider = providers.get(type);
+
+         if (provider == null) {
+            for (Class<?> p : providers.keySet()) {
+               if (p.isAssignableFrom(type)) {
+                  provider = providers.get(p);
+               }
+            }
+         }
+         return provider;
       } finally {
          lock.readLock().unlock();
       }
@@ -50,7 +59,7 @@ public abstract class AbstractContextManager implements ContextManager {
       ArgsCheck.notEmpty("provider types", types);
       lock.writeLock().lock();
       try {
-         for(Class<?> t : types) {
+         for (Class<?> t : types) {
             providers.put(t, provider);
          }
       } finally {
@@ -66,7 +75,7 @@ public abstract class AbstractContextManager implements ContextManager {
          Class<C> contextType) {
       ArgsCheck.notNull("instance", instance);
       ContextProvider provider = getProvider(instance.getClass());
-      if(provider == null) {
+      if (provider == null) {
          return null;
       }
       return provider.getContext(instance, contextType);
@@ -80,7 +89,7 @@ public abstract class AbstractContextManager implements ContextManager {
          Class<C> contextType) {
       ArgsCheck.notNull("type", type);
       ContextProvider provider = getProvider(type);
-      if(provider == null) {
+      if (provider == null) {
          return null;
       }
       return provider.getContext(type, contextType);
@@ -99,5 +108,5 @@ public abstract class AbstractContextManager implements ContextManager {
          lock.writeLock().unlock();
       }
    }
-   
+
 }
