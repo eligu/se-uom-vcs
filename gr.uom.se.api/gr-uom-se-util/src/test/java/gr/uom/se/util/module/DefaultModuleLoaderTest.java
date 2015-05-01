@@ -6,9 +6,11 @@ package gr.uom.se.util.module;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import gr.uom.se.util.config.ConfigManager;
 import gr.uom.se.util.config.DefaultConfigManager;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -284,4 +286,22 @@ public class DefaultModuleLoaderTest {
       property = "age";
       config.setProperty(domain, property, age);
    }
+   
+   @Test
+   public void testSingletonModule() {
+      ISingletonModule singleton1 = moduleLoader.load(SingletonModule.class);
+      assertNotNull(singleton1);
+      ISingletonModule singleton2 = moduleLoader.load(SingletonModule.class);
+      assertTrue(singleton1 == singleton2); // reference check
+      assertEquals(singleton1, singleton2);
+      
+      ISingletonModule module1 = moduleLoader.load(ISingletonModule.class);
+      assertNotNull(module1);
+      ISingletonModule module2 = moduleLoader.load(ISingletonModule.class);
+      assertTrue(module1 != module2); // reference check
+      Assert.assertNotEquals(module1, module2);
+      Assert.assertNotEquals(module1, singleton1);
+      Assert.assertNotEquals(module2, singleton2);
+   }
+   
 }

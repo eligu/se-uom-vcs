@@ -150,7 +150,7 @@ public class DefaultModuleLoader implements ModuleLoader {
          // static properties that are described by @Module annotation
          Map<String, Map<String, Object>> properties = ModuleUtils
                .resolveModuleConfig(clazz);
-         return loadModule(clazz, provider, properties, locator);
+         return loadWithProvider(clazz, provider, properties, locator);
       }
       return load(clazz, locator);
    }
@@ -193,11 +193,16 @@ public class DefaultModuleLoader implements ModuleLoader {
             config, properties);
       // If there is not a provider then load without a provider
       if (provider == null) {
-         return loadNoLoader(clazz, properties, propertyLocator);
+         // Set the provider as the class itself so we check for a static
+         // method that provides the implementation. If a static method is
+         // not found it will be loaded using a constructor. If no providing
+         // constructor was found (annotated with @ProvideModule) or default
+         // construct that an exception will be thrown.
+         provider = clazz;
       }
 
       // Load with provider
-      return loadModule(clazz, provider, properties, propertyLocator);
+      return loadWithProvider(clazz, provider, properties, propertyLocator);
    }
 
    /**
@@ -212,16 +217,25 @@ public class DefaultModuleLoader implements ModuleLoader {
     * @return a new instance of T
     */
    @SuppressWarnings("unchecked")
-   private <T> T loadModule(Class<T> moduleType, Class<?> provider,
+   private <T> T loadWithProvider(Class<T> moduleType, Class<?> provider,
          Map<String, Map<String, Object>> properties,
          ModulePropertyLocator propertyLocator) {
-      // Try to get an instance method first.
-      // We prioritize instance methods because they can provide
-      // a better loading in general (they can be overrided by subtypes,
-      // which allows the loading to be dynamic).
-      Method method = getInstanceLoaderMethod(moduleType, provider);
+
+      Method method = null;
       Object providerInstance = null;
 
+      // Try to get an instance method first.
+      // We prioritize instance methods because they can provide
+      // a better loading in general (they can be overridden by subtypes,
+      // which allows the loading to be dynamic).
+      // Before getting the instance method we should be sure that moduleType
+      // is different from provider type. If module is same as provider and
+      // it has a provider method that means we will fall in an infinite
+      // recursive loop because it will try to resolve a loader for the provider
+      // which is the same as the module.
+      if (!moduleType.equals(provider)) {
+         method = getInstanceProviderMethod(moduleType, provider);
+      }
       // If method is found then the provider will be considered a module
       // so try to resolve the provider (load it, or get it from properties).
       if (method != null) {
@@ -230,7 +244,7 @@ public class DefaultModuleLoader implements ModuleLoader {
       } else {
          // The provider doesn't have an instance method so we should
          // try to find a static method
-         method = getStaticLoaderMethod(moduleType, provider);
+         method = getStaticProviderMethod(moduleType, provider);
       }
 
       // If the provider doesn't have a provider method but is a concrete
@@ -240,6 +254,12 @@ public class DefaultModuleLoader implements ModuleLoader {
       // That should be the case when an interface is registering as a provider
       // its implementation
       if (method == null) {
+         // The case when the moduleType is equals to provider type
+         // so we do not need to resolve a loader, but just load
+         // the module with this loader but using its constructor
+         if (moduleType.equals(provider)) {
+            return loadWithoutProvider(moduleType, properties, propertyLocator);
+         }
          // The case when the moduleType is a super type of the provider
          // so we can safely create an instance of the provider itself
          if (moduleType.isAssignableFrom(provider)) {
@@ -277,7 +297,7 @@ public class DefaultModuleLoader implements ModuleLoader {
     * @param propertyLocator
     * @return
     */
-   private <T> T loadNoLoader(Class<T> moduleType,
+   private <T> T loadWithoutProvider(Class<T> moduleType,
          Map<String, Map<String, Object>> properties,
          ModulePropertyLocator propertyLocator) {
 
@@ -299,9 +319,9 @@ public class DefaultModuleLoader implements ModuleLoader {
          constructor = ReflectionUtils.getDefaultConstructor(moduleType);
       }
 
-      // If no suitable constructor was find that means we have
+      // If no suitable constructor was found that means we have
       // module that can not be loaded
-      if (constructor == null) {
+      if (constructor == null || !accessFilter.accept(constructor)) {
          throw new IllegalArgumentException(
                "no annotated (@ProvideModule) or default constructor found for type "
                      + moduleType);
@@ -414,22 +434,47 @@ public class DefaultModuleLoader implements ModuleLoader {
     * loader with a return type of returnType.
     * <p>
     * 
-    * @param returnType
+    * @param moduleType
     *           of the method to return
-    * @param loader
+    * @param providerType
     *           which contain the method
     * @return a static loader method
     */
-   protected Method getStaticLoaderMethod(Class<?> returnType, Class<?> loader) {
+   protected Method getStaticProviderMethod(Class<?> moduleType,
+         Class<?> providerType) {
+      Method method = getProviderMethod(moduleType, providerType,
+            staticMethodProviderFilter);
+      if(method == null) {
+         method = getProviderMethod(moduleType, providerType, staticMethodFilter);
+      }
+      return method;
+   }
 
-      Set<Method> methods = ReflectionUtils.getAccessibleMethods(loader,
-            getClass(), staticMethodLoaderFilter);
+   /**
+    * Get a method from the given {@code provider} class which has a return type
+    * of {@code moduleType} class or a subtype of it, using the {@code filter}
+    * to filter methods.
+    * <p>
+    * This method is called the provider method, because calling it it will
+    * return an instance of {@code moduleType}. If a method with no return type
+    * equal to the module type is found, then a method with a return type
+    * assignable to {@code moduleType} will be returned.
+    * 
+    * @param moduleType
+    * @param providerType
+    * @param filter
+    * @return
+    */
+   protected Method getProviderMethod(Class<?> moduleType,
+         Class<?> providerType, Filter<Method> filter) {
+      Set<Method> methods = ReflectionUtils.getAccessibleMethods(providerType,
+            getClass(), filter);
       Method method = null;
       for (Method m : methods) {
-         if (m.getReturnType().equals(returnType)) {
+         if (m.getReturnType().equals(moduleType)) {
             return m;
          } else if (method == null
-               && returnType.isAssignableFrom(m.getReturnType())) {
+               && moduleType.isAssignableFrom(m.getReturnType())) {
             method = m;
          }
       }
@@ -441,23 +486,18 @@ public class DefaultModuleLoader implements ModuleLoader {
     * loader with a return type of returnType.
     * <p>
     * 
-    * @param returnType
+    * @param moduleType
     *           of the method to return
-    * @param loader
+    * @param providerType
     *           which contain the method
     * @return an instance loader method
     */
-   protected Method getInstanceLoaderMethod(Class<?> returnType, Class<?> loader) {
-      Set<Method> methods = ReflectionUtils.getAccessibleMethods(loader,
-            getClass(), instanceMethodLoaderFilter);
-      Method method = null;
-      for (Method m : methods) {
-         if (m.getReturnType().equals(returnType)) {
-            return m;
-         } else if (method == null
-               && returnType.isAssignableFrom(m.getReturnType())) {
-            method = m;
-         }
+   protected Method getInstanceProviderMethod(Class<?> moduleType,
+         Class<?> providerType) {
+      Method method = getProviderMethod(moduleType, providerType,
+            instanceMethodProviderFilter);
+      if(method == null) {
+         method = getProviderMethod(moduleType, providerType, instanceMethodFilter);
       }
       return method;
    }
@@ -515,7 +555,7 @@ public class DefaultModuleLoader implements ModuleLoader {
     * 
     * @author Elvis
     */
-   private static final class InstanceMethodLoaderFilter implements
+   private static final class InstanceMethodProviderFilter implements
          Filter<Method> {
 
       @Override
@@ -525,7 +565,19 @@ public class DefaultModuleLoader implements ModuleLoader {
       }
    }
 
-   static final InstanceMethodLoaderFilter instanceMethodLoaderFilter = new InstanceMethodLoaderFilter();
+   private static final InstanceMethodProviderFilter instanceMethodProviderFilter = new InstanceMethodProviderFilter();
+
+   private static final class InstanceMethodFilter implements Filter<Method> {
+      /**
+       * {@inheritDoc}
+       */
+      @Override
+      public boolean accept(Method t) {
+         return !Modifier.isStatic(t.getModifiers());
+      }
+   }
+   
+   private static final InstanceMethodFilter instanceMethodFilter = new InstanceMethodFilter();
 
    /**
     * Used to find an annotated with @ProvideModule static method.
@@ -533,7 +585,7 @@ public class DefaultModuleLoader implements ModuleLoader {
     * 
     * @author Elvis
     */
-   static final class StaticMethodLoaderFilter implements Filter<Method> {
+   private static final class StaticMethodProviderFilter implements Filter<Method> {
 
       @Override
       public boolean accept(Method t) {
@@ -542,7 +594,17 @@ public class DefaultModuleLoader implements ModuleLoader {
       }
    }
 
-   private static final StaticMethodLoaderFilter staticMethodLoaderFilter = new StaticMethodLoaderFilter();
+   private static final StaticMethodProviderFilter staticMethodProviderFilter = new StaticMethodProviderFilter();
+
+   static final class StaticMethodFilter implements Filter<Method> {
+
+      @Override
+      public boolean accept(Method t) {
+         return Modifier.isStatic(t.getModifiers());
+      }
+   }
+   
+   private static final StaticMethodFilter staticMethodFilter = new StaticMethodFilter();
 
    /**
     * Used to find an annotated with @ProvideModule constructor.
