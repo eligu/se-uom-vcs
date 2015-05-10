@@ -4,7 +4,6 @@
 package gr.uom.se.util.module;
 
 import gr.uom.se.util.module.annotations.Module;
-import gr.uom.se.util.module.annotations.ProvideModule;
 
 /**
  * @author Elvis Ligu
@@ -15,7 +14,6 @@ public class SingletonModule implements ISingletonModule {
    
    private SingletonModule() {}
    
-   //@ProvideModule
    public static SingletonModule getInstance() {
       if(INSTANCE == null) {
          INSTANCE = new SingletonModule();
@@ -27,7 +25,6 @@ public class SingletonModule implements ISingletonModule {
       throw new UnsupportedOperationException();
    }
    
-   //@ProvideModule
    public SingletonModule getModule() {
       return new SingletonModule();
    }
