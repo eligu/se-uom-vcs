@@ -12,7 +12,7 @@ import gr.uom.se.vcs.analysis.Analyzer;
 import gr.uom.se.vcs.analysis.CommitAnalyzer;
 import gr.uom.se.vcs.analysis.CounterProcessor;
 import gr.uom.se.vcs.analysis.util.CommitEdits;
-import gr.uom.se.vcs.analysis.version.provider.ConnectedTagVersionProvider;
+import gr.uom.se.vcs.analysis.version.provider.ConnectedVersionProvider;
 import gr.uom.se.vcs.exceptions.VCSRepositoryException;
 import gr.uom.se.vcs.walker.filter.VCSFilter;
 import gr.uom.se.vcs.walker.filter.commit.VCSCommitFilter;
@@ -47,9 +47,9 @@ public class VersionAnalyzerAgregator {
    private boolean analyzeIntermediateCommits;
    private boolean countCommits;
    private boolean countCommitsPerVersion;
-   private ConnectedTagVersionProvider versionProvider;
+   private ConnectedVersionProvider versionProvider;
    
-   public VersionAnalyzerAgregator(ConnectedTagVersionProvider versionProvider) {
+   public VersionAnalyzerAgregator(ConnectedVersionProvider versionProvider) {
       this.versionProvider = versionProvider;
    }
 

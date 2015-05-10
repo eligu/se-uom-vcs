@@ -6,6 +6,8 @@ package gr.uom.se.vcs.analysis.util;
 import gr.uom.se.util.pattern.processor.Processor;
 import gr.uom.se.util.validation.ArgsCheck;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -64,6 +66,19 @@ public abstract class KeyValueProcessor<E, K, V> implements Processor<E> {
          }
 
          return values.get(key);
+      } finally {
+         runningLock.readLock().unlock();
+      }
+   }
+   
+   public Set<K> getKeys() {
+      runningLock.readLock().lock();
+      try {
+         if (running) {
+            throw new IllegalStateException("can't get keys while running");
+         }
+
+         return Collections.unmodifiableSet(values.keySet());
       } finally {
          runningLock.readLock().unlock();
       }

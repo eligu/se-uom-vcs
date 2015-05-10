@@ -352,8 +352,9 @@ public class ConnectedTagVersionProvider implements ConnectedVersionProvider {
     *           commit of the version
     * @return the commits of the given version
     */
+   @Override
    public Set<VCSCommit> getCommits(VCSCommit version) {
-      if (provider.isVersion(version)) {
+      if (!provider.isVersion(version)) {
          throw new IllegalArgumentException("commit is not a version");
       }
       lock.readLock().lock();
@@ -372,10 +373,16 @@ public class ConnectedTagVersionProvider implements ConnectedVersionProvider {
     *           name of the version
     * @return the commits of this version
     */
+   @Override
    public Set<VCSCommit> getCommits(String ver) {
       VCSCommit version = provider.getCommit(ver);
       ArgsCheck.notNull("version", version);
       return this.getCommits(version);
+   }
+   
+   @Override
+   public void init() throws VCSRepositoryException {
+      this.collectVersionInfo();
    }
 
    /**

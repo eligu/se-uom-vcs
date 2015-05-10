@@ -48,9 +48,17 @@ public abstract class AbstractVersionNameProvider implements
          VersionString v2 = mappedCommits.get(o2);
          // Use the default comparing mechanism if no
          // version comparator was provided
+         if(v1 == v2) {
+            return 0;
+         } else if(v1 == null) {
+            return -1;
+         } else if (v2 == null) {
+            return 1;
+         }
          if (versionComparator == null) {
             return v1.compareTo(v2);
          }
+         
          return versionComparator.compare(v1, v2);
       }
 

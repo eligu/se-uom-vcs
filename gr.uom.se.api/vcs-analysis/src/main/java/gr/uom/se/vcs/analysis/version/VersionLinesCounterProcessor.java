@@ -15,6 +15,7 @@ import gr.uom.se.vcs.walker.filter.VCSFilter;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Elvis Ligu

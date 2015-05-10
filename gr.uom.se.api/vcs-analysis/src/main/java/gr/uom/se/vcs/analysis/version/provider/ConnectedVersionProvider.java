@@ -3,14 +3,20 @@
  */
 package gr.uom.se.vcs.analysis.version.provider;
 
+import java.util.Collections;
+import java.util.Set;
+
+import gr.uom.se.util.validation.ArgsCheck;
 import gr.uom.se.vcs.VCSCommit;
+import gr.uom.se.vcs.exceptions.VCSRepositoryException;
 
 /**
  * @author Elvis Ligu
  * @version 0.0.1
  * @since 0.0.1
  */
-public interface ConnectedVersionProvider extends Iterable<VCSCommit>, ConnectedVersionNameProvider {
+public interface ConnectedVersionProvider extends Iterable<VCSCommit>,
+      ConnectedVersionNameProvider {
 
    /**
     * Find the version where the specified commit belongs to.
@@ -29,7 +35,8 @@ public interface ConnectedVersionProvider extends Iterable<VCSCommit>, Connected
     * commit is reachable by this version, but not reachable by any other
     * previous version. Keep in mind that this will require to keep in memory
     * all commits that belong to previous versions, so if we find the required
-    * commit and it is not in a previous version that means it belongs to this version.
+    * commit and it is not in a previous version that means it belongs to this
+    * version.
     * <p>
     * Note that if the given commit is equal to a commit of a version then it
     * will return that version, in this case we consider that the version commit
@@ -40,7 +47,7 @@ public interface ConnectedVersionProvider extends Iterable<VCSCommit>, Connected
     * @return the version this commit belongs to
     */
    public String findVersion(VCSCommit commit);
-   
+
    /**
     * Find out if the given commit is part of the given version.
     * <p>
@@ -57,7 +64,7 @@ public interface ConnectedVersionProvider extends Iterable<VCSCommit>, Connected
     * @return true if the given commit is part of the given version
     */
    public boolean isInVersion(String ver, VCSCommit commit);
-   
+
    /**
     * Find out if the given commit is part of the given version.
     * <p>
@@ -74,4 +81,33 @@ public interface ConnectedVersionProvider extends Iterable<VCSCommit>, Connected
     * @return true if the given commit is part of the given version
     */
    public boolean isInVersion(VCSCommit versionCommit, VCSCommit commit);
+
+   /**
+    * Initialize this versions provider.
+    * <p>
+    * This method should be executed before using this provider.
+    * 
+    * @throws VCSRepositoryException
+    */
+   void init() throws VCSRepositoryException;
+
+   /**
+    * Given a name version return all commits of this version.
+    * <p>
+    * 
+    * @param ver
+    *           name of the version
+    * @return the commits of this version
+    */
+   Set<VCSCommit> getCommits(String ver);
+
+   /**
+    * Given a commit version get all commits of this version.
+    * <p>
+    * 
+    * @param version
+    *           commit of the version
+    * @return the commits of the given version
+    */
+   Set<VCSCommit> getCommits(VCSCommit version);
 }

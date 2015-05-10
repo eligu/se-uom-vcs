@@ -388,7 +388,7 @@ public class Analyzer<T> implements ProcessorQueue<T>, Visitor<T> {
     *       // exceptions and throw one when called.
     *       // Therefore you should always ensure that threads
     *       // will terminate successfully.
-    *       parQueue.shutDownThreads();
+    *       parQueue.shutDown();
     *    }
     * 
     * @throws InterruptedException
