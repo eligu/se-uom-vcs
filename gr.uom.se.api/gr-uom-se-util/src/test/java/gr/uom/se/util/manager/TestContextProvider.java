@@ -55,7 +55,6 @@ public class TestContextProvider implements ContextProvider {
    /**
     * {@inheritDoc}
     */
-   @SuppressWarnings("unchecked")
    @Override
    public Set<Class<? extends Context>> getContextTypes() {
       Set<Class<? extends Context>> context = new HashSet<>();

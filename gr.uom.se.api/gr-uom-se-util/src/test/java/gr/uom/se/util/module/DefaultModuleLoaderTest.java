@@ -298,10 +298,10 @@ public class DefaultModuleLoaderTest {
       ISingletonModule module1 = moduleLoader.load(ISingletonModule.class);
       assertNotNull(module1);
       ISingletonModule module2 = moduleLoader.load(ISingletonModule.class);
-      assertTrue(module1 != module2); // reference check
-      Assert.assertNotEquals(module1, module2);
-      Assert.assertNotEquals(module1, singleton1);
-      Assert.assertNotEquals(module2, singleton2);
+      assertTrue(module1 == module2); // reference check
+      Assert.assertEquals(module1, module2);
+      Assert.assertEquals(module1, singleton1);
+      Assert.assertEquals(module2, singleton2);
    }
    
 }

@@ -232,10 +232,12 @@ public class DefaultModuleLoader implements ModuleLoader {
       // is different from provider type. If module is same as provider and
       // it has a provider method that means we will fall in an infinite
       // recursive loop because it will try to resolve a loader for the provider
-      // which is the same as the module.
-      if (!moduleType.equals(provider)) {
+      // which is the same as the module. Also if a module is a super type of the provider
+      // we do not want to check the provider for a method, because the provider itself is
+      // considered special case of the module, so we just load the provider.
+      if (!moduleType.isAssignableFrom(provider)) {
          method = getInstanceProviderMethod(moduleType, provider);
-      }
+      } 
       // If method is found then the provider will be considered a module
       // so try to resolve the provider (load it, or get it from properties).
       if (method != null) {

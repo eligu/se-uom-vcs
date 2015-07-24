@@ -21,11 +21,7 @@ public class SingletonModule implements ISingletonModule {
       return INSTANCE;
    }
    
-   public static SingletonModule newSingleton() {
-      throw new UnsupportedOperationException();
-   }
-   
-   public SingletonModule getModule() {
+   public ISingletonModule getModule() {
       return new SingletonModule();
    }
 }
