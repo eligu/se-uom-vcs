@@ -773,7 +773,6 @@ public class StaticTaskScheduler implements TaskScheduler {
             if (shutdown) {
                return;
             }
-
             runnable.run();
          } finally {
             // Notify consumer
